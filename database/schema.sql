@@ -1,5 +1,5 @@
 -- Starry Echo only. Central member profile data belongs to Starry central ID API.
--- Central D1 is planned as id.starry; it is NOT a binding of this Worker.
+-- Central D1 is planned as id-starry; it is NOT a binding of this Worker.
 CREATE TABLE IF NOT EXISTS echo_tracks (
   id TEXT PRIMARY KEY, legacy_track_id TEXT UNIQUE, title TEXT NOT NULL,
   speaker TEXT NOT NULL DEFAULT '', description TEXT,

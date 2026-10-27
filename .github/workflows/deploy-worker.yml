@@ -31,6 +31,8 @@ jobs:
           fi
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run api:check
       - run: npm test
       - run: npm run build:web
       - name: Deploy website and API together

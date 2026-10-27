@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.mjs';
+import workerModule from '../worker/index.ts';
+// Node 22 + tsx may interop with TypeScript modules as CJS depending on package type.
+const worker = typeof workerModule.fetch === 'function' ? workerModule : workerModule.default;
 
 const origin = 'https://echo-starry.starry-phd.workers.dev';
 const headers = {'Origin': origin};
@@ -139,4 +141,20 @@ test('invalid multi-range requests are rejected rather than ignored', async () =
   const {env}=envWithDb({firstRow:{audio_key:'safe/audio.mp3'}});
   const r=await worker.fetch(new Request(origin+'/api/tracks/safe-1/stream',{headers:{Range:'bytes=0-5,12-22'}}),env);
   assert.equal(r.status,416);
+});
+
+
+test('canonical v1 catalog requires public plus verified access', async () => {
+  const {env,sqlSeen}=envWithDb();
+  const r=await worker.fetch(new Request(origin+'/api/v1/catalog?q=test'),env);
+  assert.equal(r.status,200);
+  assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+  assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+});
+test('canonical v1 health reports pending member API', async () => {
+  const {env}=envWithDb();
+  const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+  const data=await r.json();
+  assert.equal(data.apiVersion,'v1');
+  assert.equal(data.centralMemberApi,'pending');
 });

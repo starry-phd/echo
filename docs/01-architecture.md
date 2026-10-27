@@ -35,7 +35,8 @@
 - [ ] 舊音檔關聯、會員可見性與播放測試
 - [ ] Starry 中央會員 API 正式契約與 Auth 串接
 - [ ] H-Global / Starry 中央會員綁定與個資同步整合測試
-- [ ] Expo dependencies build / Web build / iOS / Android 實機測試
+- [x] Expo Web 編譯曾在 GitHub CI 驗證通過
+- [ ] iOS / Android EAS 原生建置與四端實機／瀏覽器驗收
 - [ ] Workers Static Assets 網站部署、域名切換
 
 ## 2026-10-28 自動化實際驗證狀態
@@ -44,7 +45,7 @@
 - 新 D1：112 / 112 筆舊音檔索引資料與 8 個分類已讀取匯入；112 / 112 筆舊 R2 物件鍵已記錄。所有資料 `migration_status='pending'`，正式核准 `verified=0`。
 - 新 R2：**0 個物件**；來源 R2 共 598 個物件約 3.12 GB。跨帳戶 Super Slurper 工作尚未啟動；其臨時憑證清單複查均無殘留。
 - 會員：舊 `users`／`auth_sessions` **沒有匯入**到 Echo D1；中央會員 D1 `id-starry` 由另一工作流負責，正式 API 仍待完成。
-- Worker `echo-starry` 已上傳、配置 DB／MEDIA 綁定並啟用 workers.dev；未經 HTTP 端到端成功回應驗證，**不可視為已正式上線**。
+- Worker `echo-starry` 曾使用舊 `.mjs` 版本上傳；**TypeScript 候選實作目前只在 PR #1，未經部署驗證**。
 - Pages 空專案已依 2026-10-28 核准方案刪除；現使用 Workers Static Assets。Web SPA 發佈、HTTP 端到端驗證尚待完成。
 - 仍需完成媒體檔案轉移、權限校核、中央 Auth 契約及端到端測試，正式切換前不得改動來源。
 
@@ -63,3 +64,10 @@
 - 更新 Worker API 程式並保留 D1/R2 binding。GitHub 另增 CI 自動測試及限人工觸發的正式部署工作流；未有 GitHub Cloudflare 安全授權，不得宣稱 Web Assets 已上線。
 - 來源 R2 598 物件，共 3,122,987,926 bytes。交叉核對結果：新 D1 112 筆音檔 `audio_key` 對應來源 R2 **112/112 全數存在**，沒有遺失來源映射；但目的 R2 實際尚未完成複製，不可開放媒體。
 - 中央會員主資料專屬 D1 預定名稱**`id-starry`**，不等於已建置或 API 正式驗收；Echo 本地只有外部參照，嚴禁直接複製中央會員基本個資。
+
+## 本輪 DEV-I 技術規範轉換
+
+- 候選 PR #1： https://github.com/starry-phd/echo/pull/1
+- 後端 `.mjs` → `.ts`、OpenAPI 3.1／v1、共用 SDK、EAS Profiles、CI 測試。
+- 完整工程核對表：`docs/05-dev-i-compliance.md`，技術決策：`docs/adr/0001-dev-i-stack.md`。
+- 新增版本化 API 不代表未完成的 Starry 中央會員服務已上線；安全邊界維持原樣。

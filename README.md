@@ -28,4 +28,12 @@
 - **相同姓名、email 或手機不構成自動綁定的充分證據**；避免錯誤合併兩個人的會員資料。
 - API 未完成前保持隔離，不能將占位接口誤當已可正式同步。
 
+## DEV-I 工程基準（候選 PR #1）
+
+- Worker：TypeScript `worker/index.ts`，API v1 正式契約 `openapi/echo-public.v1.json`
+- 品牌內可重用 SDK：`packages/echo-api-sdk`（v0.1.0）
+- EAS 建置 profiles：`eas.json`（尚無原生 Build、商店審核或正式部署驗收）
+- ADR：`docs/adr/0001-dev-i-stack.md`；符合情況：`docs/05-dev-i-compliance.md`
+- 本輪採 Branch → PR → CI。PR/CI 通過不代表 Production 部署。
+
 專案開發、資料遷移、API 契約、部署與驗收詳見 `docs/` 文件。
