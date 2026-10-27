@@ -111,3 +111,32 @@ test('categories endpoint never reads central user profile storage', async () =>
   assert.deepEqual((await r.json()).categories,['學習']);
   assert.match(sqlSeen[0],/echo_categories/);
 });
+
+test('eligible audio supports byte ranges for seeking', async () => {
+  let seen;
+  const {env}=envWithDb({
+    firstRow:{audio_key:'safe/audio.mp3'},
+    MEDIA: {
+      async get(key,options) {
+        seen={key,range:options?.range?.get('Range')};
+        return {
+          size:1000,
+          range:{offset:100,length:200},
+          httpMetadata:{contentType:'audio/mpeg'},
+          body:new Uint8Array(200),
+        };
+      }
+    }
+  });
+  const r=await worker.fetch(new Request(origin+'/api/tracks/safe-1/stream',{headers:{Range:'bytes=100-299'}}),env);
+  assert.equal(r.status,206);
+  assert.equal(r.headers.get('content-range'),'bytes 100-299/1000');
+  assert.equal(r.headers.get('accept-ranges'),'bytes');
+  assert.deepEqual(seen,{key:'safe/audio.mp3',range:'bytes=100-299'});
+});
+
+test('invalid multi-range requests are rejected rather than ignored', async () => {
+  const {env}=envWithDb({firstRow:{audio_key:'safe/audio.mp3'}});
+  const r=await worker.fetch(new Request(origin+'/api/tracks/safe-1/stream',{headers:{Range:'bytes=0-5,12-22'}}),env);
+  assert.equal(r.status,416);
+});

@@ -54,11 +54,22 @@ export default {
       const id=decodeURIComponent(match[1]);
       const row=await env.DB.prepare("SELECT audio_key FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'").bind(id).first();
       if(!row?.audio_key) return json({code:'NOT_FOUND'},404,request);
-      const object=await env.MEDIA.get(row.audio_key);
+      const rangeHeader=request.headers.get('Range');
+      // Audio seek support: single HTTP byte range only, never a full multipart response.
+      if(rangeHeader && !/^bytes=(?:[0-9]+)?-(?:[0-9]+)?$/.test(rangeHeader))
+        return json({code:'INVALID_RANGE'},416,request);
+      const object=await env.MEDIA.get(row.audio_key,rangeHeader?{range:request.headers}:undefined);
       if(!object) return json({code:'MEDIA_NOT_FOUND'},404,request);
-      const headers=new Headers({'content-type':object.httpMetadata?.contentType||'audio/mpeg','cache-control':'public, max-age=300','x-content-type-options':'nosniff','vary':'Origin'});
+      const headers=new Headers({'content-type':object.httpMetadata?.contentType||'audio/mpeg','cache-control':'public, max-age=300','x-content-type-options':'nosniff','vary':'Origin','accept-ranges':'bytes'});
       const origin=request.headers.get('Origin')||'';
       if(corsAllow.has(origin)||/^http:\/\/localhost:\d+$/.test(origin))headers.set('access-control-allow-origin',origin);
+      if(rangeHeader && object.range && Number.isInteger(object.range.offset) && Number.isInteger(object.range.length)) {
+        const start=object.range.offset;
+        const end=start+object.range.length-1;
+        headers.set('content-range',`bytes ${start}-${end}/${object.size}`);
+        headers.set('content-length',String(object.range.length));
+        return new Response(object.body,{status:206,headers});
+      }
       if(object.size) headers.set('content-length',String(object.size));
       return new Response(object.body,{status:200,headers});
     }
