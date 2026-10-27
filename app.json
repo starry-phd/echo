@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "繁星回聲",
+    "slug": "echo-starry",
+    "scheme": "echostarry",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      [
+        "expo-router",
+        {}
+      ],
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "phd.starry.echo"
+    },
+    "android": {
+      "package": "phd.starry.echo"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
