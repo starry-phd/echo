@@ -26,20 +26,22 @@ function publicTrack(row:EchoTrackRow) {
 export default {
   async fetch(request:Request,env:Env):Promise<Response> {
     const url=new URL(request.url);
+    // Canonical versioned routes; temporary unversioned aliases remain for existing preview clients.
+    const path=url.pathname.startsWith('/api/v1/') ? '/api/'+url.pathname.slice('/api/v1/'.length) : url.pathname;
     if(request.method==='OPTIONS') {
       const origin=request.headers.get('Origin')||'';
       if(!corsAllow.has(origin)&&!/^http:\/\/localhost:\d+$/.test(origin)) return new Response(null,{status:403});
       return new Response(null,{status:204,headers:{'access-control-allow-origin':origin,'access-control-allow-methods':'GET, OPTIONS','access-control-allow-headers':'Content-Type, Accept','access-control-max-age':'600','vary':'Origin'}});
     }
     if(request.method!=='GET') return json({code:'METHOD_NOT_ALLOWED'},405,request);
-    if(url.pathname==='/health'||url.pathname==='/api/health')
-      return json({service:'echo-starry',stage:'bootstrap',database:Boolean(env.DB),storage:Boolean(env.MEDIA),centralMemberApi:'pending',legacyMediaMigration:'pending'},200,request);
-    if(url.pathname==='/api/categories') {
+    if(path==='/health'||path==='/api/health')
+      return json({service:'echo-starry',stage:'bootstrap',database:Boolean(env.DB),storage:Boolean(env.MEDIA),centralMemberApi:'pending',apiVersion:'v1',legacyMediaMigration:'pending'},200,request);
+    if(path==='/api/categories') {
       // Category labels themselves contain no member-specific data.
       const result=await env.DB.prepare("SELECT name FROM echo_categories ORDER BY display_order, name").all<{name:string}>();
       return json({categories:(result.results||[]).map(x=>x.name).filter(x=>typeof x==='string')},200,request);
     }
-    if(url.pathname==='/api/catalog'){
+    if(path==='/api/catalog'){
       const query=(url.searchParams.get('q')||'').trim().slice(0,100);
       const category=(url.searchParams.get('category')||'').trim().slice(0,80);
       let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
@@ -57,7 +59,7 @@ export default {
       const result=await (bindings.length ? statement.bind(...bindings) : statement).all<EchoTrackRow>();
       return json({tracks:(result.results||[]).map(publicTrack)},200,request);
     }
-    const match=/^\/api\/tracks\/([^/]+)\/stream$/.exec(url.pathname);
+    const match=/^\/api\/tracks\/([^/]+)\/stream$/.exec(path);
     if(match){
       const id=decodeURIComponent(match[1]);
       const row=await env.DB.prepare("SELECT audio_key FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'").bind(id).first<{audio_key:string|null}>();
@@ -81,7 +83,7 @@ export default {
       if(object.size) headers.set('content-length',String(object.size));
       return new Response(object.body,{status:200,headers});
     }
-    if (url.pathname.startsWith('/api/')) return json({code:'NOT_FOUND'},404,request);
+    if (path.startsWith('/api/')) return json({code:'NOT_FOUND'},404,request);
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return json({code:'STATIC_ASSETS_NOT_DEPLOYED',message:'網頁尚未發佈；API 繼續可用。'},503,request);
   }

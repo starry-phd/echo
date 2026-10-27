@@ -142,3 +142,19 @@ test('invalid multi-range requests are rejected rather than ignored', async () =
   const r=await worker.fetch(new Request(origin+'/api/tracks/safe-1/stream',{headers:{Range:'bytes=0-5,12-22'}}),env);
   assert.equal(r.status,416);
 });
+
+
+test('canonical v1 catalog requires public plus verified access', async () => {
+  const {env,sqlSeen}=envWithDb();
+  const r=await worker.fetch(new Request(origin+'/api/v1/catalog?q=test'),env);
+  assert.equal(r.status,200);
+  assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+  assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+});
+test('canonical v1 health reports pending member API', async () => {
+  const {env}=envWithDb();
+  const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+  const data=await r.json();
+  assert.equal(data.apiVersion,'v1');
+  assert.equal(data.centralMemberApi,'pending');
+});

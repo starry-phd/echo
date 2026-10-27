@@ -10,8 +10,9 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck",
-    "test": "node --import tsx --test tests/*.test.mjs"
+    "check": "npm run typecheck && npm test && npm run api:check",
+    "test": "node --import tsx --test tests/*.test.mjs",
+    "api:check": "node scripts/check-openapi.mjs"
   },
   "dependencies": {
     "expo": "~57.0.31",
