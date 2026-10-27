@@ -36,3 +36,13 @@
 - [ ] H-Global / Starry 中央會員綁定與個資同步整合測試
 - [ ] Expo dependencies build / Web build / iOS / Android 實機測試
 - [ ] Cloudflare Pages 網站部署、域名切換
+
+## 2026-10-28 自動化實際驗證狀態
+
+- GitHub Actions TypeScript typecheck：**成功**，Run https://github.com/starry-phd/echo/actions/runs/40554709773 。尚未驗證 iOS／Android 原生建置或 Web 部署。
+- 新 D1：112 / 112 筆舊音檔索引資料與 8 個分類已讀取匯入；112 / 112 筆舊 R2 物件鍵已記錄。所有資料 `migration_status='pending'`，正式核准 `verified=0`。
+- 新 R2：**0 個物件**；來源 R2 共 598 個物件約 3.12 GB。跨帳戶 Super Slurper 工作尚未啟動；其臨時憑證清單複查均無殘留。
+- 會員：舊 `users`／`auth_sessions` **沒有匯入**到 Echo D1；中央會員 D1 `id.starry` 由另一工作流負責，正式 API 仍待完成。
+- Worker `echo-starry` 已上傳、配置 DB／MEDIA 綁定並啟用 workers.dev；未經 HTTP 端到端成功回應驗證，**不可視為已正式上線**。
+- Pages 專案已建立，尚未完成網站內容部署。
+- 仍需完成媒體檔案轉移、權限校核、中央 Auth 契約及端到端測試，正式切換前不得改動來源。
