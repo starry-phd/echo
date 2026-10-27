@@ -15,3 +15,10 @@ jobs:
           cache-dependency-path: package.json
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
+      - run: npm run build:web
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: echo-starry-web-dist
+          path: dist/
+          if-no-files-found: error
