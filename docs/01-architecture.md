@@ -1,0 +1,38 @@
+# 繁星回聲 V2：架構決策與資源登記
+
+## 2026-10-28 正式目標
+
+- App：React Native + Expo Router + TypeScript，同一專案對應 iOS / Android / Web。
+- Repo：`starry-phd/echo`；由 `yukidu@gmail.com` 有權管理的 `starry-phd` GitHub 組織保管。
+- Cloudflare：`starry.phd@gmail.com`；Account ID `9ff1b4c261141730ac2fe0683f730062`。
+- Worker：`echo-starry`；D1：`echo-starry`（`8437c865-d7f5-4efb-8c95-44ee3d3fdb21`）；R2：`echo-starry`；Pages：`echo-starry`。
+- 舊版參照 `yukidu/Echo-Starry`，專用舊 D1 `echoes_db`、舊 R2 `echoes-audio-bucket`，舊 CF 帳號 `611de84062006fe96fafd0cf157f2ec0`。
+
+## 中央會員規格（以使用者最新指示為準）
+
+1. 會員姓名、聯絡方式、頭像、個人基本資料等的**唯一主資料來源為繁星生態系中央會員 API**。預定其專屬 D1 名稱是 `id.starry`；API 仍由另一個工作流開發，尚未提供正式 OpenAPI、網址、驗證方式。
+2. **本 App 的 `echo-starry` D1 不是會員基本資料庫**，只能存放自己的媒體內容與活動資料，例如 `central_user_id` 外部參照、播放進度、收藏、留言。
+3. 不從舊 `users` 或 `auth_sessions` 匯入成新版會員主檔，不複製舊密碼、session token、OTP secret。
+4. H-Global ↔ Starry 雙向個人基本資料同步與帳號關聯，由**兩生態系中央服務**在驗證雙方屬同一人、取得必要授權、處理衝突與稽核後進行。Echo 只消費 Starry 中央 API；嚴禁以相同姓名／Email／手機直接認定同一人。
+5. API 尚未完成前採 fail-closed：登入、同步、會員特權、進度寫入均不可假稱成功。
+
+## 舊資料移轉
+
+- 來源包含約 112 筆音檔資料、8 個分類、72 筆舊會員基本紀錄，舊 R2 約 598 個物件／3.12 GB。
+- 先將媒體 metadata 置入新 D1，設 `visibility='private'`、`migration_status='pending'`；新 Worker 只回傳 `public + verified` 內容，防止未驗證的 VIP／等級內容曝光。
+- R2 完成實際複製、數量與大小／必要抽樣校驗、音檔可讀、原權限政策重新審查後，才能升級 verified。
+- 舊環境繼續保留，未經遷移驗收**不可刪除或更改 DNS 路由**。
+- 目前 Pages 是資源占位，未完成 Web 靜態編譯與部署，不能將 Pages 子網域當已上線服務。
+
+## 驗收清單
+
+- [x] GitHub 組織新 repo 初始化
+- [x] 新 D1 / R2 / Pages / Worker 資源建立
+- [x] Expo 跨平台程式基座建立
+- [x] Echo 專屬 D1 Schema 初始化
+- [ ] R2 檔案跨帳戶完整複製並驗證
+- [ ] 舊音檔關聯、會員可見性與播放測試
+- [ ] Starry 中央會員 API 正式契約與 Auth 串接
+- [ ] H-Global / Starry 中央會員綁定與個資同步整合測試
+- [ ] Expo dependencies build / Web build / iOS / Android 實機測試
+- [ ] Cloudflare Pages 網站部署、域名切換
