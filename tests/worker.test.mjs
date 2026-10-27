@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.mjs';
+import worker from '../worker/index.ts';
 
 const origin = 'https://echo-starry.starry-phd.workers.dev';
 const headers = {'Origin': origin};

@@ -11,7 +11,7 @@
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck",
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --import tsx --test tests/*.test.mjs"
   },
   "dependencies": {
     "expo": "~57.0.31",
@@ -28,7 +28,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "tsx": "^4.20.6"
   },
   "overrides": {
     "expo-asset": "57.0.8"
