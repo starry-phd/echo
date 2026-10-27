@@ -22,10 +22,14 @@
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
     "react-native-web": "^0.21.0",
-    "react-native-safe-area-context": "^5.0.0"
+    "react-native-safe-area-context": "^5.0.0",
+    "expo-asset": "57.0.8"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "expo-asset": "57.0.8"
   }
 }
