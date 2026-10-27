@@ -10,7 +10,7 @@
 
 ## 中央會員規格（以使用者最新指示為準）
 
-1. 會員姓名、聯絡方式、頭像、個人基本資料等的**唯一主資料來源為繁星生態系中央會員 API**。預定其專屬 D1 名稱是 `id.starry`；API 仍由另一個工作流開發，尚未提供正式 OpenAPI、網址、驗證方式。
+1. 會員姓名、聯絡方式、頭像、個人基本資料等的**唯一主資料來源為繁星生態系中央會員 API**。預定其專屬 D1 名稱是 `id-starry`；API 仍由另一個工作流開發，尚未提供正式 OpenAPI、網址、驗證方式。
 2. **本 App 的 `echo-starry` D1 不是會員基本資料庫**，只能存放自己的媒體內容與活動資料，例如 `central_user_id` 外部參照、播放進度、收藏、留言。
 3. 不從舊 `users` 或 `auth_sessions` 匯入成新版會員主檔，不複製舊密碼、session token、OTP secret。
 4. H-Global ↔ Starry 雙向個人基本資料同步與帳號關聯，由**兩生態系中央服務**在驗證雙方屬同一人、取得必要授權、處理衝突與稽核後進行。Echo 只消費 Starry 中央 API；嚴禁以相同姓名／Email／手機直接認定同一人。
@@ -42,7 +42,7 @@
 - GitHub Actions TypeScript typecheck：**成功**，Run https://github.com/starry-phd/echo/actions/runs/40554709773 。尚未驗證 iOS／Android 原生建置或 Web 部署。
 - 新 D1：112 / 112 筆舊音檔索引資料與 8 個分類已讀取匯入；112 / 112 筆舊 R2 物件鍵已記錄。所有資料 `migration_status='pending'`，正式核准 `verified=0`。
 - 新 R2：**0 個物件**；來源 R2 共 598 個物件約 3.12 GB。跨帳戶 Super Slurper 工作尚未啟動；其臨時憑證清單複查均無殘留。
-- 會員：舊 `users`／`auth_sessions` **沒有匯入**到 Echo D1；中央會員 D1 `id.starry` 由另一工作流負責，正式 API 仍待完成。
+- 會員：舊 `users`／`auth_sessions` **沒有匯入**到 Echo D1；中央會員 D1 `id-starry` 由另一工作流負責，正式 API 仍待完成。
 - Worker `echo-starry` 已上傳、配置 DB／MEDIA 綁定並啟用 workers.dev；未經 HTTP 端到端成功回應驗證，**不可視為已正式上線**。
 - Pages 專案已建立，尚未完成網站內容部署。
 - 仍需完成媒體檔案轉移、權限校核、中央 Auth 契約及端到端測試，正式切換前不得改動來源。

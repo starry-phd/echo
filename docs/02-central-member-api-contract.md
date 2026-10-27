@@ -2,7 +2,7 @@
 
 **注意：這是一份需求，不是聲稱存在的 API。**
 
-- 中央資料庫預定名稱：`id.starry`（並非 URL）。
+- 中央資料庫預定名稱：`id-starry`（並非 URL）。
 - API origin：**未確定**，由負責中央會員服務的 AI 提供正式 OpenAPI。
 - 登入：導向 Starry 中央身份服務；採 OAuth2.1 / OIDC + PKCE 或已核准等效機制，不保留舊 session，不在 app 中嵌入機密。
 - `GET /v1/me`（路徑僅供協商）：成功時回傳 `userId`（穩定不重用）、displayName、avatarUrl、version；檢查 token audience、issuer、signature、expiry。
