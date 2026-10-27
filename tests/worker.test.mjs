@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.ts';
+import workerModule from '../worker/index.ts';
+// Node 22 + tsx may interop with TypeScript modules as CJS depending on package type.
+const worker = typeof workerModule.fetch === 'function' ? workerModule : workerModule.default;
 
 const origin = 'https://echo-starry.starry-phd.workers.dev';
 const headers = {'Origin': origin};
