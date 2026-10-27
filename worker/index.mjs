@@ -26,8 +26,27 @@ export default {
     if(request.method!=='GET') return json({code:'METHOD_NOT_ALLOWED'},405,request);
     if(url.pathname==='/health'||url.pathname==='/api/health')
       return json({service:'echo-starry',stage:'bootstrap',database:Boolean(env.DB),storage:Boolean(env.MEDIA),centralMemberApi:'pending',legacyMediaMigration:'pending'},200,request);
+    if(url.pathname==='/api/categories') {
+      // Category labels themselves contain no member-specific data.
+      const result=await env.DB.prepare("SELECT name FROM echo_categories ORDER BY display_order, name").all();
+      return json({categories:(result.results||[]).map(x=>x.name).filter(x=>typeof x==='string')},200,request);
+    }
     if(url.pathname==='/api/catalog'){
-      const result=await env.DB.prepare("SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified' ORDER BY updated_at DESC LIMIT 100").all();
+      const query=(url.searchParams.get('q')||'').trim().slice(0,100);
+      const category=(url.searchParams.get('category')||'').trim().slice(0,80);
+      let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
+      const bindings=[];
+      if(query) {
+        sql+=" AND (instr(lower(title),lower(?)) > 0 OR instr(lower(speaker),lower(?)) > 0)";
+        bindings.push(query,query);
+      }
+      if(category) {
+        sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(category_labels_json) THEN category_labels_json ELSE '[]' END) WHERE value = ?)";
+        bindings.push(category);
+      }
+      sql+=" ORDER BY updated_at DESC LIMIT 100";
+      const statement=env.DB.prepare(sql);
+      const result=await (bindings.length ? statement.bind(...bindings) : statement).all();
       return json({tracks:(result.results||[]).map(publicTrack)},200,request);
     }
     const match=/^\/api\/tracks\/([^/]+)\/stream$/.exec(url.pathname);

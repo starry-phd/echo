@@ -11,18 +11,20 @@ function envWithDb(overrides = {}) {
   const db = {
     prepare(sql) {
       sqlSeen.push(sql);
-      return {
+      const statement = {
         async all() {
-          return { results: [
+          return { results: sql.includes('echo_categories') ? [{name: '學習'}] : [
             { id: 'safe-1', title: '測試講座', speaker: '講師', description: null,
               duration_seconds: 100, category_labels_json: '["學習"]' }
           ]};
         },
         bind(...values) {
           bindings.push(values);
-          return { async first() { return overrides.firstRow ?? null; } };
-        }
+          return statement;
+        },
+        async first() { return overrides.firstRow ?? null; }
       };
+      return statement;
     }
   };
   return {
@@ -86,4 +88,26 @@ test('unapproved cross-origin preflight is rejected', async () => {
   const {env}=envWithDb();
   const r=await worker.fetch(new Request(origin+'/api/catalog',{method:'OPTIONS',headers:{origin:'https://evil.invalid'}}),env);
   assert.equal(r.status,403);
+});
+
+test('search is parameterized, without expanding public visibility', async () => {
+  const {env,sqlSeen,bindings}=envWithDb();
+  const value="abc' OR 1=1 --";
+  const url=new URL(origin+'/api/catalog');
+  url.searchParams.set('q',value);
+  url.searchParams.set('category','學習');
+  const r=await worker.fetch(new Request(url),env);
+  assert.equal(r.status,200);
+  assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+  assert.match(sqlSeen[0],/json_each/);
+  assert.equal(sqlSeen[0].includes(value),false);
+  assert.deepEqual(bindings[0],[value,value,'學習']);
+});
+
+test('categories endpoint never reads central user profile storage', async () => {
+  const {env,sqlSeen}=envWithDb();
+  const r=await worker.fetch(new Request(origin+'/api/categories'),env);
+  assert.equal(r.status,200);
+  assert.deepEqual((await r.json()).categories,['學習']);
+  assert.match(sqlSeen[0],/echo_categories/);
 });
