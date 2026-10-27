@@ -1,0 +1,54 @@
+name: Copy legacy Echo R2 to Starry R2 (no deletes)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: echo-starry-r2-migration
+  cancel-in-progress: false
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: migration
+    env:
+      RCLONE_CONFIG_OLD_TYPE: s3
+      RCLONE_CONFIG_OLD_PROVIDER: Cloudflare
+      RCLONE_CONFIG_OLD_ENDPOINT: https://611de84062006fe96fafd0cf157f2ec0.r2.cloudflarestorage.com
+      RCLONE_CONFIG_OLD_ACCESS_KEY_ID: ${{ secrets.ECHO_OLD_R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY: ${{ secrets.ECHO_OLD_R2_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_NEW_TYPE: s3
+      RCLONE_CONFIG_NEW_PROVIDER: Cloudflare
+      RCLONE_CONFIG_NEW_ENDPOINT: https://9ff1b4c261141730ac2fe0683f730062.r2.cloudflarestorage.com
+      RCLONE_CONFIG_NEW_ACCESS_KEY_ID: ${{ secrets.ECHO_NEW_R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY: ${{ secrets.ECHO_NEW_R2_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Require independent source and destination credentials
+        shell: bash
+        run: |
+          for variable in RCLONE_CONFIG_OLD_ACCESS_KEY_ID RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY RCLONE_CONFIG_NEW_ACCESS_KEY_ID RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY; do
+            if [ -z "${!variable}" ]; then
+              echo "::error::Missing migration secret: $variable"
+              exit 1
+            fi
+          done
+      - name: Install rclone from Ubuntu repository
+        run: sudo apt-get update -qq && sudo apt-get install -y rclone
+      - name: Inventory source and existing target
+        run: |
+          rclone size old:echoes-audio-bucket
+          rclone size new:echo-starry
+      - name: Copy objects without deleting or overwriting
+        run: |
+          rclone copy old:echoes-audio-bucket new:echo-starry \
+            --ignore-existing --transfers 4 --checkers 8 --stats 30s --stats-one-line
+      - name: Compare object keys and sizes
+        run: |
+          rclone check old:echoes-audio-bucket new:echo-starry \
+            --one-way --size-only --checkers 8
+      - name: Inventory target after copy
+        run: rclone size new:echo-starry

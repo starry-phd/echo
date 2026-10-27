@@ -16,3 +16,20 @@ rclone check old_r2:echoes-audio-bucket new_r2:echo-starry --one-way
 ```
 
 不得將 Access Keys 提交 GitHub；不得對來源執行 `sync --delete`、`purge` 或清空。核驗物件數量、總容量、樣本內容雜湊、metadata 與 audioKey 的正確性，並重新審查 VIP／會員等級權限；通過後逐項標記 `migration_status='verified'`，不是一鍵全公開。
+
+## 2026-10-28 交叉核對及安全遷移工作流
+
+GitHub Workflow：`.github/workflows/migrate-r2.yml`，手動觸發 `workflow_dispatch`，禁止自動刪除／覆寫。
+
+經 Cloudflare 兩個帳戶即時資料盤點：來源 598 個物件，總計 3,122,987,926 bytes。新 Echo D1 的 112 筆音檔的 R2 `audio_key` **112 筆全部可以在來源 R2 找到**。這只驗證映射，不代表內容已遷移。
+
+首次執行前，必須在 GitHub repository `Settings > Secrets and variables > Actions` 安全建立 4 個機密，來源帳號使用只能讀取 `echoes-audio-bucket` 的專用 R2 S3 金鑰，目標帳號使用只能讀寫 `echo-starry` 的金鑰：
+
+- `ECHO_OLD_R2_ACCESS_KEY_ID`
+- `ECHO_OLD_R2_SECRET_ACCESS_KEY`
+- `ECHO_NEW_R2_ACCESS_KEY_ID`
+- `ECHO_NEW_R2_SECRET_ACCESS_KEY`
+
+Workflow 的完整操作需等金鑰正式配置；不得把任何金鑰寫入 GitHub 程式碼、issue、PR 或日誌。工作流使用 `rclone copy --ignore-existing`（不刪、不覆蓋），後接 `rclone check --one-way --size-only` 核對路徑與大小。檢查通過後，仍需要抽樣內容雜湊、音檔可播放與 VIP／等級授權核對，不能自動將來源音檔設為公開。
+
+**狀態：工作流程程式已準備；尚未提供秘密憑證、未觸發，目的 R2 尚未完成複製。**
