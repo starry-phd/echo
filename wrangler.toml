@@ -12,3 +12,11 @@ database_id = "8437c865-d7f5-4efb-8c95-44ee3d3fdb21"
 [[r2_buckets]]
 binding = "MEDIA"
 bucket_name = "echo-starry"
+
+# Expo Web SPA + backend API served by the SAME Cloudflare Worker.
+# No Cloudflare Pages project is used.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/health"]

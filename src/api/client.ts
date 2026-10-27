@@ -1,9 +1,14 @@
+import { Platform } from 'react-native';
 import type { CatalogResult, EchoTrack } from '../types';
 
 const configuredUrl = process.env.EXPO_PUBLIC_ECHO_API_BASE_URL?.trim();
 
 export function getApiBaseUrl(): string | null {
-  if (!configuredUrl) return null;
+  if (!configuredUrl) {
+    // Workers Static Assets and API share the same origin in web builds.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') return window.location.origin;
+    return null;
+  }
   try {
     const parsed = new URL(configuredUrl);
     if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') return null;

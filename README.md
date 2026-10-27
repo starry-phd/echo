@@ -11,7 +11,8 @@
 - Cloudflare D1: `echo-starry`
 - Cloudflare R2: `echo-starry`
 - Cloudflare Worker: `echo-starry`（專用 API）
-- Cloudflare Pages: `echo-starry`（網頁版本，須先部署程式）
+- Web hosting: **Workers Static Assets**（與 `echo-starry` Worker/API 同一服務）
+- Pages：**不使用**；曾建立的空 Pages 專案已刪除。
 
 ## 原系統僅供參考
 

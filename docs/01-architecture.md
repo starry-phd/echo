@@ -5,7 +5,7 @@
 - App：React Native + Expo Router + TypeScript，同一專案對應 iOS / Android / Web。
 - Repo：`starry-phd/echo`；由 `yukidu@gmail.com` 有權管理的 `starry-phd` GitHub 組織保管。
 - Cloudflare：`starry.phd@gmail.com`；Account ID `9ff1b4c261141730ac2fe0683f730062`。
-- Worker：`echo-starry`；D1：`echo-starry`（`8437c865-d7f5-4efb-8c95-44ee3d3fdb21`）；R2：`echo-starry`；Pages：`echo-starry`。
+- Worker：`echo-starry`；D1：`echo-starry`（`8437c865-d7f5-4efb-8c95-44ee3d3fdb21`）；R2：`echo-starry`；Web：**Workers Static Assets**（無 Pages）。
 - 舊版參照 `yukidu/Echo-Starry`，專用舊 D1 `echoes_db`、舊 R2 `echoes-audio-bucket`，舊 CF 帳號 `611de84062006fe96fafd0cf157f2ec0`。
 
 ## 中央會員規格（以使用者最新指示為準）
@@ -22,12 +22,13 @@
 - 先將媒體 metadata 置入新 D1，設 `visibility='private'`、`migration_status='pending'`；新 Worker 只回傳 `public + verified` 內容，防止未驗證的 VIP／等級內容曝光。
 - R2 完成實際複製、數量與大小／必要抽樣校驗、音檔可讀、原權限政策重新審查後，才能升級 verified。
 - 舊環境繼續保留，未經遷移驗收**不可刪除或更改 DNS 路由**。
-- 目前 Pages 是資源占位，未完成 Web 靜態編譯與部署，不能將 Pages 子網域當已上線服務。
+- 2026-10-28 決議：採 Workers Static Assets + 同一個 API Worker。先前建立的**空白 Pages 專案已刪除**，並未部署或綁定網域。網頁須完成 Expo SPA 編譯及 Workers Assets 上傳才能視為部署。
 
 ## 驗收清單
 
 - [x] GitHub 組織新 repo 初始化
-- [x] 新 D1 / R2 / Pages / Worker 資源建立
+- [x] 新 D1 / R2 / Worker 資源建立
+- [x] 刪除不必要的 Pages 空專案，改用 Workers Static Assets
 - [x] Expo 跨平台程式基座建立
 - [x] Echo 專屬 D1 Schema 初始化
 - [ ] R2 檔案跨帳戶完整複製並驗證
@@ -35,7 +36,7 @@
 - [ ] Starry 中央會員 API 正式契約與 Auth 串接
 - [ ] H-Global / Starry 中央會員綁定與個資同步整合測試
 - [ ] Expo dependencies build / Web build / iOS / Android 實機測試
-- [ ] Cloudflare Pages 網站部署、域名切換
+- [ ] Workers Static Assets 網站部署、域名切換
 
 ## 2026-10-28 自動化實際驗證狀態
 
@@ -44,5 +45,13 @@
 - 新 R2：**0 個物件**；來源 R2 共 598 個物件約 3.12 GB。跨帳戶 Super Slurper 工作尚未啟動；其臨時憑證清單複查均無殘留。
 - 會員：舊 `users`／`auth_sessions` **沒有匯入**到 Echo D1；中央會員 D1 `id-starry` 由另一工作流負責，正式 API 仍待完成。
 - Worker `echo-starry` 已上傳、配置 DB／MEDIA 綁定並啟用 workers.dev；未經 HTTP 端到端成功回應驗證，**不可視為已正式上線**。
-- Pages 專案已建立，尚未完成網站內容部署。
+- Pages 空專案已依 2026-10-28 核准方案刪除；現使用 Workers Static Assets。Web SPA 發佈、HTTP 端到端驗證尚待完成。
 - 仍需完成媒體檔案轉移、權限校核、中央 Auth 契約及端到端測試，正式切換前不得改動來源。
+
+## Workers Static Assets 統一部署
+
+- Expo Web 使用 `web.output = single`，輸出 `dist/index.html` 與靜態資產。
+- `wrangler.toml` 的 `[assets]` 綁定同一個 `echo-starry` Worker；`/api/*` 首先由 API Worker 處理，其餘由 Static Assets 提供 SPA。
+- **不另建 Pages**；Cloudflare 官方推薦新網站採 Workers Static Assets：https://developers.cloudflare.com/workers/best-practices/workers-best-practices/ 。
+- `npm run build:web && npx wrangler deploy`，驗證後才切換正式 DNS。發佈前需將所需 Cloudflare 授權安全存於 CI Secrets，禁止提交 API Token。
+- 媒體資料未驗證與中央會員 API 未完成之前，公開清單保持為空，驗證前不得開放 VIP 或等級音檔。

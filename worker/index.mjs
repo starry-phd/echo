@@ -3,7 +3,7 @@
  * IMPORTANT: This service never stores member profile data and NEVER silently
  * treats legacy login/session as a verified Starry central member.
  */
-const corsAllow = new Set(['https://echo-starry.pages.dev','https://echo.starry.phd']);
+const corsAllow = new Set(['https://echo-starry.starry-phd.workers.dev','https://echo.starry.phd']);
 function json(data,status=200,request) {
   const origin=request?.headers.get('Origin')||'';
   const headers=new Headers({'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','vary':'Origin'});
@@ -43,6 +43,8 @@ export default {
       if(object.size) headers.set('content-length',String(object.size));
       return new Response(object.body,{status:200,headers});
     }
-    return json({code:'NOT_FOUND'},404,request);
+    if (url.pathname.startsWith('/api/')) return json({code:'NOT_FOUND'},404,request);
+    if (env.ASSETS) return env.ASSETS.fetch(request);
+    return json({code:'STATIC_ASSETS_NOT_DEPLOYED',message:'網頁尚未發佈；API 繼續可用。'},503,request);
   }
 };
