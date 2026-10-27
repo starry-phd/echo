@@ -55,3 +55,11 @@
 - **不另建 Pages**；Cloudflare 官方推薦新網站採 Workers Static Assets：https://developers.cloudflare.com/workers/best-practices/workers-best-practices/ 。
 - `npm run build:web && npx wrangler deploy`，驗證後才切換正式 DNS。發佈前需將所需 Cloudflare 授權安全存於 CI Secrets，禁止提交 API Token。
 - 媒體資料未驗證與中央會員 API 未完成之前，公開清單保持為空，驗證前不得開放 VIP 或等級音檔。
+
+## 2026-10-28 新版可驗證里程碑
+
+- Cloudflare Pages 空專案已實際刪除；正式選用 Workers Static Assets。
+- Expo Web SPA 成功產生建置壓縮檔，CI：https://github.com/starry-phd/echo/actions/runs/40558639832 。
+- 更新 Worker API 程式並保留 D1/R2 binding。GitHub 另增 CI 自動測試及限人工觸發的正式部署工作流；未有 GitHub Cloudflare 安全授權，不得宣稱 Web Assets 已上線。
+- 來源 R2 598 物件，共 3,122,987,926 bytes。交叉核對結果：新 D1 112 筆音檔 `audio_key` 對應來源 R2 **112/112 全數存在**，沒有遺失來源映射；但目的 R2 實際尚未完成複製，不可開放媒體。
+- 中央會員主資料專屬 D1 預定名稱**`id-starry`**，不等於已建置或 API 正式驗收；Echo 本地只有外部參照，嚴禁直接複製中央會員基本個資。
