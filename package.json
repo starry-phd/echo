@@ -34,5 +34,8 @@
   },
   "overrides": {
     "expo-asset": "57.0.8"
-  }
+  },
+  "workspaces": [
+    "packages/*"
+  ]
 }
