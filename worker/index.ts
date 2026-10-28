@@ -50,10 +50,20 @@ app.options('*',c=>{
   'access-control-allow-headers':'Content-Type, Accept, Range','access-control-max-age':'600','vary':'Origin'
  }});
 });
-const health=(c:{req:{raw:Request};env:Env})=>json({
- service:'echo-starry',stage:'bootstrap',apiVersion:'v1',database:Boolean(c.env.DB),
- storage:Boolean(c.env.MEDIA),centralMemberApi:'pending',legacyMediaMigration:'pending'
-},200,c.req.raw);
+const health=async(c:{req:{raw:Request};env:Env})=>{
+ let legacyMediaMigration:'pending'|'copied'|'verified'='pending';
+ try{
+  const row=await c.env.DB.prepare(
+   "SELECT status FROM echo_migrations WHERE key='legacy-echo-2026-10'"
+  ).first<{status:string}>();
+  if(row&&['pending','copied','verified'].includes(row.status))
+   legacyMediaMigration=row.status as typeof legacyMediaMigration;
+ }catch{/* Keep /health available even when migration table is temporarily unreachable. */}
+ return json({
+  service:'echo-starry',stage:'bootstrap',apiVersion:'v1',database:Boolean(c.env.DB),
+  storage:Boolean(c.env.MEDIA),centralMemberApi:'pending',legacyMediaMigration
+ },200,c.req.raw);
+};
 for(const route of ['/health','/api/health','/api/v1/health'])app.get(route,health);
 
 const categories=async(c:{req:{raw:Request};env:Env})=>{

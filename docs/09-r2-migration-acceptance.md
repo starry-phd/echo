@@ -34,3 +34,7 @@
 ## 自動私有音訊格式抽樣 Gate
 
 新設 `.github/workflows/probe-r2.yml`：僅取目的 R2 之 m4a／mp3／aac 各一筆私有檔案的前 128 bytes，判斷 media signature；在自有 `main` 的 push 初次建立 workflow 時自動執行，或以 `workflow_dispatch` 手動重新檢查。使用已建立、限定目的 Bucket 的 S3 憑證。**不公開物件、不讀取完整音訊、不建立新的音檔分享 API、不在日誌列出私有檔名或原始位元組**。此成功僅證明三筆檔頭，不是逐檔解碼或完整播放驗收。
+
+## Health API 狀態一致性
+
+新 Echo Worker `/api/v1/health` 原本硬編碼 `legacyMediaMigration='pending'`，與 R2 已搬完、D1 已標 `copied` 的真實狀態衝突；改為唯讀查詢 Echo 自己的 `echo_migrations` 狀態。失效／未識別的資料一律回退為 `pending`，**不回傳私人音檔資料，也不解除任何目錄或播放的 `public AND verified` Gate**。
