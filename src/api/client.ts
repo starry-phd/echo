@@ -33,3 +33,9 @@ export async function getPublicTrack(id:string,signal?:AbortSignal):Promise<Echo
  if(!origin)throw new Error('新 API 網址尚未設定，音檔詳情暫不開放。');
  return createEchoPublicClient(origin).getTrack(id,signal);
 }
+
+export async function getPublicSpeakers(signal?:AbortSignal):Promise<import('../../packages/echo-api-sdk/src').EchoSpeaker[]>{
+ const origin=getApiBaseUrl();
+ if(!origin)throw new Error('新版 API 網址尚未設定。');
+ return createEchoPublicClient(origin).listSpeakers(signal);
+}

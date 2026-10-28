@@ -15,6 +15,8 @@ export default function RootLayout() {
     }}>
       <Stack.Screen name="index" options={{ title: '繁星回聲' }} />
       <Stack.Screen name="profile" options={{ title: '中央會員' }} />
+      <Stack.Screen name="speaker/index" options={{ title: '講師作品' }} />
+      <Stack.Screen name="speaker/[name]" options={{ title: '講師作品' }} />
       <Stack.Screen name="track/[id]" options={{ title: '音檔詳情' }} />
     </Stack>
     </QueryClientProvider>

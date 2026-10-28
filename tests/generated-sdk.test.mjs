@@ -8,5 +8,6 @@ test('OpenAPI client is actually generated from the checked in v1.0 spec',()=>{
  assert.match(generated,/export interface paths/);
  assert.match(generated,/\/api\/v1\/catalog/);
  assert.match(generated,/\/api\/v1\/health/);
+ assert.match(generated,/\/api\/v1\/speakers/);
  assert.match(generated,/\/api\/v1\/tracks\/\{id\}/);
 });

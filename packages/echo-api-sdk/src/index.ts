@@ -10,7 +10,8 @@ export type EchoTrack=components['schemas']['Track'];
 export type EchoHealth=components['schemas']['Health'];
 export type ApiProblem=components['schemas']['Problem'];
 export type CatalogResult={tracks:EchoTrack[]};
-export type CatalogFilters={query?:string;category?:string};
+export type CatalogFilters={query?:string;category?:string;speaker?:string};
+export type EchoSpeaker=components['schemas']['Speaker'];
 
 export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=fetch){
  const base=new URL(baseUrl);
@@ -21,7 +22,8 @@ export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=f
   async listTracks(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
    const result=await api.GET('/api/v1/catalog',{params:{query:{
     q:filters.query?.trim().slice(0,100),
-    category:filters.category?.trim().slice(0,80)
+    category:filters.category?.trim().slice(0,80),
+    speaker:filters.speaker?.trim().slice(0,80)
    }},signal});
    if(result.error||!result.data||!Array.isArray(result.data.tracks))
     throw new Error('Echo catalog unavailable or schema mismatch');
@@ -35,6 +37,12 @@ export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=f
    if(result.response.status===404)return null;
    if(result.error||!result.data)throw new Error('Echo track unavailable');
    return result.data.track;
+  },
+  async listSpeakers(signal?:AbortSignal):Promise<EchoSpeaker[]>{
+   const result=await api.GET('/api/v1/speakers',{signal});
+   if(result.error||!result.data||!Array.isArray(result.data.speakers))
+    throw new Error('Echo speakers unavailable');
+   return result.data.speakers;
   },
   async listCategories(signal?:AbortSignal):Promise<string[]>{
    const result=await api.GET('/api/v1/categories',{signal});

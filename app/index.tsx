@@ -30,6 +30,10 @@ export default function CatalogScreen() {
         <Text style={styles.eyebrow}>STARRY · ECHO</Text>
         <Text style={styles.title}>好聲音，值得再聽一次。</Text>
         <Text style={styles.subtitle}>讓一段精彩分享，陪你走得更遠。</Text>
+        <Pressable accessibilityRole="button" style={styles.speakerBrowse}
+          onPress={() => router.push('/speaker')}>
+          <Text style={styles.speakerBrowseText}>探索講師作品 ›</Text>
+        </Pressable>
         <Pressable style={styles.member} onPress={() => router.push('/profile')}>
           <Text style={styles.memberText}>中央會員入口  ›</Text>
         </Pressable>
@@ -69,7 +73,7 @@ const styles = StyleSheet.create({
  root:{flex:1,backgroundColor:palette.paper},hero:{backgroundColor:palette.brand,paddingHorizontal:24,paddingTop:28,paddingBottom:26},
  eyebrow:{color:palette.accent,fontWeight:'800',letterSpacing:2,fontSize:12,marginBottom:10},
  title:{color:palette.white,fontSize:25,fontWeight:'800',marginBottom:8},
- subtitle:{color:'#ececff',fontSize:14,marginBottom:24},member:{alignSelf:'flex-start',backgroundColor:palette.white,borderRadius:24,paddingHorizontal:16,paddingVertical:11},
+ subtitle:{color:'#ececff',fontSize:14,marginBottom:24},speakerBrowse:{alignSelf:'flex-start',marginBottom:12,paddingVertical:10},speakerBrowseText:{color:palette.white,fontWeight:'700'},member:{alignSelf:'flex-start',backgroundColor:palette.white,borderRadius:24,paddingHorizontal:16,paddingVertical:11},
  memberText:{color:palette.brand,fontWeight:'800'},
  section:{marginHorizontal:20,marginTop:22,marginBottom:12},
  sectionTitle:{fontSize:20,fontWeight:'800',color:palette.ink},

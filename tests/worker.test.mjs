@@ -15,6 +15,7 @@ function envWithDb(overrides = {}) {
       sqlSeen.push(sql);
       const statement = {
         async all() {
+          if (overrides.allRows) return { results: overrides.allRows };
           return { results: sql.includes('echo_categories') ? [{name: '學習'}] : [
             { id: 'safe-1', title: '測試講座', speaker: '講師', description: null,
               duration_seconds: 100, category_labels_json: '["學習"]' }
@@ -187,4 +188,26 @@ test('single track route rejects unreasonable identifiers before a database quer
  const r=await worker.fetch(new Request(origin+'/api/v1/tracks/'+('a'.repeat(201))),env);
  assert.equal(r.status,400);
  assert.equal(sqlSeen.length,0);
+});
+
+
+test('speaker directory never queries pending or private tracks',async()=>{
+ const {env,sqlSeen}=envWithDb({allRows:[{name:'講師甲',trackCount:2}]});
+ const r=await worker.fetch(new Request(origin+'/api/v1/speakers'),env);
+ assert.equal(r.status,200);
+ assert.deepEqual((await r.json()).speakers,[{name:'講師甲',trackCount:2}]);
+ assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+ assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+});
+test('speaker filter always uses bound SQL parameters alongside public access checks',async()=>{
+ const value="a' OR 1=1 --";
+ const {env,sqlSeen,bindings}=envWithDb();
+ const url=new URL(origin+'/api/v1/catalog');url.searchParams.set('speaker',value);
+ const r=await worker.fetch(new Request(url),env);
+ assert.equal(r.status,200);
+ assert.match(sqlSeen[0],/speaker\s*=\s*\?/);
+ assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+ assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+ assert.equal(sqlSeen[0].includes(value),false);
+ assert.deepEqual(bindings[0],[value]);
 });

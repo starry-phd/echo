@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 const c=JSON.parse(readFileSync(new URL('../openapi/echo-public.v1.json',import.meta.url),'utf8'));
-const expected=['/api/v1/health','/api/v1/categories','/api/v1/catalog','/api/v1/tracks/{id}','/api/v1/tracks/{id}/stream'];
+const expected=['/api/v1/health','/api/v1/categories','/api/v1/speakers','/api/v1/catalog','/api/v1/tracks/{id}','/api/v1/tracks/{id}/stream'];
 assert.match(c.openapi,/^3\.[01]\./);
 assert.equal(c.info.version,'1.0.0');
 assert.deepEqual(Object.keys(c.paths).sort(),expected.sort());

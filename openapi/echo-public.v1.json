@@ -82,6 +82,14 @@
               "type": "string",
               "maxLength": 80
             }
+          },
+          {
+            "name": "speaker",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
           }
         ],
         "responses": {
@@ -245,6 +253,36 @@
           }
         }
       }
+    },
+    "/api/v1/speakers": {
+      "get": {
+        "operationId": "listEchoSpeakers",
+        "summary": "Names with verified public recordings only",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Public speaker directory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "speakers"
+                  ],
+                  "properties": {
+                    "speakers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Speaker"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -337,6 +375,22 @@
           },
           "message": {
             "type": "string"
+          }
+        }
+      },
+      "Speaker": {
+        "type": "object",
+        "required": [
+          "name",
+          "trackCount"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "trackCount": {
+            "type": "integer",
+            "minimum": 1
           }
         }
       }

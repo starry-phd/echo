@@ -41,7 +41,7 @@ function publicTrack(row:TrackRow){
  }catch{/* Invalid legacy JSON should not leak storage. */}
  return {id:row.id,title:row.title,speaker:row.speaker,description:row.description,durationSeconds:row.duration_seconds,categories,playable:true};
 }
-const filterSchema=z.object({q:z.string().max(100).optional(),category:z.string().max(80).optional()});
+const filterSchema=z.object({q:z.string().max(100).optional(),category:z.string().max(80).optional(),speaker:z.string().max(80).optional()});
 app.options('*',c=>{
  const origin=c.req.header('Origin')||'';
  if(!allowed(origin))return new Response(null,{status:403});
@@ -63,8 +63,19 @@ const categories=async(c:{req:{raw:Request};env:Env})=>{
 app.get('/api/categories',categories);
 app.get('/api/v1/categories',categories);
 
+/** Only speaker names associated with verified public recordings are discoverable. */
+const speakers=async(c:{req:{raw:Request};env:Env})=>{
+ const rows=await c.env.DB.prepare(
+  "SELECT speaker AS name, COUNT(*) AS trackCount FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified' AND trim(speaker) <> '' GROUP BY speaker ORDER BY trackCount DESC, name LIMIT 100"
+ ).all<{name:string;trackCount:number}>();
+ return json({speakers:(rows.results||[]).map(x=>({name:x.name,trackCount:x.trackCount}))},200,c.req.raw);
+};
+app.get('/api/speakers',speakers);
+app.get('/api/v1/speakers',speakers);
+
+
 const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env:Env})=>{
- const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category')});
+ const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker')});
  if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
  const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
  let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
@@ -76,6 +87,11 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
  if(category){
   sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(category_labels_json) THEN category_labels_json ELSE '[]' END) WHERE value = ?)";
   args.push(category);
+ }
+ const speaker=(checked.data.speaker||'').trim();
+ if(speaker){
+  sql+=" AND speaker = ?";
+  args.push(speaker);
  }
  sql+=' ORDER BY updated_at DESC LIMIT 100';
  const s=c.env.DB.prepare(sql);

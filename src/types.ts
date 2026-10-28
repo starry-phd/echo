@@ -1,1 +1,1 @@
-export type {EchoTrack,CatalogResult,ApiProblem,CatalogFilters} from '../packages/echo-api-sdk/src';
+export type {EchoTrack,CatalogResult,ApiProblem,CatalogFilters,EchoSpeaker} from '../packages/echo-api-sdk/src';

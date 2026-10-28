@@ -9,7 +9,7 @@
 | --- | --- | --- | --- |
 | 音檔清單、關鍵字／講師名稱搜尋、分類 | \`src/App.tsx\`, \`src/components/AudioTrackList.tsx\` | 已建置公開目錄與類別、搜尋 | 新 R2 尚未複製；只顯示 public + verified |
 | 音檔詳情、播放、進度拖曳基礎 | \`src/components/DetailView.tsx\`, \`src/components/MiniPlayer.tsx\` | 已建置單筆公開詳情 API、原生／Web 播放入口、HTTP Range | 實機播放與 R2 實際內容待驗 |
-| 講師專頁、講師介紹／問答 | \`src/components/SpeakerProfilePage.tsx\`, \`src/components/SpeakerNameLink.tsx\` | 尚未移植 | 名片、權限及 AI 摘要內容不得照搬未驗證權限 |
+| 講師專頁、講師介紹／問答 | \`src/components/SpeakerProfilePage.tsx\`, \`src/components/SpeakerNameLink.tsx\` | 公開講師列表與公開作品初版；AI 簡介／問答未移植 | 只顯示 public + verified，名片及 AI 摘要內容不得照搬未驗證權限 |
 | 會員收藏、播放紀錄 | \`src/utils/offlineAudio.ts\`, \`src/components/DetailView.tsx\` 等 | 僅有 Echo D1 預留結構 | 需 Starry ID／DEV-D API，會員未授權前禁止寫入 |
 | 上傳、音檔管理、社群音檔 | \`src/components/AudioWorkspacePage.tsx\`, \`src/components/UploadModal.tsx\` | 尚未移植 | 管理／上傳需 Starry Admin scopes、後端檔案類型與大小驗證、稽核 |
 | 留言、評價與分享 | \`src/components/CommentsSection.tsx\`, \`src/components/ShareModal.tsx\` | 尚未移植 | 留言需身分、審核與防濫用；分享只可公開安全路由 |

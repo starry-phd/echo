@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useAudioPlayer } from 'expo-audio';
 import { getPublicStreamUrl, getPublicTrack } from '../../src/api/client';
 import type { EchoTrack } from '../../src/types';
@@ -56,7 +56,9 @@ export default function TrackDetails() {
       <Text style={styles.note}>音檔尚未完成驗證或未獲公開授權。</Text>
     ) : <>
       <Text style={styles.title}>{track.title}</Text>
-      <Text style={styles.speaker}>{track.speaker}</Text>
+      <Pressable accessibilityRole="button" onPress={() => router.push({pathname:'/speaker/[name]',params:{name:track.speaker}})}>
+        <Text style={styles.speaker}>{track.speaker}  ›</Text>
+      </Pressable>
       <Text style={styles.body}>{track.description || '尚無介紹'}</Text>
       {track.categories.length>0&&<Text style={styles.categories}>
         {track.categories.join(' · ')}

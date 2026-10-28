@@ -29,3 +29,19 @@ test('SDK returns null for a deliberately unavailable track, not private metadat
  const sdk=createEchoPublicClient('https://echo.example.org',async()=>new Response(JSON.stringify({code:'NOT_FOUND'}),{status:404,headers:{'content-type':'application/json'}}));
  assert.equal(await sdk.getTrack('private-track'),null);
 });
+
+
+test('speaker search is URL encoded by generated OpenAPI client',async()=>{
+ const requests=[];
+ const transport=async input=>{requests.push(input.url);return new Response(JSON.stringify({tracks:[]}),{status:200})};
+ const client=createEchoPublicClient('https://echo.example.org',transport);
+ await client.listTracks(undefined,{speaker:'講師 & 朋友'});
+ assert.equal(new URL(requests[0]).searchParams.get('speaker'),'講師 & 朋友');
+});
+test('speaker directory uses public versioned endpoint',async()=>{
+ const requests=[];
+ const transport=async input=>{requests.push(input.url);return new Response(JSON.stringify({speakers:[{name:'講師甲',trackCount:2}]}),{status:200})};
+ const sdk=createEchoPublicClient('https://echo.example.org',transport);
+ assert.deepEqual(await sdk.listSpeakers(),[{name:'講師甲',trackCount:2}]);
+ assert.equal(new URL(requests[0]).pathname,'/api/v1/speakers');
+});
