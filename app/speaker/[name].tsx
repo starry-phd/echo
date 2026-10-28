@@ -1,6 +1,6 @@
 import {useLocalSearchParams,router} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
-import {ActivityIndicator,FlatList,Pressable,SafeAreaView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,FlatList,Pressable,SafeAreaView,StyleSheet,Text} from 'react-native';
 import {getPublicTracks} from '../../src/api/client';
 import {palette} from '../../src/theme';
 
