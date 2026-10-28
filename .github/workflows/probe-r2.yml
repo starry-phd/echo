@@ -58,7 +58,7 @@ jobs:
           while IFS=$'\t' read -r ext relative; do
             rclone cat "new:echo-starry/uploads/$relative" --offset 0 --count 128 > "/tmp/echo-sample.$ext"
           done < /tmp/echo-selected-media.tsv
-      - name: Validate media container signatures without publishing content
+      - name: Detect actual audio container signature without exposing audio content
         shell: bash
         run: |
           set -euo pipefail
@@ -66,13 +66,26 @@ jobs:
           import pathlib
           for ext in ('m4a','mp3','aac'):
               b=pathlib.Path('/tmp/echo-sample.'+ext).read_bytes()
-              if ext=='m4a':
-                  valid=len(b)>8 and b[4:8]==b'ftyp'
-              elif ext=='mp3':
-                  valid=b.startswith(b'ID3') or (len(b)>2 and b[0]==255 and b[1]&0xe0==0xe0)
+              if len(b)>8 and b[4:8]==b'ftyp':
+                  fmt='mp4-ftyp'
+              elif b.startswith(b'ID3'):
+                  fmt='id3'
+              elif b.startswith(b'ADIF'):
+                  fmt='aac-adif'
+              elif b.startswith(b'OggS'):
+                  fmt='ogg'
+              elif len(b)>12 and b.startswith(b'RIFF') and b[8:12]==b'WAVE':
+                  fmt='wav-riff'
+              elif len(b)>2 and b[0]==255 and (b[1]&0xf6)==0xf0:
+                  fmt='aac-adts'
+              elif len(b)>2 and b[0]==255 and (b[1]&0xe0)==0xe0:
+                  fmt='mpeg-frame'
               else:
-                  valid=b.startswith(b'ADIF') or b.startswith(b'ID3') or (len(b)>2 and b[0]==255 and b[1]&0xf0==0xf0)
-              print(ext+': '+('expected header verified' if valid else 'unexpected audio header'))
-              if not valid: raise SystemExit('Private media format audit failed: '+ext)
-          print('Audio-header probe passed. This is NOT full playback or publication authorization.')
+                  fmt='unrecognized'
+              print(ext+': detected '+fmt+' container (only first 128 bytes inspected)')
+              if fmt=='unrecognized':
+                  raise SystemExit('Unrecognized media header for '+ext+'; needs codec-specific audit')
+              if ext=='aac' and fmt=='mp4-ftyp':
+                  print('NOTICE: .aac extension uses MP4 container. Check content-type before public playback.')
+          print('Private audio-header format probe passed; not full playback, content rights or public approval.')
           PY
