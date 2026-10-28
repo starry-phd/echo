@@ -3,8 +3,8 @@ import {router,usePathname} from 'expo-router';
 import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
-import {visualMetrics} from './tokens';
-import {viewportLayout} from '../../../src/ui/responsive';
+import {visualMetrics} from '../../../packages/ui/src/tokens';
+import {viewportLayout} from '../responsive';
 
 export function LegacyHeader(){
  const colors=useLegacyTheme();

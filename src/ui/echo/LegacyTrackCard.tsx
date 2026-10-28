@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {router} from 'expo-router';
 import {Pressable,Share,StyleSheet,Text,View} from 'react-native';
-import type {EchoTrack} from '../../../src/types';
-import {getApiBaseUrl} from '../../../src/api/client';
+import type {EchoTrack} from '../../types';
+import {getApiBaseUrl} from '../../api/client';
 import {useLegacyTheme} from './legacyTheme';
 
 export function LegacyTrackCard({track,onNotice}:{track:EchoTrack;onNotice:(message:string)=>void}){

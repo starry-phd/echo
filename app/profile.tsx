@@ -1,6 +1,6 @@
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {centralMemberApiState} from '../src/auth/centralMember';
-import {useLegacyTheme} from '../packages/ui/src/legacyTheme';
+import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 export default function ProfileScreen(){
  const t=useLegacyTheme();

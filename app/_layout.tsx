@@ -1,8 +1,8 @@
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {View} from 'react-native';
-import {LegacyThemeProvider,useLegacyTheme} from '../packages/ui/src/legacyTheme';
-import {LegacyHeader} from '../packages/ui/src/LegacyHeader';
+import {LegacyThemeProvider,useLegacyTheme} from '../src/ui/echo/legacyTheme';
+import {LegacyHeader} from '../src/ui/echo/LegacyHeader';
 
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 

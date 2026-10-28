@@ -21,20 +21,22 @@ for(const name of ['nativewind','tailwindcss','tamagui','@tamagui/core','@tamagu
 }
 for(const path of [
  'packages/ui/src/tokens.ts',
- 'packages/ui/src/LegacyHeader.tsx',
- 'packages/ui/src/LegacyFilterToolbar.tsx',
- 'packages/ui/src/LegacyTrackCard.tsx',
- 'packages/ui/src/legacyTheme.tsx',
+ 'src/ui/echo/LegacyHeader.tsx',
+ 'src/ui/echo/LegacyFilterToolbar.tsx',
+ 'src/ui/echo/LegacyTrackCard.tsx',
+ 'src/ui/echo/legacyTheme.tsx',
  'src/ui/responsive.ts',
  'tests/responsive.test.mjs'
 ]) assert.ok(existsSync(new URL('../'+path,import.meta.url)), 'Missing D-08 component: '+path);
 const uiFiles=['LegacyHeader.tsx','LegacyFilterToolbar.tsx','LegacyTrackCard.tsx'];
 for(const file of uiFiles){
- const source=read('packages/ui/src/'+file);
+ const source=read('src/ui/echo/'+file);
  assert.match(source,/\bStyleSheet\.create\(/,'Custom UI must use RN StyleSheet: '+file);
  assert.doesNotMatch(source,/\bclassName\s*=/,'No Web-only className styling: '+file);
 }
 const home=read('app/index.tsx');
+const shared=read('packages/ui/src/index.ts');
+assert.doesNotMatch(shared,/Legacy(?:Header|FilterToolbar|TrackCard)|legacyTheme/,'Shared UI library must not export Echo-specific features');
 assert.match(home,/viewportLayout\(width\)/,'Mobile-first breakpoints must be used');
 assert.match(home,/LegacyTrackCard/,'Preserve the original product-specific visual components');
 assert.equal(app.expo.web?.output,'static','Existing Echo Web remains explicitly selected');

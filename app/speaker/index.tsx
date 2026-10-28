@@ -2,7 +2,7 @@ import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {ActivityIndicator,FlatList,Pressable,StyleSheet,Text,View} from 'react-native';
 import {getPublicSpeakers} from '../../src/api/client';
-import {useLegacyTheme} from '../../packages/ui/src/legacyTheme';
+import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 
 export default function SpeakerDirectory(){

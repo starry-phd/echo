@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {useLegacyTheme} from './legacyTheme';
-import {viewportLayout} from '../../../src/ui/responsive';
+import {viewportLayout} from '../responsive';
 export type SortOrder='newest'|'oldest';
 export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice}:{
  categories:string[];category:string|null;onCategory:(c:string|null)=>void;

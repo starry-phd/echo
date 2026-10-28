@@ -3,10 +3,10 @@ import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
 import {getCategories,getPublicTracks} from '../src/api/client';
-import {LegacyFilterToolbar} from '../packages/ui/src/LegacyFilterToolbar';
-import type {SortOrder} from '../packages/ui/src/LegacyFilterToolbar';
-import {LegacyTrackCard} from '../packages/ui/src/LegacyTrackCard';
-import {useLegacyTheme} from '../packages/ui/src/legacyTheme';
+import {LegacyFilterToolbar} from '../src/ui/echo/LegacyFilterToolbar';
+import type {SortOrder} from '../src/ui/echo/LegacyFilterToolbar';
+import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
+import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {viewportLayout} from '../src/ui/responsive';
 

@@ -45,3 +45,8 @@
 **設計來源分工：** v1.3 文件決定 UI 技術基座；舊版 `yukidu/Echo-Starry` 決定繁星回聲本身的品牌視覺與互動。只共用元件機制，不將全部 Starry App 做成同一套樣板畫面。手機 320–430px 第一優先，平板／桌面視為漸進適配。伺服器狀態採 TanStack Query；主題顏色為本機偏好，不存取會員或付款真相。
 
 **CI 防偏移：** `scripts/check-ui-v13.mjs` / `npm run ui:check` 審查套件、元件、原生樣式、Mobile-first 入口、Ads OFF；`tests/responsive.test.mjs` 對 280–1440px 做邊界檢查。無原始手機截圖比對、iOS/Android 實機測試時，不能宣稱舊版 UI 已 100% 還原。
+
+### 專屬品牌模組與共用元件分離
+- `@starry/ui` (`packages/ui/`, v0.1.0)：**共享技術基座**（可版本化的 Tokens 與通用元件），不輸出繁星回聲首頁。
+- `src/ui/echo/`：**Echo 專屬品牌/畫面**，承載玫瑰主題、24 色選擇、LegacyHeader、LegacyFilterToolbar、LegacyTrackCard；其他 Starry App 不自動引入。
+- 這個隔離對應 v1.3 文件 2.1 D-08「共用技術機制不等於相同畫面」。

@@ -2,8 +2,8 @@ import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getPublicTracks} from '../../src/api/client';
-import {LegacyTrackCard} from '../../packages/ui/src/LegacyTrackCard';
-import {useLegacyTheme} from '../../packages/ui/src/legacyTheme';
+import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
+import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();

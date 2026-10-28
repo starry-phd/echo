@@ -6,7 +6,7 @@ import {useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
 import {getPublicStreamUrl,getPublicTrack} from '../../src/api/client';
 import {clampSeekTime,formatAudioTime} from '../../src/media/playback';
 import type {EchoTrack} from '../../src/types';
-import {useLegacyTheme} from '../../packages/ui/src/legacyTheme';
+import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 
 /**
