@@ -13,7 +13,7 @@ export function viewportLayout(width:number){
  const luckyWidth=phone?Math.min(125,Math.max(102,Math.round(usable*.34))):166;
  const searchMinWidth=Math.max(120,usable-luckyWidth-9);
  const fourButtonWidth=(usable-8-15)/4;
- return {phone,columns,usable,menuWidth,luckyWidth,searchMinWidth,
+ return {phone,columns,usable,menuWidth,luckyWidth,searchMinWidth,fourButtonWidth,
   filterFontSize:fourButtonWidth<76?10:fourButtonWidth<100?11:13,
   horizontalGutter,minimumTouchHeight:44};
 }
