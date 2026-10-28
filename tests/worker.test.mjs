@@ -51,6 +51,22 @@ test('health reports a pending central membership API without personal data', as
   assert.equal(JSON.stringify(body).includes('email'),false);
 });
 
+test('health reads the migration status from D1 but never implies public authorization', async()=>{
+ const {env,sqlSeen}=envWithDb({firstRow:{status:'copied'}});
+ const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+ assert.equal(r.status,200);
+ const body=await r.json();
+ assert.equal(body.legacyMediaMigration,'copied');
+ assert.equal(body.centralMemberApi,'pending');
+ assert.match(sqlSeen[0],/echo_migrations/);
+ assert.equal(JSON.stringify(body).includes('audio_key'),false);
+});
+test('unrecognized migration status fails closed to pending', async()=>{
+ const {env}=envWithDb({firstRow:{status:'public'}});
+ const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+ assert.equal((await r.json()).legacyMediaMigration,'pending');
+});
+
 test('catalog SQL must require both public visibility and verified media', async () => {
   const {env,sqlSeen}=envWithDb();
   const r=await worker.fetch(new Request(origin+'/api/catalog'),env);
@@ -136,6 +152,32 @@ test('eligible audio supports byte ranges for seeking', async () => {
   assert.equal(r.headers.get('content-range'),'bytes 100-299/1000');
   assert.equal(r.headers.get('accept-ranges'),'bytes');
   assert.deepEqual(seen,{key:'safe/audio.mp3',range:'bytes=100-299'});
+});
+
+test('legacy audio without R2 MIME is served using the real media container',async()=>{
+ for(const [key,mime] of [
+  ['uploads/one.m4a','audio/mp4'],
+  ['uploads/old-aac-file.aac','audio/mp4'],
+  ['uploads/one.mp3','audio/mpeg'],
+  ['uploads/unsupported.bin','application/octet-stream']
+ ]){
+  const {env}=envWithDb({
+   firstRow:{audio_key:key},
+   MEDIA:{async get(){return {size:16,body:new Uint8Array(16)};}}
+  });
+  const r=await worker.fetch(new Request(origin+'/api/v1/tracks/safe-1/stream'),env);
+  assert.equal(r.status,200);
+  assert.equal(r.headers.get('content-type'),mime,key);
+  assert.equal(r.headers.get('x-content-type-options'),'nosniff');
+ }
+});
+test('explicit safe audio metadata takes priority for future genuine ADTS AAC',async()=>{
+ const {env}=envWithDb({
+  firstRow:{audio_key:'uploads/new.aac'},
+  MEDIA:{async get(){return {size:16,httpMetadata:{contentType:'audio/aac'},body:new Uint8Array(16)};}}
+ });
+ const r=await worker.fetch(new Request(origin+'/api/v1/tracks/safe-1/stream'),env);
+ assert.equal(r.headers.get('content-type'),'audio/aac');
 });
 
 test('invalid multi-range requests are rejected rather than ignored', async () => {
