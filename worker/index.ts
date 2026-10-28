@@ -67,7 +67,7 @@ const health=async(c:{req:{raw:Request};env:Env})=>{
 for(const route of ['/health','/api/health','/api/v1/health'])app.get(route,health);
 
 const categories=async(c:{req:{raw:Request};env:Env})=>{
- const data=await c.env.DB.prepare('SELECT name FROM echo_categories ORDER BY display_order, name').all<{name:string}>();
+ const data=await c.env.DB.prepare("SELECT DISTINCT c.name AS name FROM echo_categories c WHERE EXISTS (SELECT 1 FROM echo_tracks t, json_each(CASE WHEN json_valid(t.category_labels_json) THEN t.category_labels_json ELSE '[]' END) je WHERE t.visibility = 'public' AND t.migration_status = 'verified' AND je.value = c.name) ORDER BY c.display_order, c.name").all<{name:string}>();
  return json({categories:(data.results||[]).map(x=>x.name).filter(x=>typeof x==='string')},200,c.req.raw);
 };
 app.get('/api/categories',categories);

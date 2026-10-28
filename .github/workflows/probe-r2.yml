@@ -32,8 +32,8 @@ jobs:
         run: |
           test -n "$RCLONE_CONFIG_NEW_ACCESS_KEY_ID"
           test -n "$RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY"
-      - name: Install rclone
-        run: sudo apt-get update -qq && sudo apt-get install -y rclone
+      - name: Install rclone and ffmpeg for private decode checks
+        run: sudo apt-get update -qq && sudo apt-get install -y rclone ffmpeg
       - name: Select one representative recording of each media type
         shell: bash
         run: |
@@ -89,3 +89,29 @@ jobs:
                   print('NOTICE: .aac extension uses MP4 container. Check content-type before public playback.')
           print('Private audio-header format probe passed; not full playback, content rights or public approval.')
           PY
+      - name: Privately decode first eight seconds from three real recordings
+        shell: bash
+        timeout-minutes: 12
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/echo-private-decode
+          while IFS=$'\t' read -r ext relative; do
+            # Never print private titles, R2 object keys or media data.
+            file="/tmp/echo-private-decode/sample.$ext"
+            if ! rclone copyto "new:echo-starry/uploads/$relative" "$file" --quiet 2>/dev/null; then
+              echo "::error::R2 private decode sample could not be read ($ext)"
+              exit 1
+            fi
+            codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$file" 2>/dev/null | head -n 1)"
+            if [ -z "$codec" ]; then
+              echo "::error::Audio codec could not be detected ($ext)"
+              exit 1
+            fi
+            if ! ffmpeg -nostdin -v error -xerror -i "$file" -t 8 -vn -map 0:a:0 -f null - >/dev/null 2>/dev/null; then
+              echo "::error::Private audio decode failed ($ext)"
+              exit 1
+            fi
+            printf "%s: codec=%s, private decode (first 8s) OK\n" "$ext" "$codec"
+            rm -f "$file"
+          done < /tmp/echo-selected-media.tsv
+          echo "Media decode sampling passed; user-rights and device playback remain separate gates."
