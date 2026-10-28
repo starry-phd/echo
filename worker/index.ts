@@ -125,6 +125,22 @@ const detail=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
 app.get('/api/tracks/:id',detail);
 app.get('/api/v1/tracks/:id',detail);
 
+/**
+ * R2 migration preserved the bytes but original audio objects do not carry
+ * Content-Type metadata. MIME must match the verified legacy container.
+ * Exactly one legacy *.aac object has an MP4 'ftyp' header, not ADTS.
+ * Explicit audio/* metadata on future assets takes precedence.
+ */
+function audioMimeForKey(key:string,metadata?:string):string {
+ const supplied=(metadata||'').trim().toLowerCase();
+ if(/^audio\/[a-z0-9.+-]+$/.test(supplied))return supplied;
+ const lower=key.toLowerCase();
+ if(lower.endsWith('.m4a')||lower.endsWith('.mp4'))return 'audio/mp4';
+ if(lower.endsWith('.aac'))return 'audio/mp4'; // legacy Echo *.aac has MP4 ftyp bytes
+ if(lower.endsWith('.mp3'))return 'audio/mpeg';
+ return 'application/octet-stream';
+}
+
 const stream=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
  let id:string;
  try{id=decodeURIComponent(c.req.param('id'));}catch{return json({code:'INVALID_TRACK_ID'},400,c.req.raw);}
@@ -137,7 +153,7 @@ const stream=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
   return json({code:'INVALID_RANGE'},416,c.req.raw);
  const media=await c.env.MEDIA.get(record.audio_key,range?{range:c.req.raw.headers}:undefined);
  if(!media)return json({code:'MEDIA_NOT_FOUND'},404,c.req.raw);
- const headers=new Headers({'content-type':media.httpMetadata?.contentType||'audio/mpeg',
+ const headers=new Headers({'content-type':audioMimeForKey(record.audio_key,media.httpMetadata?.contentType),
   'cache-control':'public, max-age=300','x-content-type-options':'nosniff',
   'vary':'Origin','accept-ranges':'bytes'});
  const origin=c.req.raw.headers.get('Origin')||'';
