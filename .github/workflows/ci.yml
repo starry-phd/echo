@@ -21,6 +21,8 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm run typecheck
       - run: npm run lint
+      - name: Expo 58 native dependency compatibility
+        run: npm run expo:doctor
       - run: npm run api:check
       - run: npm run monetization:check
       - run: npm test
