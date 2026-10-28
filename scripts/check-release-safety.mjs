@@ -15,6 +15,8 @@ function triggers(yaml){
 }
 for(const [name,yaml] of [['production',release],['private-r2-probe',probe]]){
  const block=triggers(yaml);
+ const configuredEvents=[...block.matchAll(/^  ([A-Za-z_][A-Za-z0-9_-]*):/gm)].map(m=>m[1]);
+ assert.deepEqual(configuredEvents,['workflow_dispatch'],name+' must expose exactly one manual trigger');
  assert.match(block,/^on:\s*\n\s{2}workflow_dispatch:/);
  assert.doesNotMatch(block,/^\s{2}(?:push|pull_request|schedule|workflow_run):/m,name+' must be manual-only');
 }
