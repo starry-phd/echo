@@ -36,3 +36,12 @@
 - **≥900 px 桌機**：最多 832 px 主欄，雙欄音檔卡片；不以桌機排版當原始設計尺寸。
 - `src/ui/responsive.ts` 是唯一手機／平板／桌機 breakpoints 來源；`tests/responsive.test.mjs` 持續驗證。
 - 版面順序：手機版 → 平板 → 電腦；未完成舊版內容來源（封面肖像、評分、會員、貼紙）不可用虛構資料填充。
+
+## v1.3 已核准 D-08 工程基座符合性（2026-10-29）
+
+來源：《Starry生態系共用技術基座與AI開發前交接包｜v1.3 廣告平台定案版｜2026-10-28》第 2.1 節、D-08、第六節。
+本 App 的技術遵循 D-01/D-08：React Native New Architecture + Expo SDK 58 / RN 0.88 + Expo Router + TypeScript strict。UI 由 React Native StyleSheet、`packages/ui/src/tokens.ts` Design Tokens、`@starry/ui` v0.1.0 版本化自有元件（Header/Filter/Card）組成。沒有使用 NativeWind、Tamagui、Tailwind 或 Web-only 重寫，也沒有單獨換一套 UI 框架。
+
+**設計來源分工：** v1.3 文件決定 UI 技術基座；舊版 `yukidu/Echo-Starry` 決定繁星回聲本身的品牌視覺與互動。只共用元件機制，不將全部 Starry App 做成同一套樣板畫面。手機 320–430px 第一優先，平板／桌面視為漸進適配。伺服器狀態採 TanStack Query；主題顏色為本機偏好，不存取會員或付款真相。
+
+**CI 防偏移：** `scripts/check-ui-v13.mjs` / `npm run ui:check` 審查套件、元件、原生樣式、Mobile-first 入口、Ads OFF；`tests/responsive.test.mjs` 對 280–1440px 做邊界檢查。無原始手機截圖比對、iOS/Android 實機測試時，不能宣稱舊版 UI 已 100% 還原。
