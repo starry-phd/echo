@@ -1,8 +1,12 @@
 import { Stack } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 import { palette } from '../src/theme';
 
 export default function RootLayout() {
   return (
+    <QueryClientProvider client={queryClient}>
     <Stack screenOptions={{
       headerStyle: { backgroundColor: palette.white },
       headerTintColor: palette.brand,
@@ -13,5 +17,6 @@ export default function RootLayout() {
       <Stack.Screen name="profile" options={{ title: '中央會員' }} />
       <Stack.Screen name="track/[id]" options={{ title: '音檔詳情' }} />
     </Stack>
+    </QueryClientProvider>
   );
 }

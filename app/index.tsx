@@ -1,32 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { getCategories, getPublicTracks } from '../src/api/client';
 import type { EchoTrack } from '../src/types';
 import { palette } from '../src/theme';
+import { StarryFilterChip } from '../packages/ui/src';
 
 export default function CatalogScreen() {
-  const [tracks, setTracks] = useState<EchoTrack[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    getCategories(controller.signal).then(setCategories).catch(() => {});
-    return () => controller.abort();
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-    getPublicTracks(controller.signal, { query, category: category ?? undefined }).then(setTracks)
-      .catch(err => { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : '讀取失敗'); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [query, category]);
+  const tracksQuery = useQuery({
+    queryKey: ['echo', 'public-tracks', query, category],
+    queryFn: ({ signal }) => getPublicTracks(signal, { query, category: category ?? undefined }),
+    retry: 1,
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ['echo', 'categories'],
+    queryFn: ({ signal }) => getCategories(signal),
+    retry: 1,
+  });
+  const tracks = tracksQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
+  const loading = tracksQuery.isPending;
+  const error = tracksQuery.error instanceof Error ? tracksQuery.error.message : null;
 
   return (
     <SafeAreaView style={styles.root}>
@@ -50,11 +47,8 @@ export default function CatalogScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filters}
           contentContainerStyle={styles.filterItems}>
           {[null, ...categories].map(value => (
-            <Pressable key={value ?? 'all'} onPress={() => setCategory(value)}
-              accessibilityRole="button" accessibilityState={{selected:category===value}}
-              style={[styles.chip, category===value && styles.chipSelected]}>
-              <Text style={[styles.chipText, category===value && styles.chipTextSelected]}>{value ?? '全部'}</Text>
-            </Pressable>
+            <StarryFilterChip key={value ?? 'all'} label={value ?? '全部'}
+              selected={category === value} onPress={() => setCategory(value)} />
           ))}
         </ScrollView>
         <Text style={styles.note}>目前只顯示完成媒體驗證並核准公開的音檔。</Text>
