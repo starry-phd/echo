@@ -17,6 +17,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run api:check
+      - run: npm run monetization:check
       - run: npm test
       - run: npm run build:web
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
