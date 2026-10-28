@@ -1,5 +1,7 @@
 # 繁星回聲｜Echo Starry
 
+**AI 接手與最新工程進度：** [GitHub 唯一交接入口](docs/AI_HANDOFF.md)。先核對 main／PR／CI，勿依舊對話內容判定完成。
+
 全新開發的跨平台音訊 App。採用 React Native + Expo + Expo Router + TypeScript，iOS、Android、Web 共用產品規格與商業邏輯。
 
 > **狀態：Expo 58 新基座已建置；R2 已完成私有搬遷（112 筆全為 copied/private），尚未核准音檔公開、中央會員整合、原生 EAS 驗收或正式 Web 部署。**
