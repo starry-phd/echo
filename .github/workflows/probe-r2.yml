@@ -1,0 +1,78 @@
+name: Probe copied Echo R2 audio formats (read-only)
+
+# Only metadata and the first 128 bytes of three representative private files.
+# No audio, titles, or R2 secrets are printed or exposed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/probe-r2.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: echo-private-audio-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    environment: migration
+    timeout-minutes: 15
+    env:
+      RCLONE_CONFIG_NEW_TYPE: s3
+      RCLONE_CONFIG_NEW_PROVIDER: Cloudflare
+      RCLONE_CONFIG_NEW_NO_CHECK_BUCKET: 'true'
+      RCLONE_CONFIG_NEW_ENDPOINT: https://9ff1b4c261141730ac2fe0683f730062.r2.cloudflarestorage.com
+      RCLONE_CONFIG_NEW_ACCESS_KEY_ID: ${{ secrets.ECHO_NEW_R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY: ${{ secrets.ECHO_NEW_R2_SECRET_ACCESS_KEY }}
+    steps:
+      - name: Require scoped S3 credentials
+        run: |
+          test -n "$RCLONE_CONFIG_NEW_ACCESS_KEY_ID"
+          test -n "$RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY"
+      - name: Install rclone
+        run: sudo apt-get update -qq && sudo apt-get install -y rclone
+      - name: Select one representative recording of each media type
+        shell: bash
+        run: |
+          set -euo pipefail
+          rclone lsf new:echo-starry/uploads --recursive --files-only > /tmp/echo-private-audio-files.txt
+          python3 - <<'PY'
+          import pathlib
+          tracks = pathlib.Path('/tmp/echo-private-audio-files.txt').read_text().splitlines()
+          samples=[]
+          for ext in ('m4a','mp3','aac'):
+              matches=sorted(x for x in tracks if x.lower().endswith('.'+ext))
+              if not matches:
+                  raise SystemExit('No '+ext+' file found in private R2')
+              samples.append(ext+'\t'+matches[0])
+          pathlib.Path('/tmp/echo-selected-media.tsv').write_text('\n'.join(samples)+'\n')
+          print('Selected three private format samples. Names intentionally withheld.')
+          PY
+      - name: Fetch only 128 bytes from each private sample
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r ext relative; do
+            rclone cat "new:echo-starry/uploads/$relative" --offset 0 --count 128 > "/tmp/echo-sample.$ext"
+          done < /tmp/echo-selected-media.tsv
+      - name: Validate media container signatures without publishing content
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          for ext in ('m4a','mp3','aac'):
+              b=pathlib.Path('/tmp/echo-sample.'+ext).read_bytes()
+              if ext=='m4a':
+                  valid=len(b)>8 and b[4:8]==b'ftyp'
+              elif ext=='mp3':
+                  valid=b.startswith(b'ID3') or (len(b)>2 and b[0]==255 and b[1]&0xe0==0xe0)
+              else:
+                  valid=b.startswith(b'ADIF') or b.startswith(b'ID3') or (len(b)>2 and b[0]==255 and b[1]&0xf0==0xf0)
+              print(ext+': '+('expected header verified' if valid else 'unexpected audio header'))
+              if not valid: raise SystemExit('Private media format audit failed: '+ext)
+          print('Audio-header probe passed. This is NOT full playback or publication authorization.')
+          PY
