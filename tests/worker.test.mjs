@@ -131,6 +131,17 @@ test('categories endpoint never reads central user profile storage', async () =>
   assert.match(sqlSeen[0],/echo_categories/);
 });
 
+test('categories are derived only from actually published and verified tracks',async()=>{
+ const {env,sqlSeen}=envWithDb({allRows:[]});
+ const response=await worker.fetch(new Request(origin+'/api/v1/categories'),env);
+ assert.equal(response.status,200);
+ assert.deepEqual((await response.json()).categories,[]);
+ assert.match(sqlSeen[0],/visibility\\s*=\\s*'public'/);
+ assert.match(sqlSeen[0],/migration_status\\s*=\\s*'verified'/);
+ assert.match(sqlSeen[0],/json_each/);
+ assert.match(sqlSeen[0],/EXISTS/);
+});
+
 test('eligible audio supports byte ranges for seeking', async () => {
   let seen;
   const {env}=envWithDb({

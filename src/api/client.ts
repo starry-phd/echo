@@ -1,6 +1,7 @@
 import {Platform} from 'react-native';
 import {createEchoPublicClient} from '../../packages/echo-api-sdk/src';
 import type {CatalogFilters,EchoTrack} from '../types';
+import type {EchoHealth} from '../../packages/echo-api-sdk/src';
 const configuredUrl=process.env.EXPO_PUBLIC_ECHO_API_BASE_URL?.trim();
 export function getApiBaseUrl():string|null{
  if(!configuredUrl){
@@ -12,6 +13,12 @@ export function getApiBaseUrl():string|null{
   if(url.protocol!=='https:'&&url.hostname!=='localhost')return null;
   return url.origin;
  }catch{return null;}
+}
+/** Public, aggregate deployment state only. Never exposes private track metadata. */
+export async function getEchoHealth(signal?:AbortSignal):Promise<EchoHealth>{
+ const origin=getApiBaseUrl();
+ if(!origin)throw new Error('Echo API not configured');
+ return createEchoPublicClient(origin).health(signal);
 }
 export async function getPublicTracks(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
  const origin=getApiBaseUrl();
