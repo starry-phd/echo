@@ -38,3 +38,10 @@
 ## Health API 狀態一致性
 
 新 Echo Worker `/api/v1/health` 原本硬編碼 `legacyMediaMigration='pending'`，與 R2 已搬完、D1 已標 `copied` 的真實狀態衝突；改為唯讀查詢 Echo 自己的 `echo_migrations` 狀態。失效／未識別的資料一律回退為 `pending`，**不回傳私人音檔資料，也不解除任何目錄或播放的 `public AND verified` Gate**。
+
+## 第三階段｜公開 UI 準確狀態與私人音訊可解碼抽樣
+
+- 新版首頁從公開 `/api/v1/health` 讀取 `legacyMediaMigration`，只說明 R2 已搬遷但尚未核准公開；搜尋篩選無結果時顯示不同訊息，不把會員註冊說成已啟用。
+- `/api/v1/categories` 限制為真正 `public + verified` 曲目包含的分類，防止僅有私人曲目的分類先出現在公開目錄。
+- `.github/workflows/probe-r2.yml` 從目的 R2 私下取 M4A、MP3、AAC 三種代表性完整檔案，使用 ffprobe 偵測音軌、ffmpeg 解碼開頭 8 秒，**不輸出檔名／音訊、不上傳 Artifact、不開放公開播放權限**。
+- 全量解碼、原生 iOS/Android 及實體內容權利仍需後續驗收；不可把三筆抽樣當作全部 112 筆均可播放。

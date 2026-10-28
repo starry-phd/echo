@@ -2,7 +2,8 @@ import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
-import {getCategories,getPublicTracks} from '../src/api/client';
+import {getCategories,getEchoHealth,getPublicTracks} from '../src/api/client';
+import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
 import {LegacyFilterToolbar} from '../src/ui/echo/LegacyFilterToolbar';
 import type {SortOrder} from '../src/ui/echo/LegacyFilterToolbar';
 import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
@@ -35,6 +36,10 @@ export default function CatalogScreen(){
    }),
    retry:1,
  });
+ const healthQuery=useQuery({
+   queryKey:['echo','public-health'],
+   queryFn:({signal})=>getEchoHealth(signal),retry:1,staleTime:30_000,
+ });
  const categoriesQuery=useQuery({
    queryKey:['echo','categories'],
    queryFn:({signal})=>getCategories(signal),retry:1,
@@ -44,6 +49,7 @@ export default function CatalogScreen(){
    return order==='oldest'?[...items].reverse():items;
  },[tracksQuery.data,order]);
  const categories=categoriesQuery.data??[];
+ const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category));
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const draw=()=>{
@@ -94,7 +100,7 @@ export default function CatalogScreen(){
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
-         <Text style={[styles.teaserLink,{color:theme.palette.primary}]}>註冊會員解鎖更多 →</Text>
+         <Text style={[styles.teaserLink,{color:theme.palette.primary}]}>查看會員整合進度 →</Text>
        </Pressable>
        <Text style={[styles.teaserNote,{color:theme.muted}]}>
          中央會員系統尚待串接；尚未驗證的舊版音檔不會提前公開。
@@ -118,10 +124,10 @@ export default function CatalogScreen(){
        </Pressable>
      </View>:tracks.length===0?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
-         找不到符合條件的演講音檔
+         {emptyCopy.title}
        </Text>
        <Text style={[styles.emptyExplanation,{color:theme.muted}]}>
-         目前尚無完成媒體遷移及公開授權驗證的音檔。
+         {emptyCopy.detail}
        </Text>
      </View>:<View style={styles.cardGrid}>
        {tracks.map(track=><View key={track.id} style={[styles.cardCell,
