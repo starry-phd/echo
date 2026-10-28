@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { getCategories, getPublicTracks } from '../src/api/client';
-import type { EchoTrack } from '../src/types';
 import { palette } from '../src/theme';
 import { StarryFilterChip } from '../packages/ui/src';
 
