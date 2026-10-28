@@ -44,7 +44,7 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
       - name: Deploy Worker and complete Expo Web assets together
         run: npx --yes wrangler@4 deploy
-      - name: HTTP smoke test: homepage, public API, private-media refusal
+      - name: "HTTP smoke test - homepage, API and private-media refusal"
         shell: bash
         run: |
           set -euo pipefail
