@@ -1,21 +1,35 @@
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { centralMemberApiState } from '../src/auth/centralMember';
-import { palette } from '../src/theme';
-
-export default function ProfileScreen() {
-  const state = centralMemberApiState();
-  return <SafeAreaView style={styles.root}><View style={styles.card}>
-    <Text style={styles.title}>繁星中央會員</Text>
-    <Text style={styles.body}>新版繁星回聲的會員基本資料由「繁星中央會員 API」管理，不保留獨立的會員基本資料庫。</Text>
-    <Text style={styles.status}>目前狀態：{state === 'not-configured' ? 'API 網址待提供' : 'API 契約待驗證'}</Text>
-    <Text style={styles.body}>預定中央 D1 名稱：id-starry。跨 H-Global 帳號綁定將由中央會員服務，在雙方身分驗證與授權完成後處理。</Text>
-    <Text style={styles.warning}>串接完成前不開放登入，避免錯誤綁定或顯示錯誤個資。</Text>
-  </View></SafeAreaView>;
+import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {centralMemberApiState} from '../src/auth/centralMember';
+import {useLegacyTheme} from '../packages/ui/src/legacyTheme';
+import {visualMetrics} from '../packages/ui/src/tokens';
+export default function ProfileScreen(){
+ const t=useLegacyTheme();
+ const state=centralMemberApiState();
+ return <ScrollView style={[styles.root,{backgroundColor:t.bg}]}
+  contentContainerStyle={styles.content}>
+  <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
+   <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
+    <Text style={[styles.avatarIcon,{color:t.palette.primary}]}>♙</Text>
+   </View>
+   <Text style={[styles.title,{color:t.ink}]}>繁星中央會員</Text>
+   <Text style={[styles.body,{color:t.muted}]}>會員基本資料由「繁星中央會員 API」統一管理，不另外儲存會員基本資料。</Text>
+   <View style={[styles.statusBox,{backgroundColor:t.lightPill}]}>
+    <Text style={[styles.status,{color:t.palette.primary}]}>
+     {state==='not-configured'?'API 尚未設定':'會員 API 契約待驗證'}
+    </Text>
+   </View>
+   <Text style={[styles.body,{color:t.muted}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
+   <Text style={styles.warning}>尚未完成串接前不開放登入、收藏及購買，避免錯誤綁定或個資外洩。</Text>
+  </View>
+ </ScrollView>;
 }
 const styles=StyleSheet.create({
- root:{flex:1,backgroundColor:palette.paper,padding:20},card:{padding:24,borderRadius:20,backgroundColor:palette.white},
- title:{fontSize:24,fontWeight:'800',color:palette.ink,marginBottom:16},
- body:{lineHeight:24,color:palette.muted,marginBottom:18},
- status:{color:palette.brand,fontWeight:'800',marginBottom:18},
- warning:{color:palette.danger,fontWeight:'700',lineHeight:22}
+ root:{flex:1},content:{paddingHorizontal:12,paddingTop:18,paddingBottom:30,alignItems:'center'},
+ card:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',borderWidth:1,padding:20,borderRadius:21,alignItems:'center'},
+ avatar:{width:76,height:76,borderRadius:38,alignItems:'center',justifyContent:'center'},
+ avatarIcon:{fontSize:40},title:{fontSize:22,fontWeight:'900',marginTop:12,marginBottom:17},
+ body:{fontSize:14,lineHeight:23,marginBottom:18,alignSelf:'stretch'},
+ statusBox:{borderRadius:12,padding:12,alignSelf:'stretch',marginBottom:16},
+ status:{fontSize:14,fontWeight:'900'},
+ warning:{color:'#b8324e',fontWeight:'800',lineHeight:22,fontSize:13,alignSelf:'stretch'}
 });
