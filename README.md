@@ -1,8 +1,12 @@
 # 繁星回聲｜Echo Starry
 
+> **AI／跨對話唯一交接入口：[docs/AI_HANDOFF.md](docs/AI_HANDOFF.md)** — 每次開新對話先讀取此檔與 [Release Gate Issue #3](https://github.com/starry-phd/echo/issues/3)，再查最新 main／PR／CI。程式碼與已驗證狀態以 GitHub 為準，聊天紀錄不是工程權威。
+
+> **注意：下列 README 含初期建立的歷史說明；目前 Web 已部署、R2 已完成非破壞性複製，但音檔仍 private/copied、0 verified。最新狀態與證據請看上面的交接入口。**
+
 全新開發的跨平台音訊 App。採用 React Native + Expo + Expo Router + TypeScript，iOS、Android、Web 共用產品規格與商業邏輯。
 
-> **狀態：第一階段基座建置。尚未宣稱舊資料遷移或跨生態系會員同步已完成。**
+> **目前狀態須以 `docs/AI_HANDOFF.md` 的可驗證證據與最新 GitHub 記錄為準；原生商店與 Starry ID 尚未完成。**
 
 ## 正式資源
 
