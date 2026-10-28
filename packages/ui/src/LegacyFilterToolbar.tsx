@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {useLegacyTheme} from './legacyTheme';
+import {viewportLayout} from '../../../src/ui/responsive';
 export type SortOrder='newest'|'oldest';
 export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice}:{
  categories:string[];category:string|null;onCategory:(c:string|null)=>void;
@@ -8,7 +9,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
 }){
  const {width}=useWindowDimensions(),t=useLegacyTheme();
  const [open,setOpen]=useState<'category'|'advanced'|null>(null);
- const small=width<375;
+ const layout=viewportLayout(width);
  const fields=[
    {id:'category',label:category??'全部分類',press:()=>setOpen(open==='category'?null:'category')},
    {id:'time',label:order==='newest'?'最新上架':'最早上架',press:()=>{onOrder(order==='newest'?'oldest':'newest');setOpen(null);}},
@@ -26,8 +27,8 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
        accessibilityState={{expanded:item.id===open}}
        onPress={item.press}
        style={[styles.button,{backgroundColor:t.palette.primary,borderColor:t.palette.primaryHover,
-         paddingHorizontal:small?2:7},(item.id===open)&&styles.active]}>
-       <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.buttonText,{fontSize:small?10:width<600?11:13}]}>
+         paddingHorizontal:layout.phone?2:7},(item.id===open)&&styles.active]}>
+       <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.buttonText,{fontSize:layout.filterFontSize}]}>
          {item.label}{(i===0||i===3)?' ⌄':''}
        </Text>
      </Pressable>)}

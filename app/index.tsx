@@ -8,6 +8,7 @@ import type {SortOrder} from '../packages/ui/src/LegacyFilterToolbar';
 import {LegacyTrackCard} from '../packages/ui/src/LegacyTrackCard';
 import {useLegacyTheme} from '../packages/ui/src/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
+import {viewportLayout} from '../src/ui/responsive';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -43,7 +44,8 @@ export default function CatalogScreen(){
    return order==='oldest'?[...items].reverse():items;
  },[tracksQuery.data,order]);
  const categories=categoriesQuery.data??[];
- const twoColumns=width>=800;
+ const layout=viewportLayout(width);
+ const twoColumns=layout.columns===2;
  const draw=()=>{
    if(!tracks.length){
      setNotice('目前沒有完成公開驗證的音檔，尚無法召喚繁星解答。');
@@ -53,19 +55,19 @@ export default function CatalogScreen(){
    router.push({pathname:'/track/[id]',params:{id:selected.id}});
  };
  return <ScrollView style={[styles.page,{backgroundColor:theme.bg}]}
-   contentContainerStyle={styles.pageContent} keyboardShouldPersistTaps="handled">
+   contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
    <View style={styles.shell}>
      <View style={styles.searchRow}>
        <Pressable accessibilityRole="button" accessibilityLabel="召喚繁星解答"
          onPress={draw}
-         style={[styles.lucky,{backgroundColor:theme.palette.primary}]}>
+         style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
          <Text numberOfLines={2} style={styles.luckyText}>💫召喚繁星解答</Text>
        </Pressable>
        <View style={[styles.search,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.searchIcon}>⌕</Text>
          <TextInput
            accessibilityLabel="搜尋演講者、主題、系列或網友關鍵字"
-           placeholder="搜尋演講者、主題、系列或網友關鍵字..."
+           placeholder={layout.phone?'搜尋演講者、主題、關鍵字...':'搜尋演講者、主題、系列或網友關鍵字...'}
            placeholderTextColor="rgba(255,255,255,.75)"
            style={styles.input} value={query} onChangeText={setQuery}
            maxLength={100} returnKeyType="search" autoCapitalize="none"/>
@@ -140,10 +142,10 @@ const styles=StyleSheet.create({
  pageContent:{flexGrow:1,alignItems:'center',paddingHorizontal:12,paddingBottom:38},
  shell:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',paddingTop:14},
  searchRow:{flexDirection:'row',gap:9,alignItems:'stretch',minHeight:visualMetrics.searchHeight},
- lucky:{width:'34%',borderRadius:17,minHeight:50,alignItems:'center',justifyContent:'center',
+ lucky:{borderRadius:17,minHeight:50,alignItems:'center',justifyContent:'center',
    paddingHorizontal:6,shadowColor:'#c13f6f',shadowOpacity:.2,shadowRadius:12,elevation:3},
- luckyText:{fontSize:13,fontWeight:'900',textAlign:'center',color:'#fff'},
- search:{flex:1,minWidth:0,borderRadius:17,flexDirection:'row',alignItems:'center',
+ luckyText:{fontSize:12,fontWeight:'900',textAlign:'center',color:'#fff'},
+ search:{flex:1,minWidth:120,borderRadius:17,flexDirection:'row',alignItems:'center',
    paddingHorizontal:10,shadowColor:'#c13f6f',shadowOpacity:.15,shadowRadius:12,elevation:2},
  searchIcon:{color:'#fff',fontSize:25,marginRight:4},
  input:{color:'#fff',fontSize:13,flex:1,paddingVertical:9,minWidth:0},

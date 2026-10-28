@@ -4,10 +4,12 @@ import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'rea
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
 import {visualMetrics} from './tokens';
+import {viewportLayout} from '../../../src/ui/responsive';
 
 export function LegacyHeader(){
  const colors=useLegacyTheme();
  const {width,height}=useWindowDimensions();
+ const layout=viewportLayout(width);
  const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
@@ -37,7 +39,7 @@ export function LegacyHeader(){
      </Pressable>
    </View>
    <View style={[styles.quickRow,{borderTopColor:colors.border}]}>
-     <Pressable onPress={()=>go('/')} style={styles.quick}>
+     <Pressable onPress={()=>go('/')} style={styles.quick} accessibilityRole="button">
        <Text style={[styles.quickText,{color:activeColor}]}>{isHome?'⌂ 首頁':'⌂ 返回首頁'}</Text>
      </Pressable>
      <Pressable onPress={colors.cyclePalette} style={styles.quick}>
@@ -53,7 +55,7 @@ export function LegacyHeader(){
    {open&&<View style={[
       styles.menuPanel,
       {backgroundColor:colors.card,borderColor:colors.border,maxHeight:Math.max(300,height-160),
-       right:10}
+       right:10,width:layout.menuWidth}
     ]}>
      <ScrollView contentContainerStyle={styles.menuContents}>
        <Pressable onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
