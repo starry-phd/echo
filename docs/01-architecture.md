@@ -71,3 +71,7 @@
 - 後端 `.mjs` → `.ts`、OpenAPI 3.1／v1、共用 SDK、EAS Profiles、CI 測試。
 - 完整工程核對表：`docs/05-dev-i-compliance.md`，技術決策：`docs/adr/0001-dev-i-stack.md`。
 - 新增版本化 API 不代表未完成的 Starry 中央會員服務已上線；安全邊界維持原樣。
+
+## 2026-10-29 v1.3 標準遷移候選（未合併／未部署）
+
+參見 `docs/adr/0002-starry-v13-framework.md`；以 v1.3 中 Q4=A 的最後決議為準。Expo 58／RN 0.88、Ads OFF Manifest、Billing 限制契約都先由 PR／CI 驗證。既有 Central ID 等待正式 API；原 Cloudflare 不作自動正式部署。

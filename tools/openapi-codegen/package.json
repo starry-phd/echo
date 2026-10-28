@@ -1,0 +1,10 @@
+{
+  "name": "@starry/openapi-codegen-tool",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated TypeScript 5 peer tree only for OpenAPI code generation; Expo 58 app remains TypeScript 6.",
+  "dependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "~5.9.3"
+  }
+}

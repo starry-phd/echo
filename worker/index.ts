@@ -1,90 +1,154 @@
-/** DEV-I T04: TypeScript Cloudflare Worker, with explicit typed D1/R2 boundaries. */
-type EchoTrackRow = {id:string;title:string;speaker:string;description:string|null;duration_seconds:number;category_labels_json:string};
-interface D1Statement {all<T>():Promise<{results?:T[]}>;first<T>():Promise<T|null>;bind(...values:(string|number)[]):D1Statement}
-interface D1Database {prepare(query:string):D1Statement}
-interface EchoAudioObject {body:ReadableStream<Uint8Array<ArrayBuffer>>;size:number;range?:{offset?:number;length?:number};httpMetadata?:{contentType?:string}}
-interface EchoR2 {get(key:string,options?:{range:Headers}):Promise<EchoAudioObject|null>}
-export interface Env {DB:D1Database;MEDIA:EchoR2;ASSETS?:{fetch(request:Request):Promise<Response>}}
 
 /**
- * Echo Starry read-only public API.
- * IMPORTANT: This service never stores member profile data and NEVER silently
- * treats legacy login/session as a verified Starry central member.
+ * Echo public Worker API (v1.3): TypeScript + Hono + Zod.
+ * No Starry ID basic profiles or Billing truth are stored here.
  */
-const corsAllow = new Set(['https://echo-starry.starry-phd.workers.dev','https://echo.starry.phd']);
-function json(data:unknown,status=200,request?:Request):Response {
-  const origin=request?.headers.get('Origin')||'';
-  const headers=new Headers({'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','vary':'Origin'});
-  if(corsAllow.has(origin) || /^http:\/\/localhost:\d+$/.test(origin)) headers.set('access-control-allow-origin',origin);
-  return new Response(JSON.stringify(data),{status,headers});
-}
-function publicTrack(row:EchoTrackRow) {
-  let categories:string[]=[];
-  try { const raw:unknown=JSON.parse(row.category_labels_json||'[]'); if(Array.isArray(raw)) categories=raw.filter((x):x is string=>typeof x==='string'); } catch {}
-  return {id:row.id,title:row.title,speaker:row.speaker,description:row.description,durationSeconds:row.duration_seconds,categories,playable:true};
-}
-export default {
-  async fetch(request:Request,env:Env):Promise<Response> {
-    const url=new URL(request.url);
-    // Canonical versioned routes; temporary unversioned aliases remain for existing preview clients.
-    const path=url.pathname.startsWith('/api/v1/') ? '/api/'+url.pathname.slice('/api/v1/'.length) : url.pathname;
-    if(request.method==='OPTIONS') {
-      const origin=request.headers.get('Origin')||'';
-      if(!corsAllow.has(origin)&&!/^http:\/\/localhost:\d+$/.test(origin)) return new Response(null,{status:403});
-      return new Response(null,{status:204,headers:{'access-control-allow-origin':origin,'access-control-allow-methods':'GET, OPTIONS','access-control-allow-headers':'Content-Type, Accept','access-control-max-age':'600','vary':'Origin'}});
-    }
-    if(request.method!=='GET') return json({code:'METHOD_NOT_ALLOWED'},405,request);
-    if(path==='/health'||path==='/api/health')
-      return json({service:'echo-starry',stage:'bootstrap',database:Boolean(env.DB),storage:Boolean(env.MEDIA),centralMemberApi:'pending',apiVersion:'v1',legacyMediaMigration:'pending'},200,request);
-    if(path==='/api/categories') {
-      // Category labels themselves contain no member-specific data.
-      const result=await env.DB.prepare("SELECT name FROM echo_categories ORDER BY display_order, name").all<{name:string}>();
-      return json({categories:(result.results||[]).map(x=>x.name).filter(x=>typeof x==='string')},200,request);
-    }
-    if(path==='/api/catalog'){
-      const query=(url.searchParams.get('q')||'').trim().slice(0,100);
-      const category=(url.searchParams.get('category')||'').trim().slice(0,80);
-      let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
-      const bindings:string[]=[];
-      if(query) {
-        sql+=" AND (instr(lower(title),lower(?)) > 0 OR instr(lower(speaker),lower(?)) > 0)";
-        bindings.push(query,query);
-      }
-      if(category) {
-        sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(category_labels_json) THEN category_labels_json ELSE '[]' END) WHERE value = ?)";
-        bindings.push(category);
-      }
-      sql+=" ORDER BY updated_at DESC LIMIT 100";
-      const statement=env.DB.prepare(sql);
-      const result=await (bindings.length ? statement.bind(...bindings) : statement).all<EchoTrackRow>();
-      return json({tracks:(result.results||[]).map(publicTrack)},200,request);
-    }
-    const match=/^\/api\/tracks\/([^/]+)\/stream$/.exec(path);
-    if(match){
-      const id=decodeURIComponent(match[1]);
-      const row=await env.DB.prepare("SELECT audio_key FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'").bind(id).first<{audio_key:string|null}>();
-      if(!row?.audio_key) return json({code:'NOT_FOUND'},404,request);
-      const rangeHeader=request.headers.get('Range');
-      // Audio seek support: single HTTP byte range only, never a full multipart response.
-      if(rangeHeader && !/^bytes=(?:[0-9]+)?-(?:[0-9]+)?$/.test(rangeHeader))
-        return json({code:'INVALID_RANGE'},416,request);
-      const object=await env.MEDIA.get(row.audio_key,rangeHeader?{range:request.headers}:undefined);
-      if(!object) return json({code:'MEDIA_NOT_FOUND'},404,request);
-      const headers=new Headers({'content-type':object.httpMetadata?.contentType||'audio/mpeg','cache-control':'public, max-age=300','x-content-type-options':'nosniff','vary':'Origin','accept-ranges':'bytes'});
-      const origin=request.headers.get('Origin')||'';
-      if(corsAllow.has(origin)||/^http:\/\/localhost:\d+$/.test(origin))headers.set('access-control-allow-origin',origin);
-      if(rangeHeader && object.range && Number.isInteger(object.range.offset) && Number.isInteger(object.range.length)) {
-        const start=object.range.offset!;
-        const end=start+object.range.length!-1;
-        headers.set('content-range',`bytes ${start}-${end}/${object.size}`);
-        headers.set('content-length',String(object.range.length));
-        return new Response(object.body,{status:206,headers});
-      }
-      if(object.size) headers.set('content-length',String(object.size));
-      return new Response(object.body,{status:200,headers});
-    }
-    if (path.startsWith('/api/')) return json({code:'NOT_FOUND'},404,request);
-    if (env.ASSETS) return env.ASSETS.fetch(request);
-    return json({code:'STATIC_ASSETS_NOT_DEPLOYED',message:'網頁尚未發佈；API 繼續可用。'},503,request);
-  }
+import {Hono} from 'hono';
+import {z} from 'zod';
+
+type TrackRow={
+ id:string;title:string;speaker:string;description:string|null;
+ duration_seconds:number;category_labels_json:string;
 };
+interface Statement{
+ bind(...values:(string|number)[]):Statement;
+ all<T>():Promise<{results?:T[]}>;
+ first<T>():Promise<T|null>;
+}
+interface Database{prepare(sql:string):Statement}
+interface AudioObject{
+ body:ReadableStream<Uint8Array<ArrayBuffer>>;
+ size:number;
+ range?:{offset?:number;length?:number};
+ httpMetadata?:{contentType?:string};
+}
+interface Media{get(key:string,opts?:{range:Headers}):Promise<AudioObject|null>}
+export interface Env{DB:Database;MEDIA:Media;ASSETS?:{fetch(req:Request):Promise<Response>}}
+const app=new Hono<{Bindings:Env}>();
+const origins=new Set(['https://echo-starry.starry-phd.workers.dev','https://echo.starry.phd']);
+const allowed=(origin:string)=>origins.has(origin)||/^http:\/\/localhost:\d+$/.test(origin);
+function json(data:unknown,status:number,req:Request){
+ const origin=req.headers.get('Origin')||'';
+ const headers=new Headers({'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','vary':'Origin'});
+ if(allowed(origin))headers.set('access-control-allow-origin',origin);
+ return new Response(JSON.stringify(data),{status,headers});
+}
+function publicTrack(row:TrackRow){
+ let categories:string[]=[];
+ try{
+  const v:unknown=JSON.parse(row.category_labels_json||'[]');
+  if(Array.isArray(v))categories=v.filter((x):x is string=>typeof x==='string');
+ }catch{/* Invalid legacy JSON should not leak storage. */}
+ return {id:row.id,title:row.title,speaker:row.speaker,description:row.description,durationSeconds:row.duration_seconds,categories,playable:true};
+}
+const filterSchema=z.object({q:z.string().max(100).optional(),category:z.string().max(80).optional(),speaker:z.string().max(80).optional()});
+app.options('*',c=>{
+ const origin=c.req.header('Origin')||'';
+ if(!allowed(origin))return new Response(null,{status:403});
+ return new Response(null,{status:204,headers:{
+  'access-control-allow-origin':origin,'access-control-allow-methods':'GET, OPTIONS',
+  'access-control-allow-headers':'Content-Type, Accept, Range','access-control-max-age':'600','vary':'Origin'
+ }});
+});
+const health=(c:{req:{raw:Request};env:Env})=>json({
+ service:'echo-starry',stage:'bootstrap',apiVersion:'v1',database:Boolean(c.env.DB),
+ storage:Boolean(c.env.MEDIA),centralMemberApi:'pending',legacyMediaMigration:'pending'
+},200,c.req.raw);
+for(const route of ['/health','/api/health','/api/v1/health'])app.get(route,health);
+
+const categories=async(c:{req:{raw:Request};env:Env})=>{
+ const data=await c.env.DB.prepare('SELECT name FROM echo_categories ORDER BY display_order, name').all<{name:string}>();
+ return json({categories:(data.results||[]).map(x=>x.name).filter(x=>typeof x==='string')},200,c.req.raw);
+};
+app.get('/api/categories',categories);
+app.get('/api/v1/categories',categories);
+
+/** Only speaker names associated with verified public recordings are discoverable. */
+const speakers=async(c:{req:{raw:Request};env:Env})=>{
+ const rows=await c.env.DB.prepare(
+  "SELECT speaker AS name, COUNT(*) AS trackCount FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified' AND trim(speaker) <> '' GROUP BY speaker ORDER BY trackCount DESC, name LIMIT 100"
+ ).all<{name:string;trackCount:number}>();
+ return json({speakers:(rows.results||[]).map(x=>({name:x.name,trackCount:x.trackCount}))},200,c.req.raw);
+};
+app.get('/api/speakers',speakers);
+app.get('/api/v1/speakers',speakers);
+
+
+const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env:Env})=>{
+ const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker')});
+ if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
+ const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
+ let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
+ const args:string[]=[];
+ if(query){
+  sql+=" AND (instr(lower(title),lower(?)) > 0 OR instr(lower(speaker),lower(?)) > 0)";
+  args.push(query,query);
+ }
+ if(category){
+  sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(category_labels_json) THEN category_labels_json ELSE '[]' END) WHERE value = ?)";
+  args.push(category);
+ }
+ const speaker=(checked.data.speaker||'').trim();
+ if(speaker){
+  sql+=" AND speaker = ?";
+  args.push(speaker);
+ }
+ sql+=' ORDER BY updated_at DESC LIMIT 100';
+ const s=c.env.DB.prepare(sql);
+ const r=await(args.length?s.bind(...args):s).all<TrackRow>();
+ return json({tracks:(r.results||[]).map(publicTrack)},200,c.req.raw);
+};
+app.get('/api/catalog',catalog);
+app.get('/api/v1/catalog',catalog);
+
+
+/** Look up an individual public + migrated track without scanning the first 100 catalog results. */
+const detail=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
+ const parsed=z.string().min(1).max(200).safeParse(c.req.param('id'));
+ if(!parsed.success)return json({code:'INVALID_TRACK_ID'},400,c.req.raw);
+ const record=await c.env.DB.prepare(
+  "SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'"
+ ).bind(parsed.data).first<TrackRow>();
+ if(!record)return json({code:'NOT_FOUND'},404,c.req.raw);
+ return json({track:publicTrack(record)},200,c.req.raw);
+};
+app.get('/api/tracks/:id',detail);
+app.get('/api/v1/tracks/:id',detail);
+
+const stream=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
+ let id:string;
+ try{id=decodeURIComponent(c.req.param('id'));}catch{return json({code:'INVALID_TRACK_ID'},400,c.req.raw);}
+ const record=await c.env.DB.prepare(
+  "SELECT audio_key FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'"
+ ).bind(id).first<{audio_key:string|null}>();
+ if(!record?.audio_key)return json({code:'NOT_FOUND'},404,c.req.raw);
+ const range=c.req.raw.headers.get('Range');
+ if(range&&!/^bytes=(?:[0-9]+)?-(?:[0-9]+)?$/.test(range))
+  return json({code:'INVALID_RANGE'},416,c.req.raw);
+ const media=await c.env.MEDIA.get(record.audio_key,range?{range:c.req.raw.headers}:undefined);
+ if(!media)return json({code:'MEDIA_NOT_FOUND'},404,c.req.raw);
+ const headers=new Headers({'content-type':media.httpMetadata?.contentType||'audio/mpeg',
+  'cache-control':'public, max-age=300','x-content-type-options':'nosniff',
+  'vary':'Origin','accept-ranges':'bytes'});
+ const origin=c.req.raw.headers.get('Origin')||'';
+ if(allowed(origin))headers.set('access-control-allow-origin',origin);
+ if(range&&media.range&&Number.isInteger(media.range.offset)&&Number.isInteger(media.range.length)){
+  const start=media.range.offset!,end=start+media.range.length!-1;
+  headers.set('content-range','bytes '+start+'-'+end+'/'+media.size);
+  headers.set('content-length',String(media.range.length));
+  return new Response(media.body,{status:206,headers});
+ }
+ if(media.size)headers.set('content-length',String(media.size));
+ return new Response(media.body,{status:200,headers});
+};
+app.get('/api/tracks/:id/stream',stream);
+app.get('/api/v1/tracks/:id/stream',stream);
+
+app.get('*',c=>{
+ if(c.req.path.startsWith('/api/'))return json({code:'NOT_FOUND'},404,c.req.raw);
+ if(c.env.ASSETS)return c.env.ASSETS.fetch(c.req.raw);
+ return json({code:'STATIC_ASSETS_NOT_DEPLOYED'},503,c.req.raw);
+});
+app.all('*',c=>json({code:'METHOD_NOT_ALLOWED'},405,c.req.raw));
+app.onError((_err,c)=>json({code:'SERVICE_UNAVAILABLE'},503,c.req.raw));
+export default app;

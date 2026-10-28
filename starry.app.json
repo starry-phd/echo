@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "appId": "echo-starry",
+  "appName": "繁星回聲",
+  "brandId": "starry",
+  "platforms": [
+    "ios",
+    "android",
+    "web"
+  ],
+  "ios": {
+    "bundleId": "phd.starry.echo"
+  },
+  "android": {
+    "applicationId": "phd.starry.echo"
+  },
+  "urlScheme": "echostarry",
+  "tech": {
+    "expoSdk": 58,
+    "reactNative": "0.88",
+    "expoRouter": "58",
+    "typescriptStrict": true,
+    "web": "optional-enabled"
+  },
+  "identity": {
+    "source": "starry-central-id-api",
+    "plannedCentralD1": "id-starry",
+    "apiContract": "pending",
+    "purchaseRequiresStarryId": true
+  },
+  "battery": {
+    "source": "starry-battery-api",
+    "apiContract": "pending",
+    "noDirectDatabaseAccess": true
+  },
+  "monetization": {
+    "billingProviderSelection": "revenuecat",
+    "billingSdkInitialized": false,
+    "allowedProductTypes": [
+      "non-consumable",
+      "auto-renewable-monthly",
+      "auto-renewable-yearly"
+    ],
+    "products": [],
+    "crossPlatformEntitlements": "same-app-and-verified-starry-id-only",
+    "adsProviderSelection": "google-admob-mediation",
+    "adsEnabled": false,
+    "adsSdkInitialized": false,
+    "adRequestsEnabled": false,
+    "adsAppIds": [],
+    "adsUnitIds": [],
+    "adConsentStatus": "not-configured",
+    "adsActivation": "requires-separate-owner-approval"
+  },
+  "lifecycle": {
+    "stage": "development",
+    "productionAuthorized": false,
+    "storeSubmissionAuthorized": false
+  }
+}
