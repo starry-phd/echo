@@ -44,6 +44,7 @@ iOS 與 Android 仍須另行執行 EAS／實機驗收。
 
 - Cloudflare Production 工作流改為 **workflow_dispatch 唯一入口**；移除 release branch push 自動部署。
 - GitHub Actions 執行時必須選 main、輸入 40 字元核准 SHA，以及 DEPLOY-ECHO-STARRY-PRODUCTION 確認字串；Worker 上傳前檢查 event/ref/HEAD SHA。
+- 經核准的 main SHA 會於啟動時及 Wrangler bundle dry-run 後、真正上傳 Worker 前**再次比對遠端 main HEAD**；若有新提交則中止部署，不自動改用最新提交。這是程式安全 Gate，**不取代** GitHub Environment required reviewers 的人工設定與檢查。
 - 現在 starry.app.json 的 lifecycle.productionAuthorized=false，故無法部署。此旗標只有獲得當次業主正式授權、獨立 PR 核准才可改成 true。
 - 此工作流使用 production Environment，但 GitHub 的 Environment 必要審閱者及機密存取設定仍須另行人工檢查；不能只憑 YAML 宣稱已受保護。
 - 私人 R2 解碼抽樣改為手動，不再因修改該 workflow 而自動讀取音檔。

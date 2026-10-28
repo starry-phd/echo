@@ -87,6 +87,16 @@ jobs:
       - run: npm run build:web
       - name: Verify Worker and Assets bundle before uploading
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
+      - name: Revalidate current main against the approved SHA before upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          remote_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [ -z "$remote_main" ] || [ "$remote_main" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$GITHUB_SHA" ]; then
+            echo "::error::Main HEAD moved or checked-out code differs from the explicitly approved release SHA"
+            exit 1
+          fi
       - name: Deploy Worker and complete Expo Web assets together
         run: npx --yes wrangler@4 deploy
       - name: "HTTP smoke test - homepage, API and private-media refusal"

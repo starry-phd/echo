@@ -36,5 +36,14 @@ assert.equal(manifest.monetization.adsSdkInitialized,false);
 assert.deepEqual(manifest.monetization.adsAppIds,[]);
 assert.deepEqual(manifest.monetization.adsUnitIds,[]);
 assert.ok(release.includes('git ls-remote --exit-code origin refs/heads/main'),'Missing live main SHA guard');
+// The second remote HEAD guard must be after validation/build and immediately before upload.
+const dryRun=release.indexOf('run: npx --yes wrangler@4 deploy --dry-run');
+const lateGuard=release.indexOf('name: Revalidate current main against the approved SHA before upload');
+const upload=release.indexOf('name: Deploy Worker and complete Expo Web assets together');
+assert.ok(dryRun>=0 && lateGuard>dryRun && upload>lateGuard,'A fresh main SHA check is required after the dry-run and before upload');
+const finalGate=release.slice(lateGuard,upload);
+assert.match(finalGate,/git ls-remote --exit-code origin refs\/heads\/main/);
+assert.match(finalGate,/remote_main.*RELEASE_COMMIT_SHA/);
+assert.match(finalGate,/actual.*GITHUB_SHA/);
 assert.equal(manifest.monetization.adRequestsEnabled,false);
 console.log('Manual-only production/R2 triggers and release safety guards validated.');
