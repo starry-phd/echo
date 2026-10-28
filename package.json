@@ -16,7 +16,7 @@
     "lint": "eslint app src worker packages",
     "expo:doctor": "npx --yes expo-doctor@latest",
     "monetization:check": "node scripts/check-v13-manifest.mjs",
-    "api:generate": "openapi-typescript openapi/echo-public.v1.json -o packages/echo-api-sdk/src/generated.ts",
+    "api:generate": "node scripts/run-isolated-openapi-generator.mjs",
     "postinstall": "npm run api:generate"
   },
   "dependencies": {
@@ -29,7 +29,7 @@
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
     "react-native-web": "^0.21.0",
-    "react-native-safe-area-context": "^5.0.0",
+    "react-native-safe-area-context": "~5.10.1",
     "expo-asset": "~58.0.18",
     "@tanstack/react-query": "^5.90.0",
     "hono": "^4.11.0",
@@ -37,12 +37,11 @@
     "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
-    "@types/react": "~19.2.0",
-    "typescript": "~5.9.3",
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3",
     "tsx": "^4.20.6",
     "eslint": "^9.39.0",
-    "typescript-eslint": "^8.46.0",
-    "openapi-typescript": "^7.13.0"
+    "typescript-eslint": "^8.46.0"
   },
   "workspaces": [
     "packages/*"

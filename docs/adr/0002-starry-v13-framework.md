@@ -24,3 +24,7 @@
 - 如 PR 未通過 CI，保留現有 `main` 的 Expo57，不做強制合併。
 - 購買與廣告安全開關必須由可信後端與商店權益共同授權，前端布林值不能成為永久權益權威。本輪只實現 OFF Gate 和非營運 Billing 介面。
 - 不改動舊 R2/D1、正式 DNS、Cloudflare Worker Production；資料搬遷仍按已批准的原遷移作業安排。
+
+## Codegen 相容解法（2026-10-29）
+
+Expo Doctor 要求 TypeScript ~6.0.3，openapi-typescript 7.13 的 peer 只支持 TypeScript 5；為遵守 Expo 58 的正式依賴基線，App root 使用 TypeScript 6，獨立 `tools/openapi-codegen` 使用 TypeScript 5.9。透過 `scripts/run-isolated-openapi-generator.mjs` 產生同一份 OpenAPI 3.1 型別。禁止使用 `--legacy-peer-deps`、`--force` 或將 TypeScript 從 Expo Doctor 排除。此隔離僅限 build-time，不在 App bundle 裝入第二個 TypeScript runtime。
