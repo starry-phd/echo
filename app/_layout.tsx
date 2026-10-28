@@ -1,24 +1,32 @@
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {View} from 'react-native';
+import {LegacyThemeProvider,useLegacyTheme} from '../packages/ui/src/legacyTheme';
+import {LegacyHeader} from '../packages/ui/src/LegacyHeader';
 
-const queryClient = new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
-import { palette } from '../src/theme';
+const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 
-export default function RootLayout() {
-  return (
-    <QueryClientProvider client={queryClient}>
-    <Stack screenOptions={{
-      headerStyle: { backgroundColor: palette.white },
-      headerTintColor: palette.brand,
-      contentStyle: { backgroundColor: palette.paper },
-      headerTitleStyle: { fontWeight: '700' }
-    }}>
-      <Stack.Screen name="index" options={{ title: '繁星回聲' }} />
-      <Stack.Screen name="profile" options={{ title: '中央會員' }} />
-      <Stack.Screen name="speaker/index" options={{ title: '講師作品' }} />
-      <Stack.Screen name="speaker/[name]" options={{ title: '講師作品' }} />
-      <Stack.Screen name="track/[id]" options={{ title: '音檔詳情' }} />
-    </Stack>
-    </QueryClientProvider>
-  );
+function AppShell(){
+ const theme=useLegacyTheme();
+ return <View style={{flex:1,backgroundColor:theme.bg}}>
+   <LegacyHeader/>
+   <View style={{flex:1}}>
+     <Stack screenOptions={{
+       headerShown:false,
+       contentStyle:{backgroundColor:theme.bg},
+       animation:'fade'
+     }}>
+       <Stack.Screen name="index" />
+       <Stack.Screen name="profile" />
+       <Stack.Screen name="speaker/index" />
+       <Stack.Screen name="speaker/[name]" />
+       <Stack.Screen name="track/[id]" />
+     </Stack>
+   </View>
+ </View>;
+}
+export default function RootLayout(){
+ return <QueryClientProvider client={queryClient}>
+   <LegacyThemeProvider><AppShell/></LegacyThemeProvider>
+ </QueryClientProvider>;
 }
