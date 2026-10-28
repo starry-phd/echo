@@ -136,8 +136,8 @@ test('categories are derived only from actually published and verified tracks',a
  const response=await worker.fetch(new Request(origin+'/api/v1/categories'),env);
  assert.equal(response.status,200);
  assert.deepEqual((await response.json()).categories,[]);
- assert.match(sqlSeen[0],/visibility\\s*=\\s*'public'/);
- assert.match(sqlSeen[0],/migration_status\\s*=\\s*'verified'/);
+ assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+ assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
  assert.match(sqlSeen[0],/json_each/);
  assert.match(sqlSeen[0],/EXISTS/);
 });
