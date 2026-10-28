@@ -10,7 +10,7 @@ export const palette = {
 export const visualMetrics = {
   contentMaxWidth:832,
   headerHeight:60,
-  headerActionsHeight:36,
+  headerActionsHeight:44,
   searchHeight:50,
   chipHeight:48,
   cardRadius:21,
