@@ -26,3 +26,10 @@ export function getPublicStreamUrl(id:string):string|null{
  const origin=getApiBaseUrl();
  return origin?createEchoPublicClient(origin).streamUrl(id):null;
 }
+
+/** Fetch by ID; unlike catalog, this does not require the track to be in the first 100 results. */
+export async function getPublicTrack(id:string,signal?:AbortSignal):Promise<EchoTrack|null>{
+ const origin=getApiBaseUrl();
+ if(!origin)throw new Error('新 API 網址尚未設定，音檔詳情暫不開放。');
+ return createEchoPublicClient(origin).getTrack(id,signal);
+}

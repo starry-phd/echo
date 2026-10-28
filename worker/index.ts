@@ -85,6 +85,20 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
 app.get('/api/catalog',catalog);
 app.get('/api/v1/catalog',catalog);
 
+
+/** Look up an individual public + migrated track without scanning the first 100 catalog results. */
+const detail=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
+ const parsed=z.string().min(1).max(200).safeParse(c.req.param('id'));
+ if(!parsed.success)return json({code:'INVALID_TRACK_ID'},400,c.req.raw);
+ const record=await c.env.DB.prepare(
+  "SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE id = ? AND visibility = 'public' AND migration_status = 'verified'"
+ ).bind(parsed.data).first<TrackRow>();
+ if(!record)return json({code:'NOT_FOUND'},404,c.req.raw);
+ return json({track:publicTrack(record)},200,c.req.raw);
+};
+app.get('/api/tracks/:id',detail);
+app.get('/api/v1/tracks/:id',detail);
+
 const stream=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
  let id:string;
  try{id=decodeURIComponent(c.req.param('id'));}catch{return json({code:'INVALID_TRACK_ID'},400,c.req.raw);}

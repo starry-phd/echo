@@ -27,6 +27,15 @@ export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=f
     throw new Error('Echo catalog unavailable or schema mismatch');
    return result.data.tracks;
   },
+  /** 404 = not public / not yet verified; do not infer private availability. */
+  async getTrack(id:string,signal?:AbortSignal):Promise<EchoTrack|null>{
+   const result=await api.GET('/api/v1/tracks/{id}',{
+    params:{path:{id}},signal,
+   });
+   if(result.response.status===404)return null;
+   if(result.error||!result.data)throw new Error('Echo track unavailable');
+   return result.data.track;
+  },
   async listCategories(signal?:AbortSignal):Promise<string[]>{
    const result=await api.GET('/api/v1/categories',{signal});
    if(result.error||!result.data||!Array.isArray(result.data.categories))

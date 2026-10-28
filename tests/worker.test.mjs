@@ -158,3 +158,33 @@ test('canonical v1 health reports pending member API', async () => {
   assert.equal(data.apiVersion,'v1');
   assert.equal(data.centralMemberApi,'pending');
 });
+
+
+test('single track details return sanitized public metadata from a bound id',async()=>{
+ const row={id:'safe-101',title:'公開演講',speaker:'講師',description:'介紹',
+  duration_seconds:300,category_labels_json:'["營養"]',
+  audio_key:'private/should-not-be-exposed.mp3',central_user_id:'must-never-leak'};
+ const {env,bindings,sqlSeen}=envWithDb({firstRow:row});
+ const r=await worker.fetch(new Request(origin+'/api/v1/tracks/safe-101'),env);
+ assert.equal(r.status,200);
+ const d=await r.json();
+ assert.deepEqual(d.track,{id:'safe-101',title:'公開演講',speaker:'講師',description:'介紹',
+  durationSeconds:300,categories:['營養'],playable:true});
+ assert.equal(JSON.stringify(d).includes('audio_key'),false);
+ assert.equal(JSON.stringify(d).includes('central_user_id'),false);
+ assert.deepEqual(bindings[0],['safe-101']);
+ assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
+ assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
+});
+test('single track details fail closed for pending/private or absent tracks',async()=>{
+ const {env}=envWithDb();
+ const r=await worker.fetch(new Request(origin+'/api/v1/tracks/unverified-1'),env);
+ assert.equal(r.status,404);
+ assert.equal((await r.json()).code,'NOT_FOUND');
+});
+test('single track route rejects unreasonable identifiers before a database query',async()=>{
+ const {env,sqlSeen}=envWithDb();
+ const r=await worker.fetch(new Request(origin+'/api/v1/tracks/'+('a'.repeat(201))),env);
+ assert.equal(r.status,400);
+ assert.equal(sqlSeen.length,0);
+});

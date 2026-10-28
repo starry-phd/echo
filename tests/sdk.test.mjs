@@ -14,3 +14,18 @@ test('SDK emits versioned paths and safely encodes query filters',async()=>{
  assert.match(sdk.streamUrl('abc/123'),/abc%2F123\/stream$/);
 });
 test('SDK rejects insecure origin',()=>assert.throws(()=>createEchoPublicClient('http://echo.example.org')));
+
+
+test('SDK opens a direct track URL and returns its public metadata',async()=>{
+ const calls=[];
+ const track={id:'id-101',title:'公開演講',speaker:'講師',description:null,durationSeconds:500,categories:[],playable:true};
+ const transport=async request=>{calls.push(request.url);return new Response(JSON.stringify({track}),{status:200})};
+ const sdk=createEchoPublicClient('https://echo.example.org',transport);
+ const result=await sdk.getTrack('id-101');
+ assert.deepEqual(result,track);
+ assert.equal(new URL(calls[0]).pathname,'/api/v1/tracks/id-101');
+});
+test('SDK returns null for a deliberately unavailable track, not private metadata',async()=>{
+ const sdk=createEchoPublicClient('https://echo.example.org',async()=>new Response(JSON.stringify({code:'NOT_FOUND'}),{status:404,headers:{'content-type':'application/json'}}));
+ assert.equal(await sdk.getTrack('private-track'),null);
+});
