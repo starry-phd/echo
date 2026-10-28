@@ -1,40 +1,45 @@
-/** Starry Echo API SDK v0.1.0: public, read-only. No central member personal data. */
+/**
+ * Versioned Starry Echo public API SDK, generated types from OpenAPI 3.1.
+ * Only free, verified public media. No shared member profile or Billing truth.
+ */
+import createClient from 'openapi-fetch';
+import type {paths,components} from './generated';
+
 export const ECHO_API_VERSION='v1' as const;
-export interface EchoTrack {
- id:string;title:string;speaker:string;description:string|null;
- durationSeconds:number;categories:string[];playable:boolean;
-}
+export type EchoTrack=components['schemas']['Track'];
+export type EchoHealth=components['schemas']['Health'];
+export type ApiProblem=components['schemas']['Problem'];
 export type CatalogResult={tracks:EchoTrack[]};
 export type CatalogFilters={query?:string;category?:string};
-export type ApiProblem={code:string;message?:string};
-export interface EchoHealth {
- service:string;stage:string;apiVersion:string;database:boolean;storage:boolean;
- centralMemberApi:string;legacyMediaMigration:string;
-}
+
 export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=fetch){
- const parsed=new URL(baseUrl);
- if(parsed.protocol!=='https:'&&parsed.hostname!=='localhost')throw new Error('HTTPS required');
- const route=(name:string)=>parsed.origin+'/api/'+ECHO_API_VERSION+'/'+name;
- async function read<T>(url:string,signal?:AbortSignal):Promise<T>{
-  const response=await clientFetch(url,{signal,headers:{Accept:'application/json'}});
-  if(!response.ok)throw new Error('Echo API unavailable: '+response.status);
-  return await response.json() as T;
- }
+ const base=new URL(baseUrl);
+ if(base.protocol!=='https:'&&base.hostname!=='localhost')throw new Error('HTTPS required');
+ const origin=base.origin;
+ const api=createClient<paths>({baseUrl:origin,fetch:clientFetch});
  return {
   async listTracks(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
-   const params=new URLSearchParams();
-   if(filters.query?.trim())params.set('q',filters.query.trim().slice(0,100));
-   if(filters.category?.trim())params.set('category',filters.category.trim().slice(0,80));
-   const url=route('catalog')+(params.size?'?'+params.toString():'');
-   const body=await read<CatalogResult>(url,signal);
-   if(!Array.isArray(body.tracks))throw new Error('Invalid catalog response');
-   return body.tracks;
+   const result=await api.GET('/api/v1/catalog',{params:{query:{
+    q:filters.query?.trim().slice(0,100),
+    category:filters.category?.trim().slice(0,80)
+   }},signal});
+   if(result.error||!result.data||!Array.isArray(result.data.tracks))
+    throw new Error('Echo catalog unavailable or schema mismatch');
+   return result.data.tracks;
   },
   async listCategories(signal?:AbortSignal):Promise<string[]>{
-   const body=await read<{categories:unknown}>(route('categories'),signal);
-   return Array.isArray(body.categories)?body.categories.filter((x):x is string=>typeof x==='string'):[];
+   const result=await api.GET('/api/v1/categories',{signal});
+   if(result.error||!result.data||!Array.isArray(result.data.categories))
+    throw new Error('Echo categories unavailable');
+   return result.data.categories;
   },
-  health(signal?:AbortSignal):Promise<EchoHealth>{return read<EchoHealth>(route('health'),signal);},
-  streamUrl(id:string):string{return route('tracks/'+encodeURIComponent(id)+'/stream');}
+  async health(signal?:AbortSignal):Promise<EchoHealth>{
+   const result=await api.GET('/api/v1/health',{signal});
+   if(result.error||!result.data)throw new Error('Echo health unavailable');
+   return result.data;
+  },
+  streamUrl(id:string):string{
+   return origin+'/api/v1/tracks/'+encodeURIComponent(id)+'/stream';
+  },
  };
 }

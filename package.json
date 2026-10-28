@@ -10,12 +10,14 @@
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm test && npm run api:check && npm run monetization:check",
+    "check": "npm run api:generate && npm run typecheck && npm run lint && npm test && npm run api:check && npm run monetization:check",
     "test": "node --import tsx --test tests/*.test.mjs",
     "api:check": "node scripts/check-openapi.mjs",
     "lint": "eslint app src worker packages",
     "expo:doctor": "npx --yes expo-doctor@latest",
-    "monetization:check": "node scripts/check-v13-manifest.mjs"
+    "monetization:check": "node scripts/check-v13-manifest.mjs",
+    "api:generate": "openapi-typescript openapi/echo-public.v1.json -o packages/echo-api-sdk/src/generated.ts",
+    "postinstall": "npm run api:generate"
   },
   "dependencies": {
     "expo": "~58.0.0",
@@ -31,14 +33,16 @@
     "expo-asset": "~58.0.18",
     "@tanstack/react-query": "^5.90.0",
     "hono": "^4.11.0",
-    "zod": "^4.1.0"
+    "zod": "^4.1.0",
+    "openapi-fetch": "^0.17.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",
     "typescript": "~6.0.3",
     "tsx": "^4.20.6",
     "eslint": "^9.39.0",
-    "typescript-eslint": "^8.46.0"
+    "typescript-eslint": "^8.46.0",
+    "openapi-typescript": "^7.13.0"
   },
   "workspaces": [
     "packages/*"
