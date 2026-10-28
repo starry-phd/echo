@@ -4,9 +4,6 @@ name: Probe copied Echo R2 audio formats (read-only)
 # No audio, titles, or R2 secrets are printed or exposed.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: [.github/workflows/probe-r2.yml]
 
 permissions:
   contents: read

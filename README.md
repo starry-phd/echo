@@ -2,7 +2,7 @@
 
 全新開發的跨平台音訊 App。採用 React Native + Expo + Expo Router + TypeScript，iOS、Android、Web 共用產品規格與商業邏輯。
 
-> **狀態：第一階段基座建置。尚未宣稱舊資料遷移或跨生態系會員同步已完成。**
+> **狀態：Expo 58 新基座已建置；R2 已完成私有搬遷（112 筆全為 copied/private），尚未核准音檔公開、中央會員整合、原生 EAS 驗收或正式 Web 部署。**
 
 ## 正式資源
 

@@ -11,7 +11,7 @@ Cloudflare Pages 不使用，先前空專案已刪除。
 - SDK 58 Expo Web `web.output=static` 可產生網頁版建置產物，CI 驗證成功。
 - GitHub Actions 會執行 typecheck、Worker API 權限測試及 Web 打包。
 - `.github/workflows/deploy-worker.yml` 支援正式授權後使用 `workflow_dispatch` 明確發布。
-- 舊資料尚未切換，必須保持 `visibility='private'`、`migration_status='pending'`。
+- 2026-10-29：舊音檔已複製至新 R2，Echo D1 112 筆為 `migration_status='copied'`、`visibility='private'`；`verified=0`，不代表可公開播放。
 
 ## 首次部署條件
 
@@ -21,7 +21,7 @@ GitHub `starry-phd/echo` 的 `Settings > Secrets and variables > Actions` 需有
 不要將 Token 貼入 issue、commit 或 README。
 
 取得安全授權並經程式、帳號安全審閱後，手動執行
-`Actions > Deploy Expo Web to Cloudflare Workers Static Assets > Run workflow`。
+`Actions > Deploy Echo public Web shell to Cloudflare Workers > Run workflow`。
 可在同一 Worker 網域檢查 `/`、`/profile`、`/api/health`、`/api/catalog`，
 並確認新 R2 媒體尚未驗證時，不會公開音檔。
 
@@ -34,8 +34,17 @@ iOS 與 Android 仍須另行執行 EAS／實機驗收。
 
 - 使用者 2026-10-28 已在對話要求繼續開發及正式部署；此為操作授權，不是授權、資料、測試與商店資格已完成的證明。
 - 完整 Web 靜態資產部署需要 GitHub Actions Secret CLOUDFLARE_API_TOKEN；不能透過 API-only Worker 腳本替代 Expo Web assets。
-- R2 來源 598 物件、目標 R2，目前尚未完成跨帳號遷移；新 D1 112 筆中 verified=0。沒有授權核對不可一鍵全部公開。
+- R2 來源 598 物件（含兩個空佔位）；目標已複製 596 個有內容物件，經 key/size/ETag 核對；D1 112 筆全為 `copied/private`，`verified=0`。未完成播放與權利驗收前不得公開。
 - 中央 id-starry 的正式 API 契約和身分驗證仍待對接；登入、收藏、上傳、VIP、購買必須 fail closed。
 - iOS／Android 的 Expo Project、EAS Build、簽署與 App Store / Google Play 送審還需要真實驗證證據；CI Web build 不能代替。
 - 發布後要核對首頁、健康 API、分類、講師、音檔搜尋與未核准音檔 404；不得宣稱未經 HTTP 驗收已上線。
 - Ads Provider 仍選 Google AdMob Mediation，但 Ads OFF，不啟動 SDK、不產生廣告請求。
+
+## 2026-10-29 安全發布規則（候選 PR，合併後才生效）
+
+- Cloudflare Production 工作流改為 **workflow_dispatch 唯一入口**；移除 release branch push 自動部署。
+- GitHub Actions 執行時必須選 main、輸入 40 字元核准 SHA，以及 DEPLOY-ECHO-STARRY-PRODUCTION 確認字串；Worker 上傳前檢查 event/ref/HEAD SHA。
+- 現在 starry.app.json 的 lifecycle.productionAuthorized=false，故無法部署。此旗標只有獲得當次業主正式授權、獨立 PR 核准才可改成 true。
+- 此工作流使用 production Environment，但 GitHub 的 Environment 必要審閱者及機密存取設定仍須另行人工檢查；不能只憑 YAML 宣稱已受保護。
+- 私人 R2 解碼抽樣改為手動，不再因修改該 workflow 而自動讀取音檔。
+- CI 新增 release:guard 靜態檢查，不能取代實際 HTTP、原生 EAS 或權利驗收。

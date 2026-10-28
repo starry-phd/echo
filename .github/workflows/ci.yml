@@ -25,6 +25,7 @@ jobs:
         run: npm run expo:doctor
       - run: npm run api:check
       - run: npm run monetization:check
+      - run: npm run release:guard
       - run: npm run ui:check
       - run: npm test
       - run: npm run build:web
