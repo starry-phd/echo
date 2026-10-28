@@ -51,6 +51,22 @@ test('health reports a pending central membership API without personal data', as
   assert.equal(JSON.stringify(body).includes('email'),false);
 });
 
+test('health reads the migration status from D1 but never implies public authorization', async()=>{
+ const {env,sqlSeen}=envWithDb({firstRow:{status:'copied'}});
+ const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+ assert.equal(r.status,200);
+ const body=await r.json();
+ assert.equal(body.legacyMediaMigration,'copied');
+ assert.equal(body.centralMemberApi,'pending');
+ assert.match(sqlSeen[0],/echo_migrations/);
+ assert.equal(JSON.stringify(body).includes('audio_key'),false);
+});
+test('unrecognized migration status fails closed to pending', async()=>{
+ const {env}=envWithDb({firstRow:{status:'public'}});
+ const r=await worker.fetch(new Request(origin+'/api/v1/health'),env);
+ assert.equal((await r.json()).legacyMediaMigration,'pending');
+});
+
 test('catalog SQL must require both public visibility and verified media', async () => {
   const {env,sqlSeen}=envWithDb();
   const r=await worker.fetch(new Request(origin+'/api/catalog'),env);

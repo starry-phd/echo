@@ -33,3 +33,8 @@ GitHub Workflow：`.github/workflows/migrate-r2.yml`，手動觸發 `workflow_di
 Workflow 的完整操作需等金鑰正式配置；不得把任何金鑰寫入 GitHub 程式碼、issue、PR 或日誌。工作流使用 `rclone copy --ignore-existing`（不刪、不覆蓋），後接 `rclone check --one-way --size-only` 核對路徑與大小。檢查通過後，仍需要抽樣內容雜湊、音檔可播放與 VIP／等級授權核對，不能自動將來源音檔設為公開。
 
 **狀態：工作流程程式已準備；尚未提供秘密憑證、未觸發，目的 R2 尚未完成複製。**
+
+
+## 2026-10-29：實際搬遷完成（取代上方「尚未執行」的歷史狀態）
+
+已成功執行 GitHub Run #40742932810。新 R2 有 596 個非空物件，總容量 3,122,987,926 bytes；來源 598 個物件中 2 個是 0-byte 目錄佔位，故有內容的 596 個 key／size／ETag 索引完全一致。新版 D1 112 個音檔 audio_key 全部匹配，已安全改為 `migration_status=copied` 但仍全部 `private`，`verified=0`、`public=0`。舊版 `guestVisible` 是訪客首頁清單標記，不是播放授權；參見 `docs/09-r2-migration-acceptance.md`。後續須人工內容權限與實際播放測試。
