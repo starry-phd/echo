@@ -32,5 +32,9 @@ for(const marker of [
 assert.equal(manifest.brandId,'starry');
 assert.equal(manifest.appId,'echo-starry');
 assert.equal(manifest.monetization.adsEnabled,false);
+assert.equal(manifest.monetization.adsSdkInitialized,false);
+assert.deepEqual(manifest.monetization.adsAppIds,[]);
+assert.deepEqual(manifest.monetization.adsUnitIds,[]);
+assert.ok(release.includes('git ls-remote --exit-code origin refs/heads/main'),'Missing live main SHA guard');
 assert.equal(manifest.monetization.adRequestsEnabled,false);
 console.log('Manual-only production/R2 triggers and release safety guards validated.');

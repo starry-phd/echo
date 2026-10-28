@@ -1,98 +1,77 @@
-# 繁星回聲 Echo Starry｜GitHub 唯一 AI 任務交接入口
+# 繁星回聲｜GitHub 唯一任務交接入口（AI HANDOFF）
 
-**更新日期：2026-10-29（台灣）**  
-**交接狀態：程式開發中；不等於正式部署、App Store／Google Play 上架或所有舊功能移植完成。**  
-**唯一實際工程來源：** https://github.com/starry-phd/echo  
-**原始舊版參考：** https://github.com/yukidu/Echo-Starry （不得擅自改寫、刪除）  
+**狀態快照：2026-10-29（台灣時間）** ｜ 專案：Echo Starry／繁星回聲 ｜ 範圍：`starry-phd/echo`。
 
-## 0. 新 AI 接手時先做
+> **新對話接手，先讀此檔，然後即時核對 GitHub main、PR、Actions 與 Issue #3。**
+> 本檔是「有版本的交接摘要」，不是宣稱此刻雲端狀態不變；一切驗收必須能追溯到 GitHub commit／CI、Cloudflare 部署或 EAS／Store 真實記錄。禁止依聊天摘要推定部署已完成。
 
-1. 先讀本檔，再讀 README.md、docs/adr/0002-starry-v13-framework.md、docs/05-dev-i-compliance.md、docs/07-legacy-ui-parity.md、docs/09-r2-migration-acceptance.md、starry.app.json 與最新 OpenAPI。
-2. **先查 GitHub main 最新 SHA、所有 open PR 與各自的最新 CI Run。** GitHub 可能已被其他 AI 更新；本檔快照時間點後的現況須以實際 GitHub 查核結果為準，禁止憑舊聊天或手動勾選聲稱完成。
-3. 如果 PR #11 仍存在，優先繼續該 PR，避免重新開同題 PR、重做已完成工作或直接寫 main；依防封鎖 SOP 保守操作，遇限制／停權立即停止。
-4. **不可未經本次明確授權更新 Production、DNS、商店、付款、正式權限、既有 Cloudflare 媒體可見性或購買方案。** 即使 CI 成功也不代表可發版。
-5. 往後只更新 GitHub 的程式、PR、CI、ADR 與本交接檔；新對話僅需 GitHub repo 和本檔連結，不必再依賴上一個 ChatGPT 對話全文。
+## 0｜固定交接規則
 
-## 1. 權威規範及使用者已定的方向
+1. **GitHub 為單一持久工程交接來源**：實際程式碼、branch、PR、CI、技術文件、風險與下一步任務，皆以此 Repo（必要時各獨立服務 Repo）版本化。ChatGPT 對話只負責執行指令與回報，不是持久進度庫。
+2. **目前 Echo 執行任務統一追蹤**： [Issue #3 — Release Gate](https://github.com/starry-phd/echo/issues/3)。既有任務不要重複建 Issue；每項 PR 應關聯既有 Issue，明列具體變動、測試、Commit 與仍未完成項目。
+3. **架構／產品規範**：本 Repo `starry.app.json`、`docs/adr/0001-dev-i-stack.md`、`docs/adr/0002-starry-v13-framework.md`，以及已獲業主核准的 DEV-I／Starry v1.3 決議。Google Docs 仍可追溯規範來源，**但工程實況及跨對話交接一律回寫 GitHub**。v1.0 候選文件或舊聊天不得推翻較新的明確決議。
+4. **新工作**：先核對 main SHA、未合併 PR 與 Issue #3，然後以 branch → PR → CI／安全測試 → 審閱／核准 → **經授權**部署；不要直接推斷 PR 成功等於正式上線。
+5. **合規與節流**：依《第一波｜GitHub AI 自動化開發合規與防封鎖 SOP》，單一身分寫入序列化、避免重複 PR／CI／秒級輪詢；遇到 403 停權／限流必須停止並正確分流，不跨身分規避。
 
-- 2026-10-28 Starry 生態系共用技術基座候選版／更新的 v1.3 定案：以 **React Native 0.88 + Expo SDK 58 + Expo Router + TypeScript strict** 為 Echo 現行基線；Worker 用 **TypeScript + Hono + Zod**、OpenAPI 3.1，Expo Web 為 Echo 的選配。
-- 第一波 DEV-I、DEV-G、GitHub AI 自動化防封鎖 SOP 是工程流程護欄；必須區分 **規劃／實作／測試／正式部署／商店上架**。
-- 以 **舊 Echo 品牌畫面為 UI 基準**（玫瑰主題、24 色主題、手機優先 320–430px、搜尋、4 篩選按鈕、音檔卡片）；不得因換框架擅自重設計成另一款藍紫 App。
-- Echo 屬 Starry；H-Global 與 Starry 的 Cloudflare、會員 Auth、D1、Secrets、金流及管理權限必須隔離，不直接讀寫他方資料。
-- 中央 Starry ID／Auth、Battery、Billing 的業務真相由各自專責服務維護；Echo 只透過核准的版本化 API 接入。中央會員 D1 預定 id-starry，**不是 Echo 的 echo-starry D1**。
-- **Google AdMob Mediation 已選，Ads OFF；RevenueCat 為 Billing 方向，但真 SDK 未初始化、商店交易未驗證；禁止自行啟用廣告或假稱付費權益已生效。**
+## 1｜最新可驗證工程狀態
 
-參考權威 Google 文件（供追溯，日常任務狀態以 GitHub 記錄）：
-- https://docs.google.com/document/d/1wHBuIJCA1cMhLcI25MR_EYEdgmpXmzXx_D0UlEWHBAQ
-- https://docs.google.com/document/d/1dsMcGBT5PO43aQVMhZOBO5uyNTE8QHYSnBmC4y2rMSI
-- https://docs.google.com/document/d/1yEhoMtLL-WN8r-AOPl66tyQCuH3cOukh_CD3bOYgnCA/edit
-- https://docs.google.com/document/d/1o9luZIfaeMVBVT5XWD4fSiFHtG3F-viqNbsjmtoq_Cw/edit
+| 範圍 | 已驗證事實 | 依據與限制 |
+| --- | --- | --- |
+| Repo / main | `starry-phd/echo`，**快照 main `5d2b38931a27e0ea6fcc2a46d31e217dde063a0d`**。 | [main](https://github.com/starry-phd/echo/tree/main)。接手時重查 SHA。 |
+| 技術底座 | Expo SDK **58**、RN **0.88**、Expo Router、TypeScript strict、React Native Web；Worker TS、Hono、Zod、OpenAPI 3.1、TanStack Query、版本化 SDK／UI 套件。 | `package.json`、`starry.app.json`、`worker/index.ts`、`packages/`、`docs/adr/0002-starry-v13-framework.md`。 |
+| 原生 iOS / Android | `eas.json` profiles 已存在；**無真實 EAS Build／實機簽署／商店核准驗收記錄**。 | Expo Doctor／Web CI 不等於原生建置或商店上架。 |
+| Web Production | **已部署** Workers Static Assets + 同一 Worker 的公開 API，Web URL： https://echo-starry.starry-phd.workers.dev/ 。 | [部署及 HTTP Smoke 成功 Run 40750080517](https://github.com/starry-phd/echo/actions/runs/40750080517)；發布 commit `e599b92d231401748a2f403fe5211960fbcba2db`；Cloudflare deployment `a7659b36-5be3-4e86-a0e8-ce154357a164`，Worker version `ba207821-71e5-4169-a985-4611e874ab19`。**部署版 SHA 與 main SHA 不可混淆**。 |
+| 主分支 CI | 最近核實的 main CI 成功。 | [Run 40749742413](https://github.com/starry-phd/echo/actions/runs/40749742413)。最新提交須另查 Actions。 |
+| 媒體 R2 搬遷 | **複製完成，未公開**。來源 598 個物件含 2 個空目錄標記；目的 596 個有效物件，共 3,122,987,926 bytes。 | [搬遷 Run 40742932810](https://github.com/starry-phd/echo/actions/runs/40742932810)、`docs/09-r2-migration-acceptance.md`；來源未刪除。 |
+| Echo D1 媒體 | 112 個有 audio_key 的音檔已對應 R2；**112 copied／112 private／0 verified／0 public**。 | Issue #3 最新進度及 `docs/09-r2-migration-acceptance.md`；copied 不等於已授權播放。 |
+| 私有音檔抽樣 | M4A、MP3、舊 .aac 三個完整私人樣本的 ffprobe 音軌辨識與前 8 秒 ffmpeg 解碼通過。 | [Run 40749742453](https://github.com/starry-phd/echo/actions/runs/40749742453)；**不是**全部 112 筆實機播放或全量雜湊驗證。 |
+| 原版功能/UI | 已移植公開清單、搜尋、講師路由、單筆公開音檔 API、舊版玫瑰主題與手機優先 UI 基礎。 | `docs/06-legacy-feature-inventory.md`、`docs/07-legacy-ui-parity.md`；尚未逐頁截圖／真人設備做完整等價驗收。 |
+| Starry ID / Battery | **正式介面尚待專責服務契約與端到端驗證**；Echo 只預留 Client 插槽，不擁有會員主檔。 | 中央 ID D1 規劃 `id-starry`，**不表示已完成服務**；不可沿用舊 Auth、密碼或 session。 |
+| Billing / Ads | RevenueCat 已選為預定 Provider，SDK 未初始化、沒有真實 IAP 驗收；Google AdMob Mediation 已定案，但 **Ads OFF／無真 SDK／無廣告請求**。 | `starry.app.json`、`packages/billing-core`、`packages/ads-core`；不可描述為已營運或已收款。 |
 
-## 2. 此次交接時的 GitHub 事實快照
+### 進行中的重要 PR（接手務必先查）
 
-- **main 最新已查證 SHA（打包前）：** 5d2b38931a27e0ea6fcc2a46d31e217dde063a0d。
-- **main CI 已成功：** https://github.com/starry-phd/echo/actions/runs/40749742453
-- **最新安全修正 PR #11：** https://github.com/starry-phd/echo/pull/11
-- PR #11 分支：fix/dev-i-release-safety-20261029。打包前 PR 仍是 **Draft／未合併**，起始變更 SHA 57fa07cf1845e775e7f83401f9127a3976248f79。PR 新提交會改變其 SHA，請一律重查。
-- PR #11 首次 CI Run：https://github.com/starry-phd/echo/actions/runs/40752050224 （打包檢查時仍 in_progress；後續若有取消／新 Run，應核對**最新 SHA 的 Run**）。
-- 以前已合併的 DEV-I 初版 PR：https://github.com/starry-phd/echo/pull/1；後續多輪 PR 已更新至 Expo 58／v1.3，故不能以 PR #1 的老狀態當作目前程式。
-- 2026-10-28 19:07 UTC 前後其他 AI 也有提交，**禁止無視並行變更或強制覆蓋 main**。
+- **[PR #11 — 正式部署／私人 R2 安全門檻](https://github.com/starry-phd/echo/pull/11)**：截至快照為 **OPEN / DRAFT、未合併**，Head SHA `57fa07cf1845e775e7f83401f9127a3976248f79`；[PR CI Run 40752050224](https://github.com/starry-phd/echo/actions/runs/40752050224) **Success**。它預備移除 `deploy-worker.yml` 在 release 分支 push 時可能自動部署的觸發，改為人工 dispatch、main HEAD / SHA 驗證與 `release:guard`。**CI 成功不等於已合併或環境防護已生效。**
+- `starry.app.json` 目前 `lifecycle.productionAuthorized=false`、`storeSubmissionAuthorized=false`。即使正式 Web 曾部署成功，**這不構成下一次 Production／商店操作的自動授權**；每次須查本次核准及 Github Environment 保護。
+- 本 Repo `.github/workflows/deploy-worker.yml` 在主分支快照仍有 `push: release/echo-v13-owner-approved` 觸發，**優先完成 #11 安全審閱**。在合併及檢查保護措施前不得再用舊 release 分支自動發布。
 
-## 3. 已建置與已驗證
+## 2｜接續任務（優先序）
 
-| 項目 | 狀態與來源 |
-|---|---|
-| Expo 58 / RN 0.88 + TypeScript / Expo Router | 已在 main，package.json／app.json，CI 成功；**不等於 iOS/Android Build 成功** |
-| Web Expo 靜態輸出 + Worker bundle | 已經 CI build:web、Wrangler dry-run 成功；**不等於 Workers 正式站已部署** |
-| TypeScript Worker / Hono / Zod、D1 / R2 綁定 | 已在 main，worker/index.ts、wrangler.toml |
-| OpenAPI v1 / TypeScript SDK | openapi/echo-public.v1.json、packages/echo-api-sdk、scripts/check-openapi.mjs；中央 Auth 仍待對接 |
-| Expo Doctor / Lint / Tests / CI | .github/workflows/ci.yml；生成型別使用 tools/openapi-codegen 的 TS 5.9 隔離工具，root 遵循 Expo 的 TS 6 |
-| 舊版 UI 基礎還原 | packages/ui、src/ui/echo、app/index.tsx、src/ui/responsive.ts；無實機畫面比對，不能稱像素級完成 |
-| R2 跨帳戶私有搬遷 | 搬遷 Workflow：https://github.com/starry-phd/echo/actions/runs/40742932810；目的 596 個有內容檔案約 3,122,987,926 bytes，來源 598 個含兩個空佔位；已對齊 key／size／ETag 索引，**非全量 SHA256／播放驗證** |
-| 新 D1 音檔索引 | 112 筆、音檔鍵均找到目標 R2，**全部 copied + private；verified=0、public=0**；資料不等於授權播放 |
-| 廣告／付費安全鎖 | starry.app.json：Ads OFF、尚無真 Ads/IAP SDK；正式發版／商店授權均為 false |
+- [ ] **P0：審閱及驗收 PR #11 安全門檻**：核對 CI、觸發條件、production Environment 審批、手動 SHA Guard；需符合業主核准流程才合併。合併後確認 main 及實際 workflow 設定，不自動觸發 Production。
+- [ ] **P1：媒體權利逐筆確認**：舊 guestVisible=33 **僅是訪客清單標記，不等於播放授權**；保守挑出 **31 筆可能免費候選**，仍須逐筆確認內容授權、來源和實際播放權利。未核准一律保持 private/copied；不可一次把 112 筆轉 public/verified。
+- [ ] **P1：安全媒體驗收**：至少針對 M4A／MP3／AAC 及已核准候選做更完整位元組校驗／實際 iOS／Android 播放；保持 R2 公開存取 OFF；不得讓未授權音檔經列表、分類、直鏈或 Range 繞過。
+- [ ] **P1：Starry 中央會員正式 API 串接**：先取得專責服務的 OpenAPI／Auth scopes／session revoke／停權契約，再做身份／收藏／進度／VIP；會員個資主檔不得進 Echo D1。Battery 僅接正式核准介面。
+- [ ] **P2：EAS iOS／Android**：確認 Expo project、帳號、憑證／Bundle ID、development build、實機與商店 Sandbox；附 build IDs 和執行證據，不自動送審。
+- [ ] **P2：視覺與功能驗收**：手機 320–430px 為優先，平板／桌機其次；比對原版品牌 UI 截圖、搜尋／單筆音訊／講師導覽，補缺漏（會員、貼紙、收藏、播放清單與內容）時逐項核准。
+- [ ] **P2：營利預留整合**：RevenueCat / StoreKit / Play Billing 後端正式權益驗證、分 App SKU 與 Sandbox；AdMob 保持 OFF，只有業主另行核准才做 SDK/廣告投放。
+- [ ] **P2：可靠性**：建立 staging/production 真正隔離與回滾、部署版本對照、健康監控／P95／錯誤率／告警、R2/D1 復原演練及必要成本記錄。未有測試不能填「完成」。
 
-## 4. PR #11：發布安全修正（當前首要工作）
+實作過程始終更新 [Issue #3](https://github.com/starry-phd/echo/issues/3) 的**最新置頂狀態**或本文件；不要累積互相矛盾的「最新」摘要。各功能需具 owner／驗收／PR／CI／部署版本與下一步。
 
-本 PR 有實質修改而**尚未經人工核准合併**：
+## 3｜不得越界的固定限制
 
-- .github/workflows/deploy-worker.yml 原本有 release/echo-v13-owner-approved push 觸發 **正式部署的風險**；PR 改成 **workflow_dispatch 唯一入口**。
-- 正式部署必須選 main、輸入完整核准 commit SHA 與指定確認文字；Workflow 驗證 event/ref/HEAD SHA。
-- starry.app.json 仍為 lifecycle.productionAuthorized=false，部署工作流會拒絕真正上線。**切勿因測試需要將之隨意改成 true。**
-- .github/workflows/probe-r2.yml 改為純手動，避免 push 導致再次讀取私人音檔。
-- CI 新增 release:guard（scripts/check-release-safety.mjs），驗證上述靜態安全門檻與 Ads OFF。
-- docs/04-deployment.md 和 R2 驗收文件修正過期的 pending 說法，避免和 copied/private 真相衝突。
-- **下一位 AI 應先驗證 PR #11 最後 commit 的 CI、核對差異與 GitHub Environment 保護；未獲人工審閱核准，不要自行合併。**
-- **在 PR #11 合併前，main 仍保留舊版 release branch push 部署觸發。** 不可推送該發版分支，這是風險警告而非建議執行。
+- **H-Global 與 Starry 完全分離**：正式 Cloudflare／D1／R2／Auth／Session／Secrets／商家／商店帳號不可混用；跨系資訊只能經雙方驗證、本人明確同意及受保護 API。
+- 舊來源：`yukidu/Echo-Starry`、Cloudflare 舊帳戶及 R2/D1 **保留**。不刪舊資料、不改 DNS、不覆蓋正式服務。
+- Echo D1 只持有 Echo 媒體／業務參照；不直接讀取或複製 `id-starry` 中央會員主檔。
+- 只可讀取經驗證 **public 且 verified** 的公開影音；私人／會員／貼紙／獎銜內容未獲核准時一律 fail closed。
+- API Token、S3 Key、Client Secret 只可放在獲授權的 Secrets 機制，禁止貼聊天、Issue、Commit、PR、日誌。
+- 不默默增加收費／開通廣告、不新增商店商品、不提交商店、不在未核准時部署 Production。
+- 不為了工程便利將原版玫瑰色 UI 重設成新產品；新技術不等於要改品牌設計。
 
-## 5. 仍待完成：依實際阻塞排序
+## 4｜從 GitHub 取得最新真相的順序
 
-1. **P0 合併前安全審核：** 驗證 PR #11；確認 CI pass、Production GitHub Environment 的審核規則／最低權限 Secrets；必要時修正 PR，不要直接手動觸發部署。
-2. **P0 私有影音的最小權限：** 使用手動的 R2 私有格式／解碼抽樣及裝置測試，對舊素材逐項檢查可公開權利。31 筆「免費瀏覽候選」也**不能**視為 31 筆已核准免費播放。請看 docs/09-r2-migration-acceptance.md。
-3. **P1 staging／preview 隔離：** 用 Starry 專屬的 staging D1/R2/Secrets 和非正式 URL，確認不可指向 production DB；新增實際 Preview 與 HTTP smoke tests。先定安全方案，不憑空聲稱資源已存在。
-4. **P1 iOS／Android：** 使用 Expo EAS development builds，取得真實 Build IDs、簽章與實機 UI／音訊測試結果；EAS 設定存在不代表 build 成功。
-5. **P1 舊 UI 對齊：** 以舊 repo 原版截圖對照手機 390×844、桌機 1440×900，依 docs/07-legacy-ui-parity.md 逐頁還原，不自製肖像、評分或可用內容。
-6. **P1 中央會員：** 等獨立 Starry ID 的正式 OpenAPI、授權及 scopes；Fail Closed，禁止沿用舊 login/token、不得把私人音訊改公開；Battery／Billing 一樣不可自行造假端點。
-7. **P2 功能補齊：** 依 docs/06-legacy-feature-inventory.md 規劃講師專頁、搜尋與詳情逐頁比對、收藏／進度、上傳、AI 等需身份／商業契約的功能，區分已核准與候選。
-8. **P2 P07／P09：** 完成真實健康、P95／錯誤率、報警與回滾演練，以及 commit／CI／EAS／Cloudflare／商店的發布證據；不得把預估數值當實際。
+1. 讀這份 `docs/AI_HANDOFF.md`，以及根目錄 `starry.app.json`、`package.json`、`wrangler.toml`。
+2. 查 [main 最新 commit](https://github.com/starry-phd/echo/commits/main)、[OPEN PR](https://github.com/starry-phd/echo/pulls?q=is%3Apr+is%3Aopen)（先看 #11）、[Actions](https://github.com/starry-phd/echo/actions) 與 [Issue #3](https://github.com/starry-phd/echo/issues/3)。
+3. 詳讀 `docs/09-r2-migration-acceptance.md`、`docs/07-legacy-ui-parity.md`、`docs/adr/0002-starry-v13-framework.md`、`.github/workflows/`。
+4. **注意舊文件存在歷史段落**：`docs/03-r2-migration.md`、`docs/04-deployment.md`、`docs/06-legacy-feature-inventory.md`、`docs/05-dev-i-compliance.md` 中可能有「R2 尚未搬遷／Web 尚未部署／Expo 57」等早期敘述。**按日期、證據與新決議核對，不得把過時段落覆蓋新事實**。
+5. 若要更動 Starry ID、Battery、Billing 或 H-Global，先去該專責 Repo 讀其正式契約與核准範圍；**本 Echo Repo 的交接不授權操作其他模組的正式資料**。
 
-## 6. 嚴格禁止與工作規則
+## 5｜新 ChatGPT 對話直接使用的接手指令
 
-- 不得改動或刪除舊版 Echo 原始資料與網域，不得改兩品牌中央資料庫。
-- 不得擅自公開任何舊音檔、對外建立分享 URL、解除會員／VIP／貼紙權限。
-- 不得擅自啟用 AdMob、RevenueCat 收款、真實 SDK、付費方案或商店送審。
-- 不得以 CI PASS 說成正式部署；不得因「繼續」二字推定無條件的正式部署核准。
-- 依第一波 GitHub AI 合規與防封鎖 SOP：低頻、去重、單一工作 owner／Branch、不要快速連續建 PR、不要使用其他帳號規避任何限制。
-- 遇文件矛盾，先引用主規範、實際 source 與驗證證據；若牽涉用戶未裁決的業務權限，列「待業主決議」，不要悄悄改條件。
-- 編輯本文件時，把「已完成」「未完成」「CI」「部署」「阻塞」「下一步」及對應 PR／commit／Run 分清楚，不留下矛盾的老狀態。
+> 請接手「繁星回聲」新架構移植工作。GitHub `https://github.com/starry-phd/echo` 是唯一持久工程交接來源。**先完整讀取 `docs/AI_HANDOFF.md`、`starry.app.json`、Issue #3、所有未合併 PR（尤其 #11）、latest main SHA 和 CI／部署證據**，再依 DEV-I 與 Starry v1.3 核准規範接續開發。不得引用舊聊天作為實際部署證據。請優先處理安全門檻、R2 私有權限與 EAS／中央會員依賴。採 Branch → PR → CI → 審閱／核准 → 必要時部署，每輪把決策、進度、已完成、未完成、風險、commit／Actions 證據和下一步更新回 GitHub。Starry/H-Global 隔離、舊資料保護、Ads OFF、不擅自啟動 Production 或商店上架。
 
-## 7. GitHub 交接更新方式
+## 6｜本交接包的更新規約
 
-- **唯一長期交接入口：docs/AI_HANDOFF.md**；工程真相仍以 Repo 檔案、PR、GitHub Actions、Cloudflare／EAS 可核實證據為準。
-- 新任 AI 在每次開工前：讀取本檔 + 最新 main/PR/CI；只在授權範圍新增功能 Branch/PR，附測試結果。
-- 每次任務完成後：更新本檔的事實快照、目前未結 PR、通過的 Commit/Run、確定的阻塞和下一步，與程式改動同一 PR 提交；合併後才視為 main 已更新。
-- 同一事項不可同時由多個 AI 改同一文件；有並行改動先拉取最新 SHA 再整合。
+每次新對話完成一個**具體實質里程碑**，在同一 GitHub Repo 透過 PR 更新本文件：日期／main SHA／實際雲端版本／證據連結／是否部署／已完成／未完成／新阻礙／下一位 AI 優先事項；不要為每一句狀態創建新 Issue 或 PR。當全局狀態與特定 Issue 不一致時先核查證據，必要時修正，而非自行推測。
 
-### 新對話最短接手指令
-
-「請接手繁星回聲 Echo Starry，GitHub 唯一任務交接來源是 https://github.com/starry-phd/echo/blob/fix/dev-i-release-safety-20261029/docs/AI_HANDOFF.md（PR #11 合併後改讀 main）。先讀完整文件、核對 GitHub main 最新 SHA、open PR、CI、實際部署，再依 P0/P1 未完成事項接續，不必要求我重新講歷史。遵守 DEV-I／v1.3／GitHub SOP；正式環境、音檔公開、會員與商店操作一律另需當次核准。只報告真實 GitHub 進度與下一步。」
+**結束新對話只須留下 GitHub 連結，不再另做長篇聊天交接包。**
