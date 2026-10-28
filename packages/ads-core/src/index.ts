@@ -12,7 +12,8 @@ export type AdEntitlementState =
   | {kind: 'verified'; permanentRemoveAds: boolean; activeSubscriptionRemovesAds: boolean}
   | {kind: 'unknown'};
 
-export function canShowAds(_entitlements: AdEntitlementState): boolean {
+export function canShowAds(entitlements: AdEntitlementState): boolean {
+  void entitlements;
   // Explicitly fail closed while this app is not permitted to serve advertisements.
   return false;
 }
