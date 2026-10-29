@@ -10,6 +10,11 @@ type TrackRow={
  id:string;title:string;speaker:string;description:string|null;
  duration_seconds:number;category_labels_json:string;
 };
+type PreviewRow=TrackRow&{
+ cover_key?:string|null;speaker_rank?:string|null;
+ rating?:number|null;rating_count?:number|null;
+ comments_count?:number|null;likes?:number|null;upload_date?:string|null;
+};
 interface Statement{
  bind(...values:(string|number)[]):Statement;
  all<T>():Promise<{results?:T[]}>;
@@ -121,7 +126,7 @@ const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefin
  const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker')});
  if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
  const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
- let sql="SELECT t.id,t.title,t.speaker,NULL AS description,t.duration_seconds,t.category_labels_json FROM echo_tracks t INNER JOIN echo_guest_previews p ON p.track_id=t.id WHERE t.visibility='private' AND t.migration_status='copied'";
+ let sql="SELECT t.id,t.title,t.speaker,NULL AS description,t.duration_seconds,t.category_labels_json,m.cover_key,m.speaker_rank,m.rating,m.rating_count,m.comments_count,m.likes,m.upload_date FROM echo_tracks t INNER JOIN echo_guest_previews p ON p.track_id=t.id LEFT JOIN echo_guest_card_media m ON m.track_id=t.id WHERE t.visibility='private' AND t.migration_status='copied'";
  const args:string[]=[];
  if(query){
   sql+=" AND (instr(lower(t.title),lower(?))>0 OR instr(lower(t.speaker),lower(?))>0)";
@@ -134,10 +139,42 @@ const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefin
  if(checked.data.speaker?.trim()){sql+=" AND t.speaker=?";args.push(checked.data.speaker.trim());}
  sql+=" ORDER BY t.updated_at DESC LIMIT 100";
  const s=c.env.DB.prepare(sql);
- const rows=await(args.length?s.bind(...args):s).all<TrackRow>();
- return json({tracks:(rows.results||[]).map(row=>({...publicTrack(row),description:null,playable:false}))},200,c.req.raw);
+ const rows=await(args.length?s.bind(...args):s).all<PreviewRow>();
+ return json({tracks:(rows.results||[]).map(row=>({
+  ...publicTrack(row),description:null,playable:false,
+  coverUrl:row.cover_key?'/api/v1/previews/'+encodeURIComponent(row.id)+'/cover':null,
+  speakerRank:row.speaker_rank||null,
+  rating:Math.max(0,Math.min(5,Number(row.rating)||0)),
+  ratingCount:Math.max(0,Number(row.rating_count)||0),
+  commentsCount:Math.max(0,Number(row.comments_count)||0),
+  likes:Math.max(0,Number(row.likes)||0),
+  uploadDate:row.upload_date||null,
+  legacySnapshot:true
+ }))},200,c.req.raw);
 };
 app.get('/api/v1/previews',previewCatalog);
+
+/** Covers from the legacy guest list only; never expose arbitrary R2 keys. */
+const previewCover=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
+ const id=c.req.param('id');
+ if(!id||id.length>200)return json({code:'INVALID_TRACK_ID'},400,c.req.raw);
+ const row=await c.env.DB.prepare(
+  "SELECT m.cover_key FROM echo_tracks t INNER JOIN echo_guest_previews p ON p.track_id=t.id INNER JOIN echo_guest_card_media m ON m.track_id=t.id WHERE t.id=? AND t.visibility='private' AND t.migration_status='copied'"
+ ).bind(id).first<{cover_key:string|null}>();
+ const key=row?.cover_key||'';
+ if(!/^cover\/[^/\\]{1,180}\.(?:jpe?g|png|webp)$/i.test(key))
+  return json({code:'NOT_FOUND'},404,c.req.raw);
+ const item=await c.env.MEDIA.get(key);
+ if(!item||item.size<=0||item.size>2_000_000)return json({code:'NOT_FOUND'},404,c.req.raw);
+ const mime=key.toLowerCase().endsWith('.png')?'image/png':
+  key.toLowerCase().endsWith('.webp')?'image/webp':'image/jpeg';
+ return new Response(item.body,{status:200,headers:{
+  'content-type':mime,'content-length':String(item.size),
+  'cache-control':'public,max-age=3600','x-content-type-options':'nosniff',
+  'content-security-policy':"default-src 'none'"
+ }});
+};
+app.get('/api/v1/previews/:id/cover',previewCover);
 
 
 

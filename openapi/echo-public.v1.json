@@ -342,6 +342,54 @@
           }
         }
       }
+    },
+    "/api/v1/previews/{id}/cover": {
+      "get": {
+        "operationId": "getEchoGuestPreviewCover",
+        "summary": "Approved guest metadata cover image from private R2; no recording access",
+        "security": [],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Approved image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not approved for preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -420,6 +468,46 @@
           },
           "playable": {
             "type": "boolean"
+          },
+          "coverUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Guest-approved cover route, not an audio URL"
+          },
+          "speakerRank": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "ratingCount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "commentsCount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "likes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "uploadDate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "legacySnapshot": {
+            "type": "boolean",
+            "description": "Historical legacy counters, not current interactive state"
           }
         }
       },
