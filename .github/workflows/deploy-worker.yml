@@ -113,6 +113,19 @@ jobs:
           node -e "const r=require('/tmp/echo-speakers.json'); if(!Array.isArray(r.speakers)) process.exit(1)"
           status="$(curl -sS -o /tmp/echo-hidden.json -w '%{http_code}' "$ECHO_URL/api/v1/tracks/not-verified-and-public")"
           test "$status" = "404"
+      - name: "HTTP smoke test - 28 guest portraits are nonplayable"
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "$ECHO_URL/api/v1/previews" > /tmp/echo-previews.json
+          node -e "const t=require('/tmp/echo-previews.json').tracks;if(!Array.isArray(t)||t.length!==28||t.some(x=>x.playable!==false||!x.coverUrl?.startsWith('/api/v1/previews/')||x.description!==null))process.exit(1)"
+          cover="$(node -p "require('/tmp/echo-previews.json').tracks[0].coverUrl")"
+          id="$(node -p "require('/tmp/echo-previews.json').tracks[0].id")"
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 -D /tmp/echo-cover-headers -o /tmp/echo-cover "$ECHO_URL$cover"
+          grep -qi '^content-type: image/' /tmp/echo-cover-headers
+          test "$(wc -c < /tmp/echo-cover)" -gt 1000
+          stream_status="$(curl -sS -o /dev/null -w '%{http_code}' "$ECHO_URL/api/v1/tracks/$id/stream")"
+          test "$stream_status" = "404"
       - name: Clarify deploy scope in logs
         run: |
           echo "Web shell and public read-only APIs only; media migration, Starry Auth and native EAS remain separate gates."
