@@ -15,6 +15,7 @@ import {sortEchoCards} from '../src/ui/echo/cardSorting';
 import {baseSpeakerRank,matchesCardFilters} from '../src/ui/echo/cardFilters';
 import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
+import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -75,6 +76,11 @@ export default function CatalogScreen(){
    ...(categoriesQuery.data??[]),
    ...(previewsQuery.data??[]).flatMap(t=>t.categories)
  ])],[categoriesQuery.data,previewsQuery.data]);
+ const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError,count:tracksQuery.data?.length??0};
+ const previewSource={pending:previewsQuery.isPending,failed:previewsQuery.isError,count:previewsQuery.data?.length??0};
+ const catalogDisplay=getCatalogDisplayState(publicSource,previewSource,visibleTracks.length);
+ const catalogPartialFailure=hasPartialCatalogFailure(publicSource,previewSource);
+ const retryCatalog=()=>{void tracksQuery.refetch();void previewsQuery.refetch();};
  const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank));
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
@@ -153,17 +159,26 @@ export default function CatalogScreen(){
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
          onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
-     {(tracksQuery.isPending||previewsQuery.isPending)?<View style={styles.loading}>
+     {catalogPartialFailure&&catalogDisplay!=='failed'&&<View style={[styles.notice,{
+       borderColor:theme.palette.primary,borderWidth:1,backgroundColor:theme.card}]}>
+       <Text style={[styles.noticeText,{color:theme.ink}]}>
+         部分音檔資訊暫時無法更新，畫面只顯示目前成功讀取的資料。
+       </Text>
+       <Pressable accessibilityRole="button" accessibilityLabel="重新讀取全部音檔資訊" onPress={retryCatalog}>
+         <Text style={{color:theme.palette.primary,fontWeight:'900'}}>重試</Text>
+       </Pressable>
+     </View>}
+     {catalogDisplay==='loading'?<View style={styles.loading}>
        <ActivityIndicator color={theme.palette.primary} size="large"/>
        <Text style={[styles.loadingText,{color:theme.muted}]}>讀取音檔清單中…</Text>
-     </View>:(tracksQuery.isError&&previewsQuery.isError)?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:catalogDisplay==='failed'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
-         暫時無法取得公開音檔清單，請稍後重試。
+         音檔資訊暫時無法完整讀取，並非沒有音檔。請重試。
        </Text>
-       <Pressable onPress={()=>{void tracksQuery.refetch();void previewsQuery.refetch();}} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
+       <Pressable accessibilityRole="button" onPress={retryCatalog} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
-     </View>:visibleTracks.length===0?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:catalogDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          {emptyCopy.title}
        </Text>
