@@ -41,14 +41,44 @@ function envWithDb(overrides = {}) {
   };
 }
 
+test('guest image endpoint reads R2 only for allowlisted metadata',async()=>{
+ const reads=[];
+ const {env,sqlSeen,bindings}=envWithDb({firstRow:{cover_key:'cover/guest.jpg'},MEDIA:{
+  async get(key){reads.push(key);return {size:4,body:new Uint8Array([0xff,0xd8,0xff,0xd9]),httpMetadata:{contentType:'image/jpeg'}};}
+ }});
+ const r=await worker.fetch(new Request(origin+'/api/v1/previews/guest-1/cover'),env);
+ assert.equal(r.status,200);
+ assert.equal(r.headers.get('content-type'),'image/jpeg');
+ assert.equal(r.headers.get('x-content-type-options'),'nosniff');
+ assert.deepEqual(reads,['cover/guest.jpg']);
+ assert.deepEqual(bindings[0],['guest-1']);
+ assert.match(sqlSeen[0],/INNER JOIN echo_guest_previews/);
+ assert.match(sqlSeen[0],/INNER JOIN echo_guest_card_media/);
+ assert.match(sqlSeen[0],/visibility='private'/);
+ assert.match(sqlSeen[0],/migration_status='copied'/);
+});
+test('guest image endpoint denies unlisted, untrusted paths and avoids R2',async()=>{
+ for(const cover_key of [null,'private/audio.mp3','cover/../../secret.jpg','cover/not-an-image.svg']){
+  let reads=0;
+  const {env}=envWithDb({firstRow:cover_key?{cover_key}:null,MEDIA:{async get(){reads++;return null;}}});
+  const r=await worker.fetch(new Request(origin+'/api/v1/previews/blocked/cover'),env);
+  assert.equal(r.status,404);
+  assert.equal(reads,0);
+ }
+});
 test('metadata-only guest previews require explicit whitelist and cannot stream',async()=>{
  const row={id:'guest-1',title:'講座資訊',speaker:'演講者',description:'MUST_NOT_LEAK',
-   audio_key:'private/sensitive.mp3',duration_seconds:160,category_labels_json:'["學習"]'};
+   audio_key:'private/sensitive.mp3',duration_seconds:160,category_labels_json:'["學習"]',
+   cover_key:'cover/guest.jpg',speaker_rank:'鑽石',rating:4.5,rating_count:5,
+   comments_count:2,likes:8,upload_date:'2026-10-10'};
  const {env,sqlSeen}=envWithDb({allRows:[row]});
  const r=await worker.fetch(new Request(origin+'/api/v1/previews'),env);
  assert.equal(r.status,200);
  assert.deepEqual((await r.json()).tracks,[{id:'guest-1',title:'講座資訊',speaker:'演講者',
-   description:null,durationSeconds:160,categories:['學習'],playable:false}]);
+   description:null,durationSeconds:160,categories:['學習'],playable:false,
+   coverUrl:'/api/v1/previews/guest-1/cover',speakerRank:'鑽石',
+   rating:4.5,ratingCount:5,commentsCount:2,likes:8,
+   uploadDate:'2026-10-10',legacySnapshot:true}]);
  assert.match(sqlSeen[0],/INNER JOIN echo_guest_previews/);
  assert.match(sqlSeen[0],/p\.track_id=t\.id/);
  assert.match(sqlSeen[0],/visibility='private'/);

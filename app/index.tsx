@@ -10,6 +10,7 @@ import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {viewportLayout} from '../src/ui/responsive';
+import {readDislikedTrackIds,saveDislikedTrackIds} from '../src/ui/echo/dislikedTracks';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -25,6 +26,19 @@ export default function CatalogScreen(){
  const [category,setCategory]=useState<string|null>(null);
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
+ const [dislikedIds,setDislikedIds]=useState<string[]>([]);
+ useEffect(()=>setDislikedIds(readDislikedTrackIds()),[]);
+ const dislikeTrack=(id:string)=>{
+  setDislikedIds(ids=>{
+   const next=ids.includes(id)?ids:[...ids,id];
+   saveDislikedTrackIds(next);return next;
+  });
+  setNotice('已在此裝置隱藏這張音檔卡；可點「還原隱藏」恢復。');
+ };
+ const restoreDisliked=()=>{
+  saveDislikedTrackIds([]);setDislikedIds([]);
+  setNotice('已還原此裝置隱藏的音檔卡。');
+ };
  useEffect(()=>{
    const timer=setTimeout(()=>setDebouncedQuery(query),250);
    return ()=>clearTimeout(timer);
@@ -54,6 +68,8 @@ export default function CatalogScreen(){
    const items=[...(tracksQuery.data??[]),...(previewsQuery.data??[])];
    return order==='oldest'?items.reverse():items;
  },[tracksQuery.data,previewsQuery.data,order]);
+ const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)),
+  [tracks,dislikedIds]);
  const categories=useMemo(()=>[...new Set([
    ...(categoriesQuery.data??[]),
    ...(previewsQuery.data??[]).flatMap(t=>t.categories)
@@ -62,7 +78,7 @@ export default function CatalogScreen(){
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const draw=()=>{
-   const playable=tracks.filter(t=>t.playable);
+   const playable=visibleTracks.filter(t=>t.playable);
    if(!playable.length){
      setNotice('資訊卡已恢復，但目前沒有完成播放授權的音檔。');
      return;
@@ -106,7 +122,7 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{tracks.length}</Text> 張音檔資訊卡；可播放 {tracks.filter(t=>t.playable).length} 部
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{visibleTracks.length}</Text> 張音檔資訊卡；可播放 {tracks.filter(t=>t.playable).length} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
@@ -116,6 +132,13 @@ export default function CatalogScreen(){
          資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
        </Text>
      </View>
+     {dislikedIds.length>0&&<Pressable
+       accessibilityRole="button" accessibilityLabel="還原本裝置隱藏的音檔卡"
+       onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
+        <Text style={[styles.restoreText,{color:theme.palette.primary}]}>
+         還原隱藏（本裝置 {dislikedIds.length} 張）
+        </Text>
+       </Pressable>}
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
        backgroundColor:theme.card}]}>
        <Text style={[styles.noticeText,{color:theme.ink}]}>{notice}</Text>
@@ -132,7 +155,7 @@ export default function CatalogScreen(){
        <Pressable onPress={()=>void tracksQuery.refetch()} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
-     </View>:tracks.length===0?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:visibleTracks.length===0?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          {emptyCopy.title}
        </Text>
@@ -140,9 +163,9 @@ export default function CatalogScreen(){
          {emptyCopy.detail}
        </Text>
      </View>:<View style={styles.cardGrid}>
-       {tracks.map(track=><View key={track.id} style={[styles.cardCell,
+       {visibleTracks.map(track=><View key={track.id} style={[styles.cardCell,
          {width:twoColumns?'49%':'100%'}]}>
-         <LegacyTrackCard track={track} onNotice={setNotice}/>
+         <LegacyTrackCard track={track} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
      <View style={styles.footer}>
@@ -187,5 +210,7 @@ const styles=StyleSheet.create({
  loadingText:{fontSize:13},
  retry:{paddingVertical:10,paddingHorizontal:19,borderRadius:12,marginTop:14},
  retryText:{fontSize:13,color:'#fff',fontWeight:'900'},
+ restore:{marginTop:6,padding:10,borderWidth:1,borderRadius:12,alignItems:'center'},
+ restoreText:{fontSize:12,fontWeight:'700'},
  footer:{paddingTop:18,alignItems:'center'},footerText:{fontSize:11}
 });
