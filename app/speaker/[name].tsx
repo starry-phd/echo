@@ -1,3 +1,4 @@
+import {useEffect,useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
@@ -5,8 +6,16 @@ import {getPublicTracks} from '../../src/api/client';
 import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
+import {readDislikedTrackIds,saveDislikedTrackIds} from '../../src/ui/echo/dislikedTracks';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
+ const [notice,setNotice]=useState('');
+ const [dislikedIds,setDislikedIds]=useState<string[]>([]);
+ useEffect(()=>setDislikedIds(readDislikedTrackIds()),[]);
+ const hide=(id:string)=>{
+  setDislikedIds(prev=>{const next=[...new Set([...prev,id])];saveDislikedTrackIds(next);return next;});
+  setNotice('已在此裝置隱藏卡片。');
+ };
  const {name}=useLocalSearchParams<{name:string}>();
  const speaker=typeof name==='string'&&name.length>0&&name.length<=80?name:null;
  const q=useQuery({
@@ -28,11 +37,15 @@ export default function PublicSpeakerTracks(){
     </View>
    </View>
    <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
+   {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary}]}>{notice}</Text>}
+   {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
+    saveDislikedTrackIds([]);setDislikedIds([]);setNotice('已還原此裝置隱藏的卡片。');
+   }}><Text style={[styles.backText,{color:t.palette.primary}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
    {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
     q.isPending?<ActivityIndicator color={t.palette.primary}/>:
     q.isError?<Text style={[styles.message,{color:t.muted}]}>讀取暫時失敗，請稍後再試。</Text>:
-    q.data?.length? q.data.map(track=><LegacyTrackCard key={track.id} track={track}
-      onNotice={()=>{router.push({pathname:'/track/[id]',params:{id:track.id}});}}/>):
+    q.data?.some(track=>!dislikedIds.includes(track.id))? q.data.filter(track=>!dislikedIds.includes(track.id)).map(track=><LegacyTrackCard key={track.id} track={track}
+      onNotice={setNotice} onDislike={hide}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted}]}>目前沒有可以公開的音檔。</Text>
     </View>}
