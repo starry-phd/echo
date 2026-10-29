@@ -26,6 +26,8 @@ jobs:
       - run: npm run api:check
       - run: npm run monetization:check
       - run: npm run release:guard
+      - name: Quarantined legacy D1 staging preflight (offline only)
+        run: npm run staging:check
       - run: npm run ui:check
       - run: npm test
       - run: npm run build:web

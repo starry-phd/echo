@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "observedDate": "2026-10-30",
+  "evidence": "GitHub Issue #3 manual D1 row-count readback; snapshot, not live database verification",
+  "source": {
+    "database": "echoes_db",
+    "applicationTableCount": 50,
+    "applicationRowCount": 2534
+  },
+  "destination": {
+    "database": "echo-starry",
+    "existingOfficialTablesMustRemainUnmodified": true
+  },
+  "forbiddenSourceTables": [
+    "auth_sessions",
+    "external_app_auth_codes",
+    "vip_share_access",
+    "users"
+  ],
+  "staging": [
+    {
+      "table": "legacy_categories",
+      "sourceRows": 8,
+      "targetRows": 8
+    },
+    {
+      "table": "legacy_ai_speaker_generation_daily",
+      "sourceRows": null,
+      "targetRows": 1
+    },
+    {
+      "table": "legacy_ai_speaker_profiles",
+      "sourceRows": null,
+      "targetRows": 51
+    },
+    {
+      "table": "legacy_ai_speaker_summary_settings",
+      "sourceRows": null,
+      "targetRows": 4
+    },
+    {
+      "table": "legacy_ai_story_facts",
+      "sourceRows": 264,
+      "targetRows": 70
+    },
+    {
+      "table": "legacy_ai_story_manual_overrides",
+      "sourceRows": null,
+      "targetRows": 0
+    },
+    {
+      "table": "legacy_ai_story_owner_edits",
+      "sourceRows": null,
+      "targetRows": 0
+    },
+    {
+      "table": "legacy_ai_story_pilots",
+      "sourceRows": null,
+      "targetRows": 5
+    },
+    {
+      "table": "legacy_app_migrations",
+      "sourceRows": null,
+      "targetRows": 15
+    },
+    {
+      "table": "legacy_tracks",
+      "sourceRows": 112,
+      "targetRows": 28
+    }
+  ]
+}
