@@ -25,6 +25,14 @@ export async function getPublicTracks(signal?:AbortSignal,filters:CatalogFilters
  if(!origin)throw new Error('新 API 網址尚未設定，音檔清單暫不開放。');
  return createEchoPublicClient(origin).listTracks(signal,filters);
 }
+/** Metadata-only cards whose legacy visitor listing was permitted.
+ * Does not change the verified-public media catalog or grant audio playback.
+ */
+export async function getGuestPreviewTracks(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
+ const origin=getApiBaseUrl();
+ if(!origin)throw new Error('Echo API not configured');
+ return createEchoPublicClient(origin).listPreviews(signal,filters);
+}
 export async function getCategories(signal?:AbortSignal):Promise<string[]>{
  const origin=getApiBaseUrl();
  return origin?createEchoPublicClient(origin).listCategories(signal):[];

@@ -41,6 +41,38 @@ function envWithDb(overrides = {}) {
   };
 }
 
+test('metadata-only guest previews require explicit whitelist and cannot stream',async()=>{
+ const row={id:'guest-1',title:'講座資訊',speaker:'演講者',description:'MUST_NOT_LEAK',
+   audio_key:'private/sensitive.mp3',duration_seconds:160,category_labels_json:'["學習"]'};
+ const {env,sqlSeen}=envWithDb({allRows:[row]});
+ const r=await worker.fetch(new Request(origin+'/api/v1/previews'),env);
+ assert.equal(r.status,200);
+ assert.deepEqual((await r.json()).tracks,[{id:'guest-1',title:'講座資訊',speaker:'演講者',
+   description:null,durationSeconds:160,categories:['學習'],playable:false}]);
+ assert.match(sqlSeen[0],/INNER JOIN echo_guest_previews/);
+ assert.match(sqlSeen[0],/p\.track_id=t\.id/);
+ assert.match(sqlSeen[0],/visibility='private'/);
+ assert.match(sqlSeen[0],/migration_status='copied'/);
+ assert.doesNotMatch(sqlSeen[0],/audio_key/);
+});
+test('guest previews search binds dangerous input, never grants media access',async()=>{
+ const {env,sqlSeen,bindings}=envWithDb({allRows:[],firstRow:null});
+ const attack="x' OR 1=1 --";
+ const r=await worker.fetch(new Request(origin+'/api/v1/previews?q='+encodeURIComponent(attack)),env);
+ assert.equal(r.status,200);
+ assert.deepEqual((await r.json()).tracks,[]);
+ assert.equal(sqlSeen[0].includes(attack),false);
+ assert.deepEqual(bindings[0],[attack,attack]);
+ const stream=await worker.fetch(new Request(origin+'/api/v1/tracks/guest-1/stream'),env);
+ assert.equal(stream.status,404);
+});
+test('guest preview rejects invalid filter before querying DB',async()=>{
+ const {env,sqlSeen}=envWithDb();
+ const r=await worker.fetch(new Request(origin+'/api/v1/previews?q='+('x'.repeat(101))),env);
+ assert.equal(r.status,400);
+ assert.equal(sqlSeen.length,0);
+});
+
 test('health reports a pending central membership API without personal data', async () => {
   const {env}=envWithDb();
   const r=await worker.fetch(new Request(origin+'/api/health'),env);

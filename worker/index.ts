@@ -111,6 +111,35 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
 app.get('/api/catalog',catalog);
 app.get('/api/v1/catalog',catalog);
 
+/**
+ * Metadata-only guest preview catalog. The whitelist is a separate, scoped
+ * owner-reviewed table, populated ONLY from old guestVisible=1 records with
+ * no VIP, rank, authorization-list, or sticker unlock conditions.
+ * This does NOT grant media access, change visibility, or verify migration.
+ */
+const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env:Env})=>{
+ const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker')});
+ if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
+ const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
+ let sql="SELECT t.id,t.title,t.speaker,NULL AS description,t.duration_seconds,t.category_labels_json FROM echo_tracks t INNER JOIN echo_guest_previews p ON p.track_id=t.id WHERE t.visibility='private' AND t.migration_status='copied'";
+ const args:string[]=[];
+ if(query){
+  sql+=" AND (instr(lower(t.title),lower(?))>0 OR instr(lower(t.speaker),lower(?))>0)";
+  args.push(query,query);
+ }
+ if(category){
+  sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(t.category_labels_json) THEN t.category_labels_json ELSE '[]' END) WHERE value=?)";
+  args.push(category);
+ }
+ if(checked.data.speaker?.trim()){sql+=" AND t.speaker=?";args.push(checked.data.speaker.trim());}
+ sql+=" ORDER BY t.updated_at DESC LIMIT 100";
+ const s=c.env.DB.prepare(sql);
+ const rows=await(args.length?s.bind(...args):s).all<TrackRow>();
+ return json({tracks:(rows.results||[]).map(row=>({...publicTrack(row),description:null,playable:false}))},200,c.req.raw);
+};
+app.get('/api/v1/previews',previewCatalog);
+
+
 
 /** Look up an individual public + migrated track without scanning the first 100 catalog results. */
 const detail=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
