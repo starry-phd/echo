@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {router,usePathname} from 'expo-router';
-import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
 import {visualMetrics} from '../../../packages/ui/src/tokens';
@@ -8,7 +9,7 @@ import {viewportLayout} from '../responsive';
 
 export function LegacyHeader(){
  const colors=useLegacyTheme();
- const {width,height}=useWindowDimensions();
+ const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
  const pathname=usePathname();
  const [open,setOpen]=useState(false);

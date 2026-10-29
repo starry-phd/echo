@@ -1,5 +1,6 @@
 import {useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useViewportDimensions} from '../useViewportDimensions';
 import {useLegacyTheme} from './legacyTheme';
 import {viewportLayout} from '../responsive';
 import type {SortOrder} from './cardSorting';
@@ -9,7 +10,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
  order:SortOrder;onOrder:(value:SortOrder)=>void;onNotice:(s:string)=>void;
  advanced:boolean;onAdvanced:()=>void;
 }){
- const {width}=useWindowDimensions(),t=useLegacyTheme();
+ const {width}=useViewportDimensions(),t=useLegacyTheme();
  const [open,setOpen]=useState<'category'|'popular'|null>(null);
  const layout=viewportLayout(width);
  const fields=[

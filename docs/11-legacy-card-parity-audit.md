@@ -7,6 +7,7 @@
 - 原版 `trackMatchesHomeSearch` 為多字AND交集；新版改為只在已准許欄位作同樣交集。Worker使用單一bound JSON token參數及SQLite JSON_each，維持public+verified/preview whitelist gate。真實SQLite回歸測試覆蓋交集與惡意輸入。
 - `/preview/[id]` 純資訊詳情只解析當前28筆白名單，不查私人description、audio key、評論或會員資料；無audio source及分享入口。照片、姓名、時長、上架日、分類、唯讀統計可瀏覽，仍不等於原版所有詳情功能已完成。
 - 修正熱門排序時誤顯示「最早上架」；分類、熱門及主選單補button語意，音檔選單有明確關閉控制。
+- 實際Web影格讀回發現原彩虹transform停在-84px，並有native driver fallback警告；改為Web JS driver、Native維持native driver，明確每輪reset且不阻擋清單互動。另將responsive首輪Web markup固定與靜態輸出一致，避免伺服器/瀏覽器寬度不同造成hydration錯配。修復後仍須正式瀏覽器影格驗證。
 - 是否正式部署以Issue #3即時證據為準。原生實機、完整評論/AI/會員/VIP/貼紙等仍未驗收。
 
 **查核來源**：`src/components/AudioCard.tsx`（410 行）、`AudioCard.css`（新人彩虹邊框動畫 2.4s）、`src/App.tsx`、`src/components/DetailView.tsx`、`src/visitorTrackPolicy.ts`、舊 `echoes_db` 與新 `echo-starry` D1/R2 即時資料。原始錄音的權利範圍與可播放資格，和資料顯示分開核對。

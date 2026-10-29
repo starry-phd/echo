@@ -1,7 +1,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
 import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
 import {LegacyFilterToolbar} from '../src/ui/echo/LegacyFilterToolbar';
@@ -23,7 +24,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
- const {width}=useWindowDimensions();
+ const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [debouncedQuery,setDebouncedQuery]=useState('');
  const [category,setCategory]=useState<string|null>(null);
