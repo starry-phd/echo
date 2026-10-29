@@ -2,6 +2,8 @@
 
 此流程只讀舊 `echoes-audio-bucket/uploads` 與新 Starry `echo-starry/uploads`，不部署Worker、不寫D1、不修改R2物件／公開設定、不產生播放或分享權。
 
+**2026-10-29 Work執行狀態：未啟動，GitHub顯示0 runs。** 自動核准審查拒絕送出，理由是將112筆私人音檔下載至GitHub Runner並產生彙總artifact的具體私人資料處理未獲明確授權。沒有重試或繞過；完成其餘UI開發，並將此步列為等待使用者明確核准的獨立項目。腳本與測試存在不表示稽核完成。下列為可供核准的確切流程。
+
 ## 執行條件
 
 - 使用既有 `migration` Environment、彼此獨立的舊／新 scoped S3 Secrets；不新增Secrets、不把值寫入log。

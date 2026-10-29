@@ -24,7 +24,9 @@ PR #19已合併並正式部署，release SHA `ed1262b2c1e0097a7a531aee6491d68008
 - 搜尋用bound JSON token list及SQLite JSON_each交集，不拼入使用者輸入。public+verified與preview白名單gate維持。
 - 該版68 tests及完整遠端CI通過；正式390px UI實測照片28/28、獎銜篩出9張、多字交集13張、分類在無結果仍保留、收藏頁／詳情取消／首頁同步、詳情無audio元素。彩虹transform兩次影格不同，重新載入未再出現原hydration/native driver警告。原生iOS/Android實測仍未完成。
 - 21時續驗確認跨頁隱藏可由講師頁同步到首頁27張；同時找到桌面卡片彈出選單被下一排卡片遮住，造成部分選項點不到。不是儲存失效；修復改用React Native Modal及螢幕內定位。修復部署及重測狀態以Issue #3為準。
-- 後續分支 `test/echo-private-audio-integrity-20261029` 同時新增只讀112筆原檔／複本完整SHA-256+逐筆前8秒解碼，僅上傳彙總artifact；詳見 `docs/12-private-audio-integrity-audit.md`。本機73 tests通過。**實際112筆run未成功前不可填媒體驗收完成，更不可改公開權限。**
+- **PR #20已合併且正式部署**，release `bc8f5f9d9f39afe42172acae4c5d4a20107c6287`；PR CI #40880938534、main CI #40881258562、Production #40881561931均success。Cloudflare deployment `c0c5b7f2-ee28-401a-8271-208d7f78625e`，2026-10-29 13:29:28 UTC，version `f4e88a83-8a56-4898-bdd1-7a420cdf3497` 100%。浮層遮擋修復及28照片、我不喜歡/持久化/還原、收藏/詳情/取消、兩種關閉方式已實測，見`docs/13-work-ui-acceptance.md`。
+- PR20新增只讀112筆原檔／複本完整SHA-256+逐筆前8秒解碼，僅上傳彙總artifact，73 tests通過。**實際稽核未啟動（0 runs）**：自動核准審查拒絕將私人音檔下載到GitHub Runner及產生彙總artifact，需使用者針對此私人資料處理具體核准，詳見`docs/12-private-audio-integrity-audit.md`。不得重試繞過，不可填媒體驗收完成或改公開權限。
+- 下一批修復原版外觀偏好差異：24色好心情應隨機選另一色、iOS/Android主題應持久保存、分類底色/邊框隨主色；沿用Web keys、支援舊dark key fallback、保留hydration前的操作、寫入序列與讀取失敗不覆蓋舊值。是否已合併／部署仍須查Issue #3。
 
 ## 部署與保護
 
@@ -38,7 +40,7 @@ PR #19已合併並正式部署，release SHA `ed1262b2c1e0097a7a531aee6491d68008
 1. **音訊**：112/112 private/copied，0 public+verified。28張照片與資訊卡不是播放／分享授權。不得批次公開R2或把guestVisible當使用權。逐曲權利、完整解碼/Range及Web/iOS/Android播放仍待驗收。
 2. **Starry ID/Battery**：只接正式可信契約；Echo不持有會員主檔、不讀中央D1、不沿用舊密碼/session。2026-10-29重查starry-phd/id main `a1d3ced10e2bbeed03434b4747fa7f003fae55ac` 的apps/api/openapi.yaml，仍明示DRAFT/not deployed，僅/v1/health liveness，沒有authenticated user/admin endpoints。離線Auth候選source不是正式登入API。
 3. **原版剩餘功能**：網友關鍵字、完整詳情／評論／評分／按讚、AI/逐字稿、會員收藏及進度同步、排行榜、VIP/貼紙、通知、管理上傳、背景／離線播放仍須逐項契約、資料權利及端到端驗收。可安全移植的顯示功能繼續小PR，不用假狀態補齊。
-4. **Native/商店**：EAS profiles存在，沒有實際iOS/Android build、簽章、實機或商店Sandbox證據；不得宣稱已上架。AsyncStorage程式及測試不代替真機驗收。
+4. **Native/商店**：EAS profiles存在，PR20在設定公開API base URL後iOS/Android Hermes export成功，但沒有EAS簽章build、實機安裝或商店Sandbox證據；不得宣稱已上架。AsyncStorage程式及測試不代替真機驗收。
 5. **營利**：AdMob Mediation定案但Ads OFF，無真SDK／廣告請求；RevenueCat未初始化；商店發布未核准。
 6. **隔離**：不動H-Global，不刪原yukidu/Echo-Starry或舊R2/D1，不改DNS，不公開私人檔案，不將Secrets放入commit/Issue/log。
 
