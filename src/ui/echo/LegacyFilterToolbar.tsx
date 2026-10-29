@@ -2,21 +2,27 @@ import {useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {useLegacyTheme} from './legacyTheme';
 import {viewportLayout} from '../responsive';
-export type SortOrder='newest'|'oldest';
+import type {SortOrder} from './cardSorting';
+export type {SortOrder} from './cardSorting';
 export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice}:{
  categories:string[];category:string|null;onCategory:(c:string|null)=>void;
  order:SortOrder;onOrder:(value:SortOrder)=>void;onNotice:(s:string)=>void;
 }){
  const {width}=useWindowDimensions(),t=useLegacyTheme();
- const [open,setOpen]=useState<'category'|'advanced'|null>(null);
+ const [open,setOpen]=useState<'category'|'advanced'|'popular'|null>(null);
  const layout=viewportLayout(width);
  const fields=[
    {id:'category',label:category??'全部分類',press:()=>setOpen(open==='category'?null:'category')},
    {id:'time',label:order==='newest'?'最新上架':'最早上架',press:()=>{onOrder(order==='newest'?'oldest':'newest');setOpen(null);}},
-   {id:'popular',label:'熱門推薦',press:()=>{setOpen(null);onNotice('熱門推薦需要原版評價、收藏及心得統計資料，目前尚未完成安全移植。');}},
+   {id:'popular',label:order==='rating'?'評價最高':order==='likes'?'按讚最多':order==='comments'?'心得最多':'熱門推薦',
+    press:()=>setOpen(open==='popular'?null:'popular')},
    {id:'advanced',label:'進階篩選',press:()=>setOpen(open==='advanced'?null:'advanced')},
  ] as const;
  const options=open==='category'?[{label:'全部分類',action:()=>onCategory(null)},...categories.map(c=>({label:c,action:()=>onCategory(c)}))]:
+  open==='popular'?[{label:'評價最高（舊版）',action:()=>onOrder('rating')},
+    {label:'按讚最多（舊版）',action:()=>onOrder('likes')},
+    {label:'心得最多（舊版）',action:()=>onOrder('comments')},
+    {label:'收藏人數（待會員同步）',action:()=>onNotice('收藏統計尚未從中央會員系統取得，不能使用虛構數字排序。')}]:
   [{label:'公開音檔',action:()=>onNotice('目前只顯示完成驗證並核准公開的音檔。')},
    {label:'獎銜篩選（待會員權限）',action:()=>onNotice('獎銜篩選須等繁星中央會員與音檔授權完成。')},
    {label:'貼紙排序（待電池服務）',action:()=>onNotice('貼紙資料須由 Starry Battery 正式 API 提供。')}];

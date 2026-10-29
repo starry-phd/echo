@@ -19,3 +19,9 @@
 - `/api/v1/catalog`、`/api/v1/tracks/:id`、`/api/v1/tracks/:id/stream` 仍要求 `visibility='public' AND migration_status='verified'`，本修復不更新這兩個欄位或聲稱音訊可播放。
 - 舊版 rating/likes/comment counts 是快照，不能誤稱全新資料或假裝本機點擊已同步。
 - 下一輪優先：登入／開放播放契約及 28 筆素材逐筆內容授權，原版頁面手機與桌面截圖逐項比對；用新的業務 API 逐步恢復進階功能。
+
+
+## 延續：原版講師連結／熱門排序
+- 舊版 `shared/speakers.ts` 只用 ASCII `&` 與全形 `＆` 分開多人演講者；`SpeakerNameLink.tsx` 點每位講者各自開啟講者頁。新 `speakerNames.ts` 沿用此規則，姓名改為可點選連結；新講者列表／講者作品頁會同時展示經白名單核准的非播放資訊卡與真正 public+verified 的作品，不暴露未核准作品。
+- 舊版 `v145FourFilterToolbar.ts` 的熱門選單有「評價最高、按讚最多、心得最多、收藏人數」；新版用**已核對的舊版公開統計快照**恢復前三項排序（唯讀、非即時）；收藏人數仍待 Starry ID 正式提供，不虛構。
+- 播放權限與講師頁在資料展示層各自隔離：點講者姓名僅導向白名單內的標題／照片／標籤，點未核准音檔仍不開放播放。
