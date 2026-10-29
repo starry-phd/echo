@@ -19,3 +19,7 @@
 - 以 `scripts/check-production-guest.mjs` 取代不具診斷性的 Bash，保留完整**嚴格**驗收要求且新增有限重試：初次清單 10 次、每張封面最多 4 次、私人 stream 404 5 次、非白名單封面 404 5 次。輸出失敗條件與序號（不輸出音檔ID、講者、封面路徑、私人資料），全部成功才回 success。
 - `scripts/production-guest-validation.mjs` 純函式及 `tests/production-guest-validation.test.mjs` 回歸涵蓋 28 張名單數量、類型/大小/權限/白名單 URL/no-store、未授權 404/no-store。**原音檔不下載、不解碼、不公開；未變更任何 Worker/R2/D1/封面公開政策**。
 - 本補丁只加強**未來**正式部署的後置健康檢查，不聲稱舊的 GitHub run #40911155585 變成成功；Cloudflare Worker 新版上線與 28 張封面實際已通過獨立 CI 現場驗證，兩者應分開記錄。
+
+## 2026-10-30｜長期 CI／Production 職責分離
+
+PR #24 曾在修復確認期間讓 `ci.yml` 的 PR job 同時跑一次 live `scripts/check-production-guest.mjs`，並透過 [#40913409966](https://github.com/starry-phd/echo/actions/runs/40913409966) 實際驗證腳本可執行、28/28 圖片和 404/no-store 皆成功。驗證後依維護原則**撤掉一般 PR 的強制 live 依賴**：否則 Cloudflare 暫時性斷線、未來合法白名單變更、或網路不穩，都會卡死與 Production 無關的所有 PR。嚴格 live 驗收仍保留於已核准 Production 的 `deploy-worker.yml`，也可在需要時手動執行 `node scripts/check-production-guest.mjs`；PR CI 仍跑純函式測試 `tests/production-guest-validation.test.mjs` 和 build/dry-run。此變更純 CI 管理，不涉及 Worker 程式、雲端資料或部署。

@@ -29,9 +29,6 @@ jobs:
       - run: npm run ui:check
       - run: npm test
       - run: npm run build:web
-      - name: Validate latest live guest cards via reusable strict read-only smoke
-        if: github.event_name == 'pull_request'
-        run: node scripts/check-production-guest.mjs
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
       - uses: actions/upload-artifact@v4
