@@ -11,7 +11,7 @@ assert.equal(manifest.android.applicationId,app.expo.android.package);
 assert.equal(manifest.urlScheme,app.expo.scheme);
 assert.equal(manifest.tech.expoSdk,58);
 assert.match(pkg.dependencies.expo,/^~58\./);
-assert.equal(pkg.dependencies['react-native'],'0.88.0');
+assert.equal(pkg.dependencies['react-native'],'0.88.1');
 assert.equal(manifest.identity.plannedCentralD1,'id-starry');
 assert.equal(manifest.monetization.billingProviderSelection,'revenuecat');
 assert.deepEqual(manifest.monetization.allowedProductTypes,[

@@ -11,7 +11,7 @@ const ui=JSON.parse(read('packages/ui/package.json'));
 const app=JSON.parse(read('app.json'));
 const dep={...pkg.dependencies,...pkg.devDependencies};
 assert.match(pkg.dependencies.expo,/^~58\./);
-assert.equal(pkg.dependencies['react-native'],'0.88.0');
+assert.equal(pkg.dependencies['react-native'],'0.88.1');
 assert.ok(pkg.dependencies['expo-router']);
 assert.ok(pkg.dependencies['@tanstack/react-query']);
 assert.equal(ui.name,'@starry/ui');
