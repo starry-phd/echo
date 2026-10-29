@@ -19,7 +19,7 @@ export default function ProfileScreen(){
     </Text>
    </View>
    <Text style={[styles.body,{color:t.muted}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
-   <Text style={styles.warning}>尚未完成串接前不開放登入、收藏及購買，避免錯誤綁定或個資外洩。</Text>
+   <Text style={styles.warning}>登入、會員收藏同步及購買尚未開放；本裝置收藏可由主選單查看。</Text>
   </View>
  </ScrollView>;
 }

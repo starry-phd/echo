@@ -105,7 +105,7 @@ test('guest previews search binds dangerous input, never grants media access',as
  assert.equal(r.status,200);
  assert.deepEqual((await r.json()).tracks,[]);
  assert.equal(sqlSeen[0].includes(attack),false);
- assert.deepEqual(bindings[0],[attack,attack]);
+ assert.deepEqual(bindings[0],[JSON.stringify(attack.split(/\s+/))]);
  const stream=await worker.fetch(new Request(origin+'/api/v1/tracks/guest-1/stream'),env);
  assert.equal(stream.status,404);
 });
@@ -195,7 +195,7 @@ test('search is parameterized, without expanding public visibility', async () =>
   assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
   assert.match(sqlSeen[0],/json_each/);
   assert.equal(sqlSeen[0].includes(value),false);
-  assert.deepEqual(bindings[0],[value,value,'學習']);
+  assert.deepEqual(bindings[0],[JSON.stringify(value.split(/\s+/)),'學習']);
 });
 
 test('categories endpoint never reads central user profile storage', async () => {

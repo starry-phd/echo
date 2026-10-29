@@ -6,24 +6,20 @@ import {getApiBaseUrl} from '../../api/client';
 import {useLegacyTheme} from './legacyTheme';
 import {AnimatedNewcomerTag} from './AnimatedNewcomerTag';
 import {splitSpeakerNames} from './speakerNames';
-import {readDeviceFavorites,saveDeviceFavorites} from './deviceFavorites';
+import {useDevicePreferences} from './DevicePreferences';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
  track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
 }){
  const t=useLegacyTheme();
+ const preferences=useDevicePreferences();
  const [open,setOpen]=useState(false);
- const [expanded,setExpanded]=useState(false);
  const [coverError,setCoverError]=useState(false);
- const [favorite,setFavorite]=useState(false);
- useEffect(()=>setFavorite(readDeviceFavorites().includes(track.id)),[track.id]);
+ const favorite=preferences.favoriteIds.includes(track.id);
  const toggleFavorite=()=>{
   setOpen(false);
-  const ids=new Set(readDeviceFavorites());
-  if(favorite)ids.delete(track.id);else ids.add(track.id);
-  const next=[...ids];saveDeviceFavorites(next);
-  setFavorite(ids.has(track.id));
-  onNotice(ids.has(track.id)?'已加入此裝置收藏（尚未與中央會員同步）。':'已取消此裝置的收藏。');
+  const added=preferences.toggleFavorite(track.id);
+  onNotice(added?'已加入此裝置收藏（尚未與中央會員同步）。':'已取消此裝置的收藏。');
  };
  const apiOrigin=getApiBaseUrl();
  const rawCover=track.coverUrl;
@@ -33,11 +29,10 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const duration=Math.max(0,Math.floor(track.durationSeconds));
  const speakerRank=track.speakerRank?.trim()||'';
  const legacy=track.legacySnapshot===true;
- const date=track.uploadDate?.slice(0,10)||'';
  const toggleDetails=()=>{
   setOpen(false);
   if(track.playable){router.push({pathname:'/track/[id]',params:{id:track.id}});return;}
-  setExpanded(current=>!current);
+  router.push({pathname:'/preview/[id]',params:{id:track.id}});
  };
  const playFromPhoto=()=>{
   setOpen(false);
@@ -127,26 +122,24 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    <Text style={[styles.moreText,{color:t.muted}]}>⋮</Text>
   </Pressable>
   {open&&<View style={[styles.popup,{backgroundColor:t.card,borderColor:t.border}]}>
+   <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
+    <Text style={[styles.popupText,{color:t.muted}]}>✕　關閉選單</Text>
+   </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>void share()}>
     <Text style={[styles.popupText,{color:t.ink}]}>⇧　{track.playable?'分享音檔':'分享尚未開放'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleDetails}>
     <Text style={[styles.popupText,{color:t.ink}]}>ⓘ　詳細內容</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleFavorite}>
+   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleFavorite}
+    disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
     <Text style={[styles.popupText,{color:t.ink}]}>{favorite?'▣　取消收藏':'♧　加入收藏'}</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}>
+   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}
+    disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
     <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡</Text>
    </Pressable>
   </View>}
-  {expanded&&!track.playable&&
-   <View style={[styles.expanded,{borderTopColor:t.border,backgroundColor:t.lightPill}]}>
-    <Text style={[styles.expandedTitle,{color:t.palette.primary}]}>演講資訊</Text>
-    <Text style={[styles.expandedText,{color:t.ink}]}>{track.speaker}{speakerRank?' · '+speakerRank:''}</Text>
-    {!!date&&<Text style={[styles.expandedText,{color:t.muted}]}>舊版上架日期：{date}</Text>}
-    <Text style={[styles.expandedText,{color:t.muted}]}>本卡片僅提供原版訪客可見的基本資料；音訊、分享與會員互動仍待核准。</Text>
-   </View>}
  </View>;
 }
 const styles=StyleSheet.create({

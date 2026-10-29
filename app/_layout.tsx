@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {View} from 'react-native';
 import {LegacyThemeProvider,useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {LegacyHeader} from '../src/ui/echo/LegacyHeader';
+import {DevicePreferencesProvider} from '../src/ui/echo/DevicePreferences';
 
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 
@@ -18,6 +19,8 @@ function AppShell(){
      }}>
        <Stack.Screen name="index" />
        <Stack.Screen name="profile" />
+       <Stack.Screen name="favorites" />
+       <Stack.Screen name="preview/[id]" />
        <Stack.Screen name="speaker/index" />
        <Stack.Screen name="speaker/[name]" />
        <Stack.Screen name="track/[id]" />
@@ -27,6 +30,6 @@ function AppShell(){
 }
 export default function RootLayout(){
  return <QueryClientProvider client={queryClient}>
-   <LegacyThemeProvider><AppShell/></LegacyThemeProvider>
+   <LegacyThemeProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></LegacyThemeProvider>
  </QueryClientProvider>;
 }
