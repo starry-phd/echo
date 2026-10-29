@@ -125,7 +125,7 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{visibleTracks.length}</Text> 張音檔資訊卡；可播放 {tracks.filter(t=>t.playable).length} 部
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{visibleTracks.length}</Text> 張音檔資訊卡；目前條件可播放 {visibleTracks.filter(t=>t.playable).length} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
@@ -178,7 +178,7 @@ export default function CatalogScreen(){
      </View>}
      <View style={styles.footer}>
        <Text style={[styles.footerText,{color:theme.muted}]}>
-         繁星回聲 · 已驗證公開內容　│　廣告目前關閉
+         繁星回聲 · 訪客資訊卡（唯讀）　│　播放須另經授權　│　廣告關閉
        </Text>
      </View>
    </View>

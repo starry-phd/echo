@@ -144,7 +144,7 @@ const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefin
  const rows=await(args.length?s.bind(...args):s).all<PreviewRow>();
  return json({tracks:(rows.results||[]).map(row=>({
   ...publicTrack(row),description:null,playable:false,
-  coverUrl:row.cover_key?'/api/v1/previews/'+encodeURIComponent(row.id)+'/cover':null,
+  coverUrl:row.cover_key?'/api/v1/previews/'+encodeURIComponent(row.id)+'/cover?policy=2':null,
   speakerRank:row.speaker_rank||null,
   rating:Math.max(0,Math.min(5,Number(row.rating)||0)),
   ratingCount:Math.max(0,Number(row.rating_count)||0),
@@ -172,7 +172,7 @@ const previewCover=async(c:{req:{raw:Request;param(name:string):string};env:Env}
   key.toLowerCase().endsWith('.webp')?'image/webp':'image/jpeg';
  return new Response(item.body,{status:200,headers:{
   'content-type':mime,'content-length':String(item.size),
-  'cache-control':'public,max-age=3600','x-content-type-options':'nosniff',
+  'cache-control':'no-store','x-content-type-options':'nosniff',
   'content-security-policy':"default-src 'none'"
  }});
 };
@@ -222,7 +222,7 @@ const stream=async(c:{req:{raw:Request;param(name:string):string};env:Env})=>{
  const media=await c.env.MEDIA.get(record.audio_key,range?{range:c.req.raw.headers}:undefined);
  if(!media)return json({code:'MEDIA_NOT_FOUND'},404,c.req.raw);
  const headers=new Headers({'content-type':audioMimeForKey(record.audio_key,media.httpMetadata?.contentType),
-  'cache-control':'public, max-age=300','x-content-type-options':'nosniff',
+  'cache-control':'no-store','x-content-type-options':'nosniff',
   'vary':'Origin','accept-ranges':'bytes'});
  const origin=c.req.raw.headers.get('Origin')||'';
  if(allowed(origin))headers.set('access-control-allow-origin',origin);
