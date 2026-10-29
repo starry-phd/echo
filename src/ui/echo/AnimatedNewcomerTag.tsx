@@ -1,5 +1,5 @@
 import {useEffect,useRef} from 'react';
-import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,Platform,StyleSheet,Text,View} from 'react-native';
 
 /** React Native-compatible approximation of the old 2.4s moving rainbow
  * 1px category outline, only used for the exact '新人' category.
@@ -10,8 +10,9 @@ export function AnimatedNewcomerTag({fill,textColor}:{fill:string;textColor:stri
  const progress=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   const loop=Animated.loop(Animated.timing(progress,{
-   toValue:1,duration:2400,easing:Easing.linear,useNativeDriver:true
-  }));
+   toValue:1,duration:2400,easing:Easing.linear,
+   useNativeDriver:Platform.OS!=='web',isInteraction:false
+  }),{iterations:-1,resetBeforeIteration:true});
   loop.start();return()=>loop.stop();
  },[progress]);
  // 7 stripes * 12 px = one complete repeating rainbow cycle.

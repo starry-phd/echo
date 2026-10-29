@@ -96,8 +96,8 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
  let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
  const args:string[]=[];
  if(query){
-  sql+=" AND (instr(lower(title),lower(?)) > 0 OR instr(lower(speaker),lower(?)) > 0)";
-  args.push(query,query);
+  sql+=" AND NOT EXISTS (SELECT 1 FROM json_each(?) term WHERE instr(lower(COALESCE(title,'')),lower(term.value))=0 AND instr(lower(COALESCE(speaker,'')),lower(term.value))=0 AND instr(lower(COALESCE(category_labels_json,'')),lower(term.value))=0)";
+  args.push(JSON.stringify(query.split(/\s+/u).filter(Boolean)));
  }
  if(category){
   sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(category_labels_json) THEN category_labels_json ELSE '[]' END) WHERE value = ?)";
@@ -129,8 +129,10 @@ const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefin
  let sql="SELECT t.id,t.title,t.speaker,NULL AS description,t.duration_seconds,t.category_labels_json,m.cover_key,m.speaker_rank,m.rating,m.rating_count,m.comments_count,m.likes,m.upload_date FROM echo_tracks t INNER JOIN echo_guest_previews p ON p.track_id=t.id LEFT JOIN echo_guest_card_media m ON m.track_id=t.id WHERE t.visibility='private' AND t.migration_status='copied'";
  const args:string[]=[];
  if(query){
-  sql+=" AND (instr(lower(t.title),lower(?))>0 OR instr(lower(t.speaker),lower(?))>0)";
-  args.push(query,query);
+  // Only fields already returned by the curated metadata endpoint are searched.
+  // A single bound JSON array supports many words without multiplying SQL parameters.
+  sql+=" AND NOT EXISTS (SELECT 1 FROM json_each(?) term WHERE instr(lower(COALESCE(t.title,'')),lower(term.value))=0 AND instr(lower(COALESCE(t.speaker,'')),lower(term.value))=0 AND instr(lower(COALESCE(t.category_labels_json,'')),lower(term.value))=0 AND instr(lower(COALESCE(m.speaker_rank,'')),lower(term.value))=0 AND instr(COALESCE(m.upload_date,''),term.value)=0)";
+  args.push(JSON.stringify(query.split(/\s+/u).filter(Boolean)));
  }
  if(category){
   sql+=" AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_valid(t.category_labels_json) THEN t.category_labels_json ELSE '[]' END) WHERE value=?)";

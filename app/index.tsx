@@ -1,7 +1,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
 import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
 import {LegacyFilterToolbar} from '../src/ui/echo/LegacyFilterToolbar';
@@ -11,7 +12,9 @@ import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {viewportLayout} from '../src/ui/responsive';
 import {sortEchoCards} from '../src/ui/echo/cardSorting';
-import {readDislikedTrackIds,saveDislikedTrackIds} from '../src/ui/echo/dislikedTracks';
+import {baseSpeakerRank,matchesCardFilters} from '../src/ui/echo/cardFilters';
+import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
+import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -21,23 +24,21 @@ import {readDislikedTrackIds,saveDislikedTrackIds} from '../src/ui/echo/disliked
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
- const {width}=useWindowDimensions();
+ const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [debouncedQuery,setDebouncedQuery]=useState('');
  const [category,setCategory]=useState<string|null>(null);
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
- const [dislikedIds,setDislikedIds]=useState<string[]>([]);
- useEffect(()=>setDislikedIds(readDislikedTrackIds()),[]);
+ const [advanced,setAdvanced]=useState(false);
+ const [speakerRank,setSpeakerRank]=useState<string|null>(null);
+ const {dislikedIds,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
  const dislikeTrack=(id:string)=>{
-  setDislikedIds(ids=>{
-   const next=ids.includes(id)?ids:[...ids,id];
-   saveDislikedTrackIds(next);return next;
-  });
+  dislike(id);
   setNotice('已在此裝置隱藏這張音檔卡；可點「還原隱藏」恢復。');
  };
  const restoreDisliked=()=>{
-  saveDislikedTrackIds([]);setDislikedIds([]);
+  restoreHidden();
   setNotice('已還原此裝置隱藏的音檔卡。');
  };
  useEffect(()=>{
@@ -52,10 +53,8 @@ export default function CatalogScreen(){
    retry:1,
  });
  const previewsQuery=useQuery({
-   queryKey:['echo','guest-previews',debouncedQuery,category],
-   queryFn:({signal})=>getGuestPreviewTracks(signal,{
-     query:debouncedQuery,category:category??undefined
-   }),retry:1,
+   queryKey:['echo','guest-previews'],
+   queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1,
  });
  const healthQuery=useQuery({
    queryKey:['echo','public-health'],
@@ -68,13 +67,15 @@ export default function CatalogScreen(){
  const tracks=useMemo(()=>sortEchoCards([
    ...(tracksQuery.data??[]),...(previewsQuery.data??[])
  ],order),[tracksQuery.data,previewsQuery.data,order]);
- const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)),
-  [tracks,dislikedIds]);
+ const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&matchesCardFilters(t,{
+  query:debouncedQuery,category,speakerRank
+ })),[tracks,dislikedIds,debouncedQuery,category,speakerRank]);
+ const ranks=useMemo(()=>[...new Set((previewsQuery.data??[]).map(t=>baseSpeakerRank(t.speakerRank??'')).filter(Boolean))].sort(),[previewsQuery.data]);
  const categories=useMemo(()=>[...new Set([
    ...(categoriesQuery.data??[]),
    ...(previewsQuery.data??[]).flatMap(t=>t.categories)
  ])],[categoriesQuery.data,previewsQuery.data]);
- const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category));
+ const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank));
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const draw=()=>{
@@ -98,8 +99,8 @@ export default function CatalogScreen(){
        <View style={[styles.search,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.searchIcon}>⌕</Text>
          <TextInput
-           accessibilityLabel="搜尋演講者、主題、系列或網友關鍵字"
-           placeholder={layout.phone?'搜尋演講者、主題、關鍵字...':'搜尋演講者、主題、系列或網友關鍵字...'}
+           accessibilityLabel="搜尋演講者、主題、分類或獎銜"
+           placeholder={layout.phone?'搜尋演講者、主題、分類...':'搜尋演講者、主題、分類或獎銜...'}
            placeholderTextColor="rgba(255,255,255,.75)"
            style={styles.input} value={query} onChangeText={setQuery}
            maxLength={100} returnKeyType="search" autoCapitalize="none"/>
@@ -110,15 +111,17 @@ export default function CatalogScreen(){
        </View>
      </View>
      <Pressable accessibilityRole="button"
-       accessibilityState={{expanded:false}}
-       onPress={()=>setNotice('進階關鍵字、獎銜與網友詞庫需由舊資料與中央會員權限驗證後才能開放。')}
+       accessibilityState={{expanded:advanced}}
+       onPress={()=>setAdvanced(value=>!value)}
        style={styles.advancedHint}>
        <Text style={[styles.advancedHintText,{color:'#b47a08'}]}>
-         按此 ▼展開 進階篩選
+         按此 {advanced?'▲收起':'▼展開'} 進階篩選{speakerRank?'（已套用）':''}
        </Text>
      </Pressable>
+     {advanced&&<AdvancedCardFilters ranks={ranks} selectedRank={speakerRank} onRank={setSpeakerRank}/>}
      <LegacyFilterToolbar categories={categories} category={category}
-       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}/>
+       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}
+       advanced={advanced} onAdvanced={()=>setAdvanced(value=>!value)}/>
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
@@ -132,9 +135,14 @@ export default function CatalogScreen(){
          資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
        </Text>
      </View>
+     {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
+      onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
+      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
+     </Pressable>}
+     {storageError&&<Text style={[styles.teaserNote,{color:theme.muted}]}>裝置儲存暫時不可用，這次變更僅在目前使用期間保留。</Text>}
      {dislikedIds.length>0&&<Pressable
        accessibilityRole="button" accessibilityLabel="還原本裝置隱藏的音檔卡"
-       onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
+       disabled={!ready} onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
         <Text style={[styles.restoreText,{color:theme.palette.primary}]}>
          還原隱藏（本裝置 {dislikedIds.length} 張）
         </Text>
@@ -152,7 +160,7 @@ export default function CatalogScreen(){
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          暫時無法取得公開音檔清單，請稍後重試。
        </Text>
-       <Pressable onPress={()=>void tracksQuery.refetch()} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
+       <Pressable onPress={()=>{void tracksQuery.refetch();void previewsQuery.refetch();}} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
      </View>:visibleTracks.length===0?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>

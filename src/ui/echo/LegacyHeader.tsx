@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {router,usePathname} from 'expo-router';
-import {Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
 import {visualMetrics} from '../../../packages/ui/src/tokens';
@@ -8,16 +9,16 @@ import {viewportLayout} from '../responsive';
 
 export function LegacyHeader(){
  const colors=useLegacyTheme();
- const {width,height}=useWindowDimensions();
+ const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
  const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
- const go=(path:'/'|'/speaker'|'/profile')=>{setOpen(false);router.push(path);};
+ const go=(path:'/'|'/speaker'|'/profile'|'/favorites')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
-  ['首頁',()=>go('/')],['講師作品',()=>go('/speaker')],['個人資料／登入',()=>go('/profile')]
+  ['首頁',()=>go('/')],['講師作品',()=>go('/speaker')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
    <View style={styles.main}>
@@ -42,13 +43,13 @@ export function LegacyHeader(){
      <Pressable onPress={()=>go('/')} style={styles.quick} accessibilityRole="button">
        <Text style={[styles.quickText,{color:activeColor}]}>{isHome?'⌂ 首頁':'⌂ 返回首頁'}</Text>
      </Pressable>
-     <Pressable onPress={colors.cyclePalette} style={styles.quick}>
+     <Pressable accessibilityRole="button" onPress={colors.cyclePalette} style={styles.quick}>
        <Text style={[styles.quickText,{color:activeColor}]}>✦ 好心情</Text>
      </Pressable>
-     <Pressable onPress={()=>go('/speaker')} style={styles.quick}>
+     <Pressable accessibilityRole="button" onPress={()=>go('/speaker')} style={styles.quick}>
        <Text style={[styles.quickText,{color:activeColor}]}>♫ 講師作品</Text>
      </Pressable>
-     <Pressable onPress={()=>go('/profile')} style={styles.quick}>
+     <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={styles.quick}>
        <Text style={[styles.quickText,{color:activeColor}]}>♙ 會員</Text>
      </Pressable>
    </View>
@@ -58,7 +59,7 @@ export function LegacyHeader(){
        right:10,width:layout.menuWidth}
     ]}>
      <ScrollView contentContainerStyle={styles.menuContents}>
-       <Pressable onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
+       <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
          <View style={[styles.avatar,{backgroundColor:activeColor}]}><Text style={styles.avatarText}>♙</Text></View>
          <View style={styles.identityBody}>
            <Text style={[styles.identityName,{color:colors.ink}]}>訪客</Text>
@@ -66,14 +67,14 @@ export function LegacyHeader(){
          </View>
        </Pressable>
        <View style={styles.menuGrid}>
-         <Pressable style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={colors.cyclePalette}>
+         <Pressable accessibilityRole="button" style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={colors.cyclePalette}>
            <Text style={[styles.menuMiniText,{color:activeColor}]}>✦ 好心情</Text>
          </Pressable>
-         <Pressable style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={()=>go('/')}>
+         <Pressable accessibilityRole="button" style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={()=>go('/')}>
            <Text style={[styles.menuMiniText,{color:activeColor}]}>⌂ 回首頁</Text>
          </Pressable>
        </View>
-       <Pressable style={styles.menuItem} onPress={()=>setShowColors(!showColors)}>
+       <Pressable accessibilityRole="button" accessibilityState={{expanded:showColors}} style={styles.menuItem} onPress={()=>setShowColors(!showColors)}>
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◐　主題顏色　{colors.palette.name}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>{showColors?'⌃':'⌄'}</Text>
        </Pressable>
@@ -86,11 +87,11 @@ export function LegacyHeader(){
           <Text numberOfLines={1} style={[styles.swatchLabel,{color:colors.muted}]}>{p.name}</Text>
         </Pressable>)}
        </View>}
-       <Pressable style={styles.menuItem} onPress={colors.toggleDark}>
+       <Pressable accessibilityRole="button" style={styles.menuItem} onPress={colors.toggleDark}>
          <Text style={[styles.itemLabel,{color:colors.ink}]}>☾　{colors.dark?'切換淺色模式':'切換深色模式'}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>
-       {buttons.map(([label,fn])=><Pressable key={label} style={styles.menuItem} onPress={fn}>
+       {buttons.map(([label,fn])=><Pressable key={label} accessibilityRole="button" style={styles.menuItem} onPress={fn}>
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}

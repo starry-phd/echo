@@ -10,7 +10,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 export default function SpeakerDirectory(){
  const t=useLegacyTheme();
  const q=useQuery({queryKey:['echo','public-speakers'],queryFn:({signal})=>getPublicSpeakers(signal),retry:1});
- const previews=useQuery({queryKey:['echo','speaker-preview-list'],
+ const previews=useQuery({queryKey:['echo','guest-previews'],
   queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
  const origin=getApiBaseUrl();
  const speakers=useMemo(()=>{

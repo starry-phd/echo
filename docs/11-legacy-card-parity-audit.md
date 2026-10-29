@@ -1,5 +1,15 @@
 # 舊版 `yukidu/Echo-Starry` → Expo 58 音檔卡逐項對照（2026-10-29）
 
+## Work 後續：收藏清單、顯示篩選與安全詳情
+
+- 原版 `AudioCard.tsx` 本機收藏行為有持久key；新卡雖能收藏卻沒有集中清單，不同頁面各持有React state也會失步。新增 `/favorites` 與全App共用偏好store；Expo58相容AsyncStorage2.2.0沿用兩個既有Web key，支援原生持久化。hydrate完成前不寫入、快速點擊序列儲存、讀/寫失敗保留記憶體操作並明示限制。
+- 原版 `src/utils/ranks.ts` 將講師獎銜去GAR及創辦人修飾後作首頁篩選。新版只對已開放的歷史metadata做相同篩選，不讀會員獎銜或擴大內容權限。分類選項從未篩選的28筆metadata取得，不再隨搜尋消失；網友關鍵字未移植，不冒稱可搜尋不存在資料。
+- 原版 `trackMatchesHomeSearch` 為多字AND交集；新版改為只在已准許欄位作同樣交集。Worker使用單一bound JSON token參數及SQLite JSON_each，維持public+verified/preview whitelist gate。真實SQLite回歸測試覆蓋交集與惡意輸入。
+- `/preview/[id]` 純資訊詳情只解析當前28筆白名單，不查私人description、audio key、評論或會員資料；無audio source及分享入口。照片、姓名、時長、上架日、分類、唯讀統計可瀏覽，仍不等於原版所有詳情功能已完成。
+- 修正熱門排序時誤顯示「最早上架」；分類、熱門及主選單補button語意，音檔選單有明確關閉控制。
+- 實際Web影格讀回發現原彩虹transform停在-84px，並有native driver fallback警告；改為Web JS driver、Native維持native driver，明確每輪reset且不阻擋清單互動。另將responsive首輪Web markup固定與靜態輸出一致，避免伺服器/瀏覽器寬度不同造成hydration錯配。修復後仍須正式瀏覽器影格驗證。
+- 是否正式部署以Issue #3即時證據為準。原生實機、完整評論/AI/會員/VIP/貼紙等仍未驗收。
+
 **查核來源**：`src/components/AudioCard.tsx`（410 行）、`AudioCard.css`（新人彩虹邊框動畫 2.4s）、`src/App.tsx`、`src/components/DetailView.tsx`、`src/visitorTrackPolicy.ts`、舊 `echoes_db` 與新 `echo-starry` D1/R2 即時資料。原始錄音的權利範圍與可播放資格，和資料顯示分開核對。
 
 | 舊版行為／視覺 | 新版現況／本 PR 修正 | 真正依賴 |

@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
@@ -7,21 +7,21 @@ import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
-import {readDislikedTrackIds,saveDislikedTrackIds} from '../../src/ui/echo/dislikedTracks';
+import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
- const [dislikedIds,setDislikedIds]=useState<string[]>([]);
- useEffect(()=>setDislikedIds(readDislikedTrackIds()),[]);
+ const {dislikedIds,dislike,restoreHidden}=useDevicePreferences();
  const hide=(id:string)=>{
-  setDislikedIds(prev=>{const next=[...new Set([...prev,id])];saveDislikedTrackIds(next);return next;});
+  dislike(id);
   setNotice('已在此裝置隱藏卡片。');
  };
  const {name}=useLocalSearchParams<{name:string}>();
  const speaker=typeof name==='string'&&name.length>0&&name.length<=80?name:null;
  const p=useQuery({
-  queryKey:['echo','speaker-metadata-previews',speaker],
-  queryFn:async({signal})=>(await getGuestPreviewTracks(signal)).filter(track=>splitSpeakerNames(track.speaker).includes(speaker!)),
+  queryKey:['echo','guest-previews'],
+  queryFn:({signal})=>getGuestPreviewTracks(signal),
+  select:tracks=>tracks.filter(track=>splitSpeakerNames(track.speaker).includes(speaker!)),
   enabled:Boolean(speaker),retry:1
  });
  const q=useQuery({
@@ -50,7 +50,7 @@ export default function PublicSpeakerTracks(){
    <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
    {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary}]}>{notice}</Text>}
    {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
-    saveDislikedTrackIds([]);setDislikedIds([]);setNotice('已還原此裝置隱藏的卡片。');
+    restoreHidden();setNotice('已還原此裝置隱藏的卡片。');
    }}><Text style={[styles.backText,{color:t.palette.primary}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
    {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
     (q.isPending||p.isPending)?<ActivityIndicator color={t.palette.primary}/>:
