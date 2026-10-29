@@ -1,8 +1,9 @@
 import {useEffect,useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {getPublicTracks} from '../../src/api/client';
+import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {getApiBaseUrl,getPublicTracks,getGuestPreviewTracks} from '../../src/api/client';
+import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
@@ -18,10 +19,18 @@ export default function PublicSpeakerTracks(){
  };
  const {name}=useLocalSearchParams<{name:string}>();
  const speaker=typeof name==='string'&&name.length>0&&name.length<=80?name:null;
+ const p=useQuery({
+  queryKey:['echo','speaker-metadata-previews',speaker],
+  queryFn:async({signal})=>(await getGuestPreviewTracks(signal)).filter(track=>splitSpeakerNames(track.speaker).includes(speaker!)),
+  enabled:Boolean(speaker),retry:1
+ });
  const q=useQuery({
   queryKey:['echo','public-speaker-recordings',speaker],
   queryFn:({signal})=>getPublicTracks(signal,{speaker:speaker!}),enabled:Boolean(speaker),retry:1,
  });
+ const tracks=[...(q.data??[]),...(p.data??[])];
+ const photo=p.data?.find(x=>x.coverUrl)?.coverUrl;
+ const origin=getApiBaseUrl();
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/speaker')} style={styles.back}>
@@ -29,11 +38,13 @@ export default function PublicSpeakerTracks(){
    </Pressable>
    <View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
-     <Text style={[styles.initial,{color:t.palette.primary}]}>{Array.from(speaker??'♪')[0]??'♪'}</Text>
+     {photo&&origin?<Image source={{uri:origin+photo}} resizeMode="cover"
+      style={styles.photo} accessibilityLabel={'原版講者封面：'+speaker}/>:
+      <Text style={[styles.initial,{color:t.palette.primary}]}>{Array.from(speaker??'♪')[0]??'♪'}</Text>}
     </View>
     <View style={styles.bioText}>
      <Text style={[styles.title,{color:t.ink}]}>{speaker??'無效的講師名稱'}</Text>
-     <Text style={[styles.note,{color:t.muted}]}>已驗證的公開演講作品</Text>
+     <Text style={[styles.note,{color:t.muted}]}>原版可瀏覽作品；播放須另行授權</Text>
     </View>
    </View>
    <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
@@ -42,12 +53,12 @@ export default function PublicSpeakerTracks(){
     saveDislikedTrackIds([]);setDislikedIds([]);setNotice('已還原此裝置隱藏的卡片。');
    }}><Text style={[styles.backText,{color:t.palette.primary}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
    {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
-    q.isPending?<ActivityIndicator color={t.palette.primary}/>:
-    q.isError?<Text style={[styles.message,{color:t.muted}]}>讀取暫時失敗，請稍後再試。</Text>:
-    q.data?.some(track=>!dislikedIds.includes(track.id))? q.data.filter(track=>!dislikedIds.includes(track.id)).map(track=><LegacyTrackCard key={track.id} track={track}
+    (q.isPending||p.isPending)?<ActivityIndicator color={t.palette.primary}/>:
+    (q.isError&&p.isError)?<Text style={[styles.message,{color:t.muted}]}>讀取暫時失敗，請稍後再試。</Text>:
+    tracks.some(track=>!dislikedIds.includes(track.id))? tracks.filter(track=>!dislikedIds.includes(track.id)).map(track=><LegacyTrackCard key={track.id} track={track}
       onNotice={setNotice} onDislike={hide}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
-     <Text style={[styles.message,{color:t.muted}]}>目前沒有可以公開的音檔。</Text>
+     <Text style={[styles.message,{color:t.muted}]}>目前沒有可瀏覽的講者作品資訊。</Text>
     </View>}
    <Text style={[styles.disclaimer,{color:t.muted}]}>
     舊版講師簡介、AI 問答及會員權限資料尚待授權驗證，因此暫不顯示。
@@ -61,7 +72,8 @@ const styles=StyleSheet.create({
  back:{alignSelf:'flex-start',minHeight:44,justifyContent:'center',paddingHorizontal:5},
  backText:{fontSize:14,fontWeight:'800'},
  bio:{borderWidth:1,borderRadius:20,padding:15,flexDirection:'row',alignItems:'center',gap:12,minHeight:106},
- avatar:{width:72,height:72,borderRadius:19,justifyContent:'center',alignItems:'center'},
+ avatar:{width:72,height:72,borderRadius:19,justifyContent:'center',alignItems:'center',overflow:'hidden'},
+ photo:{width:72,height:72},
  initial:{fontSize:32,fontWeight:'900'},
  bioText:{flex:1},title:{fontSize:22,fontWeight:'900'},
  note:{fontSize:12,marginTop:8},section:{fontSize:18,fontWeight:'900',marginVertical:18},

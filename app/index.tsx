@@ -10,6 +10,7 @@ import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {viewportLayout} from '../src/ui/responsive';
+import {sortEchoCards} from '../src/ui/echo/cardSorting';
 import {readDislikedTrackIds,saveDislikedTrackIds} from '../src/ui/echo/dislikedTracks';
 
 /**
@@ -64,10 +65,9 @@ export default function CatalogScreen(){
    queryKey:['echo','categories'],
    queryFn:({signal})=>getCategories(signal),retry:1,
  });
- const tracks=useMemo(()=>{
-   const items=[...(tracksQuery.data??[]),...(previewsQuery.data??[])];
-   return order==='oldest'?items.reverse():items;
- },[tracksQuery.data,previewsQuery.data,order]);
+ const tracks=useMemo(()=>sortEchoCards([
+   ...(tracksQuery.data??[]),...(previewsQuery.data??[])
+ ],order),[tracksQuery.data,previewsQuery.data,order]);
  const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)),
   [tracks,dislikedIds]);
  const categories=useMemo(()=>[...new Set([
