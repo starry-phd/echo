@@ -29,6 +29,17 @@ export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=f
     throw new Error('Echo catalog unavailable or schema mismatch');
    return result.data.tracks;
   },
+  /** Guest metadata cards only. Never infer any right to stream audio. */
+  async listPreviews(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
+   const result=await api.GET('/api/v1/previews',{params:{query:{
+    q:filters.query?.trim().slice(0,100),
+    category:filters.category?.trim().slice(0,80),
+    speaker:filters.speaker?.trim().slice(0,80)
+   }},signal});
+   if(result.error||!result.data||!Array.isArray(result.data.tracks))
+    throw new Error('Echo metadata previews unavailable');
+   return result.data.tracks;
+  },
   /** 404 = not public / not yet verified; do not infer private availability. */
   async getTrack(id:string,signal?:AbortSignal):Promise<EchoTrack|null>{
    const result=await api.GET('/api/v1/tracks/{id}',{

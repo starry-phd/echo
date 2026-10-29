@@ -7,9 +7,10 @@ import {useLegacyTheme} from './legacyTheme';
 
 export function LegacyTrackCard({track,onNotice}:{track:EchoTrack;onNotice:(message:string)=>void}){
  const t=useLegacyTheme(),[open,setOpen]=useState(false);
- const go=()=>{setOpen(false);router.push({pathname:'/track/[id]',params:{id:track.id}});};
+ const go=()=>{setOpen(false);if(!track.playable){onNotice('此卡片目前僅開放標題、講者與分類等資訊；音檔播放與詳細資料尚待權利驗證。');return;}router.push({pathname:'/track/[id]',params:{id:track.id}});};
  const share=async()=>{
   setOpen(false);
+  if(!track.playable){onNotice('此筆音訊尚未核准公開分享或播放。');return;}
   const origin=getApiBaseUrl();
   if(!origin){onNotice('尚未設定公開分享網址。');return;}
   try{await Share.share({message:track.title+' · '+track.speaker+'\n'+origin+'/track/'+encodeURIComponent(track.id)});}
@@ -23,8 +24,8 @@ export function LegacyTrackCard({track,onNotice}:{track:EchoTrack;onNotice:(mess
      <View style={styles.mediaSide}>
        <View style={[styles.portrait,{backgroundColor:t.dark?'#344052':'#f8e6ed'}]}>
          <Text style={[styles.portraitIcon,{color:t.palette.primary}]}>🎙</Text>
-         <View style={styles.rewardBar}><Text style={styles.rewardText}>音檔已核准公開</Text></View>
-         <View style={styles.permissionBar}><Text style={styles.permissionText}>公開</Text></View>
+         <View style={styles.rewardBar}><Text style={styles.rewardText}>{track.playable?'音檔已核准公開':'僅展示資訊'}</Text></View>
+         <View style={styles.permissionBar}><Text style={styles.permissionText}>{track.playable?'公開播放':'播放未開放'}</Text></View>
        </View>
        <Text style={[styles.duration,{color:t.muted}]}>◷ {Math.floor(duration/60)}:{String(duration%60).padStart(2,'0')}</Text>
      </View>
@@ -54,7 +55,7 @@ export function LegacyTrackCard({track,onNotice}:{track:EchoTrack;onNotice:(mess
    </Pressable>
    {open&&<View style={[styles.popup,{backgroundColor:t.card,borderColor:t.border}]}>
      <Pressable style={styles.popupRow} onPress={()=>void share()}>
-       <Text style={[styles.popupText,{color:t.ink}]}>⇧　分享音檔</Text>
+       <Text style={[styles.popupText,{color:t.ink}]}>⇧　{track.playable?'分享音檔':'分享尚未開放'}</Text>
      </Pressable>
      <Pressable style={styles.popupRow} onPress={go}>
        <Text style={[styles.popupText,{color:t.ink}]}>ⓘ　詳細內容</Text>

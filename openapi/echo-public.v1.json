@@ -283,6 +283,65 @@
           }
         }
       }
+    },
+    "/api/v1/previews": {
+      "get": {
+        "operationId": "listEchoGuestMetadataPreviews",
+        "summary": "Owner-approved legacy guest metadata cards only. All returned tracks are non-playable.",
+        "security": [],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "speaker",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 80
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whitelisted legacy visitor metadata only; never a playback grant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "tracks"
+                  ],
+                  "properties": {
+                    "tracks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Track"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter parameters"
+          }
+        }
+      }
     }
   },
   "components": {

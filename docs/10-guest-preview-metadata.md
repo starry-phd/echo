@@ -1,0 +1,7 @@
+# Echo metadata-only guest previews (2026-10-29)
+
+The new Cloudflare D1 contains 112 imported tracks, all private/copied; zero are public/verified. The legacy guest homepage showed 33 tracks but guestVisible is **NOT** a playback grant. An independent read-only audit of the source D1 found exactly 28 of those 33 have no VIP, authorized-only, rank or sticker restrictions; new Echo D1 has the same 28 IDs as private/copied.
+
+Owner approved restoring guest **information cards** and independently authorized controlled development and release; this scoped preview provides only public-facing metadata (id, title, speaker, duration and categories). No descriptions, external links, uploader info, R2 key, stream URLs, likes, accounts or member details are revealed. The whitelist is in `echo_guest_previews`, added separately by the SQL migration. Only entries both in the whitelist and still private/copied qualify. They are returned from `/api/v1/previews` with `playable=false` and `description=null`. Cards clearly say playback is unavailable. The existing `/api/v1/catalog`, `/api/v1/tracks/:id` and `/stream` retain their **public + verified** restrictions. This does not clear individual publishing rights or audio rights.
+
+Manual migration: `database/migrations/20261029_guest_metadata_previews.sql`. Validate curated row count=28 before deployment. No mass UPDATE to `echo_tracks` or source DB. Remove an ID from the whitelist to revoke metadata immediately; do not change media visibility to restore a card.

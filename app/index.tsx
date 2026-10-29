@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,useWindowDimensions,View} from 'react-native';
-import {getCategories,getEchoHealth,getPublicTracks} from '../src/api/client';
+import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
 import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
 import {LegacyFilterToolbar} from '../src/ui/echo/LegacyFilterToolbar';
 import type {SortOrder} from '../src/ui/echo/LegacyFilterToolbar';
@@ -36,6 +36,12 @@ export default function CatalogScreen(){
    }),
    retry:1,
  });
+ const previewsQuery=useQuery({
+   queryKey:['echo','guest-previews',debouncedQuery,category],
+   queryFn:({signal})=>getGuestPreviewTracks(signal,{
+     query:debouncedQuery,category:category??undefined
+   }),retry:1,
+ });
  const healthQuery=useQuery({
    queryKey:['echo','public-health'],
    queryFn:({signal})=>getEchoHealth(signal),retry:1,staleTime:30_000,
@@ -45,19 +51,23 @@ export default function CatalogScreen(){
    queryFn:({signal})=>getCategories(signal),retry:1,
  });
  const tracks=useMemo(()=>{
-   const items=tracksQuery.data??[];
-   return order==='oldest'?[...items].reverse():items;
- },[tracksQuery.data,order]);
- const categories=categoriesQuery.data??[];
+   const items=[...(tracksQuery.data??[]),...(previewsQuery.data??[])];
+   return order==='oldest'?items.reverse():items;
+ },[tracksQuery.data,previewsQuery.data,order]);
+ const categories=useMemo(()=>[...new Set([
+   ...(categoriesQuery.data??[]),
+   ...(previewsQuery.data??[]).flatMap(t=>t.categories)
+ ])],[categoriesQuery.data,previewsQuery.data]);
  const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category));
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const draw=()=>{
-   if(!tracks.length){
-     setNotice('目前沒有完成公開驗證的音檔，尚無法召喚繁星解答。');
+   const playable=tracks.filter(t=>t.playable);
+   if(!playable.length){
+     setNotice('資訊卡已恢復，但目前沒有完成播放授權的音檔。');
      return;
    }
-   const selected=tracks[Math.floor(Math.random()*tracks.length)];
+   const selected=playable[Math.floor(Math.random()*playable.length)];
    router.push({pathname:'/track/[id]',params:{id:selected.id}});
  };
  return <ScrollView style={[styles.page,{backgroundColor:theme.bg}]}
@@ -96,14 +106,14 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可聽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{tracks.length}</Text> 部已驗證公開音檔
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{tracks.length}</Text> 張音檔資訊卡；可播放 {tracks.filter(t=>t.playable).length} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
          <Text style={[styles.teaserLink,{color:theme.palette.primary}]}>查看會員整合進度 →</Text>
        </Pressable>
        <Text style={[styles.teaserNote,{color:theme.muted}]}>
-         中央會員系統尚待串接；尚未驗證的舊版音檔不會提前公開。
+         資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
        </Text>
      </View>
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
@@ -112,10 +122,10 @@ export default function CatalogScreen(){
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
          onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
-     {tracksQuery.isPending?<View style={styles.loading}>
+     {(tracksQuery.isPending||previewsQuery.isPending)?<View style={styles.loading}>
        <ActivityIndicator color={theme.palette.primary} size="large"/>
        <Text style={[styles.loadingText,{color:theme.muted}]}>讀取音檔清單中…</Text>
-     </View>:tracksQuery.isError?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:(tracksQuery.isError&&previewsQuery.isError)?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          暫時無法取得公開音檔清單，請稍後重試。
        </Text>
