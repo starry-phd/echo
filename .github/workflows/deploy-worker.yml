@@ -117,13 +117,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 "$ECHO_URL/api/v1/previews" > /tmp/echo-previews.json
-          node -e "const t=require('/tmp/echo-previews.json').tracks;if(!Array.isArray(t)||t.length!==28||t.some(x=>x.playable!==false||!x.coverUrl?.startsWith('/api/v1/previews/')||x.description!==null))process.exit(1)"
+          curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 -D /tmp/echo-preview-headers "$ECHO_URL/api/v1/previews" > /tmp/echo-previews.json
+          grep -Eiq '^cache-control:[[:space:]]*no-store' /tmp/echo-preview-headers
+          node -e "const t=require('/tmp/echo-previews.json').tracks;if(!Array.isArray(t)||t.length!==28||t.some(x=>x.playable!==false||!x.coverUrl?.startsWith('/api/v1/previews/')||!x.coverUrl?.includes('policy=2')||x.description!==null))process.exit(1)"
           node -e "require('/tmp/echo-previews.json').tracks.forEach(x=>console.log(x.coverUrl))" > /tmp/echo-cover-urls.txt
           checked=0
           while IFS= read -r cover; do
             curl --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 -D /tmp/echo-cover-headers -o /tmp/echo-cover "$ECHO_URL$cover"
             grep -qi '^content-type: image/' /tmp/echo-cover-headers
+            grep -Eiq '^cache-control:[[:space:]]*no-store' /tmp/echo-cover-headers
             test "$(wc -c < /tmp/echo-cover)" -gt 1000
             checked=$((checked+1))
           done < /tmp/echo-cover-urls.txt
@@ -131,6 +133,10 @@ jobs:
           id="$(node -p "require('/tmp/echo-previews.json').tracks[0].id")"
           stream_status="$(curl -sS -o /dev/null -w '%{http_code}' "$ECHO_URL/api/v1/tracks/$id/stream")"
           test "$stream_status" = "404"
+          # Exercise an unlisted ID without touching private data or changing D1.
+          unknown_status="$(curl -sS -D /tmp/echo-unlisted-cover-headers -o /tmp/echo-unlisted-cover -w '%{http_code}' "$ECHO_URL/api/v1/previews/not-a-whitelisted-track-20261030/cover?policy=2")"
+          test "$unknown_status" = "404"
+          grep -Eiq '^cache-control:[[:space:]]*no-store' /tmp/echo-unlisted-cover-headers
       - name: Clarify deploy scope in logs
         run: |
           echo "Web shell and public read-only APIs only; media migration, Starry Auth and native EAS remain separate gates."
