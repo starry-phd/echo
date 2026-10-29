@@ -29,6 +29,10 @@ jobs:
       - run: npm run ui:check
       - run: npm test
       - run: npm run build:web
+      - name: Diagnose currently live public guest endpoints (aggregates only)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: node scripts/diagnose-public-guest.mjs
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
       - uses: actions/upload-artifact@v4
