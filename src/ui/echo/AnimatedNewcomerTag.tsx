@@ -19,7 +19,7 @@ export function AnimatedNewcomerTag({fill,textColor}:{fill:string;textColor:stri
  return <View style={styles.outer} accessibilityLabel="分類：新人">
   <Animated.View pointerEvents="none" style={[styles.rainbow,{transform:[{translateX:shift}]}]}>
    {Array.from({length:3},(_,cycle)=>colors.map((color,i)=>
-    <View key={cycle+'-'+i} style={{width:12,backgroundColor:color}}/>)}
+    <View key={cycle+'-'+i} style={{width:12,backgroundColor:color}}/>))}
   </Animated.View>
   <View style={[styles.inner,{backgroundColor:fill}]}>
    <Text style={[styles.text,{color:textColor}]}>新人</Text>
