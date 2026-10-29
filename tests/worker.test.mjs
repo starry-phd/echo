@@ -41,6 +41,27 @@ function envWithDb(overrides = {}) {
   };
 }
 
+test('revoked guest cover fails closed without reading R2, response not cacheable',async()=>{
+ let objectReads=0;
+ const {env}=envWithDb({firstRow:null,MEDIA:{async get(){objectReads++;return null;}}});
+ const response=await worker.fetch(new Request(origin+'/api/v1/previews/revoked/cover?policy=2'),env);
+ assert.equal(response.status,404);
+ assert.equal(response.headers.get('cache-control'),'no-store');
+ assert.equal(objectReads,0);
+});
+test('guest metadata cover version changes path to bypass older hour-long browser caches',async()=>{
+ const {env}=envWithDb({allRows:[{
+  id:'safe-1',title:'合規資訊卡',speaker:'講者',description:null,duration_seconds:60,
+  category_labels_json:'[]',cover_key:'cover/approved.jpg'
+ }]});
+ const response=await worker.fetch(new Request(origin+'/api/v1/previews'),env);
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get('cache-control'),'no-store');
+ const {tracks}=await response.json();
+ assert.equal(tracks[0].coverUrl,'/api/v1/previews/safe-1/cover?policy=2');
+ assert.equal(tracks[0].playable,false);
+});
+
 test('guest image endpoint reads R2 only for allowlisted metadata',async()=>{
  const reads=[];
  const {env,sqlSeen,bindings}=envWithDb({firstRow:{cover_key:'cover/guest.jpg'},MEDIA:{
@@ -49,6 +70,7 @@ test('guest image endpoint reads R2 only for allowlisted metadata',async()=>{
  const r=await worker.fetch(new Request(origin+'/api/v1/previews/guest-1/cover'),env);
  assert.equal(r.status,200);
  assert.equal(r.headers.get('content-type'),'image/jpeg');
+ assert.equal(r.headers.get('cache-control'),'no-store');
  assert.equal(r.headers.get('x-content-type-options'),'nosniff');
  assert.deepEqual(reads,['cover/guest.jpg']);
  assert.deepEqual(bindings[0],['guest-1']);
@@ -89,7 +111,7 @@ test('metadata-only guest previews require explicit whitelist and cannot stream'
  assert.equal(r.status,200);
  assert.deepEqual((await r.json()).tracks,[{id:'guest-1',title:'講座資訊',speaker:'演講者',
    description:null,durationSeconds:160,categories:['學習'],playable:false,
-   coverUrl:'/api/v1/previews/guest-1/cover',speakerRank:'鑽石',
+   coverUrl:'/api/v1/previews/guest-1/cover?policy=2',speakerRank:'鑽石',
    rating:4.5,ratingCount:5,commentsCount:2,likes:8,
    uploadDate:'2026-10-10',legacySnapshot:true}]);
  assert.match(sqlSeen[0],/INNER JOIN echo_guest_previews/);
@@ -237,6 +259,7 @@ test('eligible audio supports byte ranges for seeking', async () => {
   assert.equal(r.status,206);
   assert.equal(r.headers.get('content-range'),'bytes 100-299/1000');
   assert.equal(r.headers.get('accept-ranges'),'bytes');
+  assert.equal(r.headers.get('cache-control'),'no-store');
   assert.deepEqual(seen,{key:'safe/audio.mp3',range:'bytes=100-299'});
 });
 
@@ -254,6 +277,7 @@ test('legacy audio without R2 MIME is served using the real media container',asy
   const r=await worker.fetch(new Request(origin+'/api/v1/tracks/safe-1/stream'),env);
   assert.equal(r.status,200);
   assert.equal(r.headers.get('content-type'),mime,key);
+  assert.equal(r.headers.get('cache-control'),'no-store',key);
   assert.equal(r.headers.get('x-content-type-options'),'nosniff');
  }
 });
