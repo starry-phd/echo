@@ -23,7 +23,17 @@ for(const name of ['adsEnabled','adsSdkInitialized','adRequestsEnabled']){
 }
 assert.deepEqual(manifest.monetization.adsAppIds,[]);
 assert.deepEqual(manifest.monetization.adsUnitIds,[]);
-assert.equal(manifest.lifecycle.productionAuthorized,false);
+// Production may be enabled only for the explicitly scoped owner-approved Web shell release.
+if(manifest.lifecycle.productionAuthorized===true){
+ assert.equal(manifest.lifecycle.stage,'web-shell-release-approved');
+ assert.equal(manifest.lifecycle.storeSubmissionAuthorized,false);
+ assert.equal(manifest.identity.apiContract,'pending');
+ assert.equal(manifest.battery.apiContract,'pending');
+ assert.equal(manifest.monetization.billingSdkInitialized,false);
+ assert.equal(manifest.monetization.adRequestsEnabled,false);
+}else{
+ assert.equal(manifest.lifecycle.productionAuthorized,false);
+}
 const forbidden=['react-native-google-mobile-ads','expo-ads-admob','react-native-purchases','react-native-applovin-max'];
 for(const name of forbidden){
  assert.equal(pkg.dependencies[name],undefined, 'SDK '+name+' requires separate approval');

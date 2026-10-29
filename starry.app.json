@@ -53,8 +53,8 @@
     "adsActivation": "requires-separate-owner-approval"
   },
   "lifecycle": {
-    "stage": "development",
-    "productionAuthorized": false,
+    "stage": "web-shell-release-approved",
+    "productionAuthorized": true,
     "storeSubmissionAuthorized": false
   }
 }
