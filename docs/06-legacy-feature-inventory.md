@@ -1,30 +1,37 @@
-# 繁星回聲｜舊版功能與 Expo 58 v1.3 移植盤點（2026-10-29）
+# 繁星回聲｜原版功能移植盤點
 
-## 來源與權威界線
-- 舊版 GitHub：\`yukidu/Echo-Starry\`。本盤點依可讀的舊 Repo 目錄與部分原始碼；**源程式存在不代表舊功能在線或新案已核准照搬**。
-- 新版 GitHub：\`starry-phd/echo\` PR #2（Draft）；新系統以 Starry 生態系 v1.3 技術基座、模組唯一資料擁有權及新的中央 Auth 契約為準。
-- 標記：**已建置**指新 PR 中有候選程式；**尚待端到端驗收**及**依賴其他模組**不得宣稱功能已正式遷移。
+更新2026-10-29。唯一原版參考`yukidu/Echo-Starry`；新案`starry-phd/echo`採Expo58/RN0.88.1、Router、StyleSheet及Starry v1.3架構。最新main、CI、Production與驗收一律先讀[Issue #3頂端](https://github.com/starry-phd/echo/issues/3)。本表不把原版有程式碼、候選碼或CI當作功能已正式完成。
 
-| 舊版可辨識功能 | 舊版來源範例 | 新版進度 | 後續阻塞／安全規則 |
-| --- | --- | --- | --- |
-| 音檔清單、關鍵字／講師名稱搜尋、分類 | \`src/App.tsx\`, \`src/components/AudioTrackList.tsx\` | 已建置公開目錄與類別、搜尋 | 新 R2 尚未複製；只顯示 public + verified |
-| 音檔詳情、播放、進度拖曳基礎 | \`src/components/DetailView.tsx\`, \`src/components/MiniPlayer.tsx\` | 已建置單筆公開詳情 API、原生／Web 播放入口、HTTP Range | 實機播放與 R2 實際內容待驗 |
-| 講師專頁、講師介紹／問答 | \`src/components/SpeakerProfilePage.tsx\`, \`src/components/SpeakerNameLink.tsx\` | 公開講師列表與公開作品初版；AI 簡介／問答未移植 | 只顯示 public + verified，名片及 AI 摘要內容不得照搬未驗證權限 |
-| 會員收藏、播放紀錄 | \`src/utils/offlineAudio.ts\`, \`src/components/DetailView.tsx\` 等 | 僅有 Echo D1 預留結構 | 需 Starry ID／DEV-D API，會員未授權前禁止寫入 |
-| 上傳、音檔管理、社群音檔 | \`src/components/AudioWorkspacePage.tsx\`, \`src/components/UploadModal.tsx\` | 尚未移植 | 管理／上傳需 Starry Admin scopes、後端檔案類型與大小驗證、稽核 |
-| 留言、評價與分享 | \`src/components/CommentsSection.tsx\`, \`src/components/ShareModal.tsx\` | 尚未移植 | 留言需身分、審核與防濫用；分享只可公開安全路由 |
-| 逐字稿與 AI 問答 | \`src/components/TranscriptQaAdmin.tsx\`, \`src/components/AiQuestionSettingsAdmin.tsx\` | 尚未移植 | DEV-A／AI／權限、費用及內容審核規格尚需確認 |
-| 舊登入、會員資料、獎銜 | \`src/authSessionPolicy.ts\`, \`src/components/ProfileModal.tsx\` | 只保留 Starry 中央 API 插槽 | 舊 Session／密碼／管理員繼承一律禁止；Starry ID 在獨立服務中開發 |
-| 音訊離線／背景播放 | \`src/utils/offlineAudio.ts\`, \`src/mediaSessionPolicy.ts\` | 僅有 Expo audio 基礎設定 | R2、平台 DRM／授權、背景及離線可見性待驗 |
+## 已部署到PR20的範圍
 
-## 本輪修正的具體問題
+| 原版功能／來源 | 新版實際狀態 | 剩餘依賴與界線 |
+| --- | --- | --- |
+| 首頁清單、照片、姓名、獎銜、分類；`AudioCard.tsx`/CSS | 28張核准訪客資訊卡及28張照片；8個新人彩虹框、拆分講師連結、歷史星級／按讚／心得數（唯讀） | 私人錄音不因展示照片而可播放／分享；84筆未核准metadata不公開 |
+| 搜尋、分類及排序；`App.tsx`/`v145FourFilterToolbar.ts`/`utils/ranks.ts` | 已准許欄位多字AND、穩定分類選項、獎銜篩選、時間及三種熱門排序 | 網友關鍵字及收藏人數無可信新API，不虛構 |
+| 音檔詳情；`DetailView.tsx` | `/preview/[id]`純資訊詳情已部署；公開音檔單筆API及播放器/Range候選程式具安全測試 | 全部112仍private/copied，0 public+verified，沒有真實公開音檔播放驗收 |
+| 講師專頁；`SpeakerProfilePage.tsx`/`SpeakerNameLink.tsx` | 講師列表、拆分姓名連結、核准照片與安全作品頁 | 簡介、AI問答、名片不得擅自照搬未核准內容 |
+| 本機收藏與偏好；`AudioCard.tsx` | 全App共用AsyncStorage裝置收藏／隱藏、收藏清單；PR20 Modal修復選單被下排遮住，正式回歸通過 | 不宣稱會員或跨裝置同步；不喜歡另依使用者明確需求新增 |
+| 24主題、深淺模式、好心情；`utils/theme.ts`/`App.tsx` | 24色UI已部署；下一批修復原生持久化、隨機另一色及主題底色，待該PR CI/部署 | 外觀只存本機，無中央會員或資料權限 |
 
-舊版講師及音檔列表具大量內容，新版第一版 \`/api/v1/catalog\` 為有限（最多 100 筆）目錄。**不應**再讓音檔詳情頁從前 100 筆列表查找某個 id：加入 \`GET /api/v1/tracks/{id}\` 的單筆公開音檔 API，只有 \`visibility='public' AND migration_status='verified'\` 才返回已安全裁切的資料，404 不揭露私有／尚未驗證內容。新增 OpenAPI → SDK → App Route → CI 契約與安全測試。後續可按需增加真正的分頁，不把音檔 100 筆上限當作資料總量。
+## 仍須逐項移植與驗收
 
-## v1.3 強制保持的界線
+| 原版功能／來源 | 具體未完成項目 | 依賴 |
+| --- | --- | --- |
+| 會員、個人資料與獎銜；`authSessionPolicy.ts`/`ProfileModal.tsx` | 中央登入、登出/revoke、可信user/admin scopes | Starry ID正式契約；目前公開OpenAPI仍DRAFT/not deployed、僅health；不讀中央D1或沿用舊session/密碼 |
+| 播放、續播、背景及離線；`MiniPlayer.tsx`/`mediaSessionPolicy.ts`/`utils/offlineAudio.ts` | 逐曲權利、全長/抽段解碼、HTTP Range與四端實測、平台音訊中斷 | 私人音檔完整性稽核尚0 runs，自動核准審查阻擋Runner下載／彙總artifact，需具體核准；不得批量公開 |
+| 收藏與播放紀錄同步；`DetailView.tsx` | 會員收藏、學習進度與跨裝置同步 | 中央身分與Echo業務API；不能把裝置收藏當會員資料 |
+| 心得、評價、按讚及分享；`CommentsSection.tsx`/`ShareModal.tsx` | 寫入、審核、防濫用、公開安全分享 | 中央身分、內容權利與新業務API；歷史aggregate唯讀 |
+| 排行榜；`StatisticsView.tsx`/`KeywordsTab.tsx` | 模範生／會員／熱門關鍵字及新即時統計 | 不公開舊會員名單或個人學習資料；需可信scope與統計契約 |
+| 通知；`NotificationsView.tsx` | @提及、審核、會員晉升與快速回覆 | 中央身分、Echo事件API與收件人授權 |
+| VIP、貼紙與付費；`StickersModal.tsx` | entitlement、貼紙扣發、VIP/特定帳號內容權限、商店Sandbox | Starry ID/Battery契約；RevenueCat未初始化，Ads OFF，不沿用舊權限 |
+| 上傳、管理、社群音檔；`AudioWorkspacePage.tsx`/`UploadModal.tsx` | 管理scopes、檔案驗證、審核與稽核 | Starry Admin及Echo業務API；不直接開放寫入 |
+| 逐字稿／AI；`TranscriptQaAdmin.tsx`/`AiQuestionSettingsAdmin.tsx` | 內容權利、AI權限與費用、管理及引用 | 未核准API、資料與費用前不偽造摘要或問答 |
+| 原生與商店 | PR20 iOS/Android Hermes export成功；簽章Build、安裝、真機、商店Sandbox未驗 | EAS project/credentials及商店核准；Web部署不是App上架 |
 
-- **Ads**：Google AdMob Mediation 已選，但 Ads OFF；不得初始化、投放或建立真 Ad Unit。
-- **Billing**：RevenueCat 為方向；商品只可非消耗永久買斷、月／年自動續訂；購買需先驗證 Starry ID，同一 App 會員的有效權益跨 iOS／Android 規則待 Sandbox。
-- **D1/R2**：Echo 專屬音檔資料庫保留；中央會員資料由另一個 Starry API 服務主責，暫定獨立 D1 \`id-starry\`。
-- **Legacy**：舊 App 與舊 Cloudflare 不刪；影音 metadata 暫保持 pending/private，不改成 verified/public。
-- **部署**：本 PR 為候選、CI 不等於部署、EAS 原生 Build／正式網站及商店仍未驗收。未經當次明確授權不合併、不部署、不付費。
+## 資料與部署事實
+
+- R2跨帳號複製已完成：來源有效596物件／3,122,987,926 bytes，新端相同；舊端保留。不要沿用早期「新R2為空」快照。
+- 112音訊全private/copied；28卡whitelist、28封面與歷史metadata已在D1。原版guestVisible只控制清單展示，不能作播放使用權。
+- 最新已驗證release至PR20：`bc8f5f9d9f39afe42172acae4c5d4a20107c6287`；Production #40881561931 success、Cloudflare deployment `c0c5b7f2-ee28-401a-8271-208d7f78625e`。見`docs/13-work-ui-acceptance.md`修復前後截圖與實測限制。
+- 本輪已獲自主開發、合併及正式部署授權；仍走受保護PR/CI/main CI/精確SHA手動Production及Environment審批，不改保護、不直推main、不直接Cloudflare發布繞過gate。
+- AdMob Mediation已定案但Ads OFF、RevenueCat未初始化；不動H-Global、不刪舊系統或媒體、不改DNS、不將Secrets寫入repo/log/Issue。

@@ -1,6 +1,7 @@
-import {createContext,useContext,useEffect,useMemo,useState} from 'react';
+import {createContext,useContext,useEffect,useMemo,useState,useSyncExternalStore} from 'react';
 import type {ReactNode} from 'react';
-import {Platform} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {createThemePreferenceStore} from './themePreferenceStore';
 export type LegacyPalette={id:string;name:string;primary:string;primaryHover:string};
 const base:LegacyPalette[]=[
  ['rose','經典玫瑰','#c13f6f','#a8325e'],
@@ -29,7 +30,6 @@ const base:LegacyPalette[]=[
  ['charcoal','石墨灰','#5d6570','#4c535c']
 ].map(([id,name,primary,primaryHover])=>({id,name,primary,primaryHover}));
 export const legacyPalettes:readonly LegacyPalette[]=base;
-const key='sq_light_palette_v1';
 type ThemeState={
   palette:LegacyPalette;dark:boolean;
   bg:string;card:string;ink:string;muted:string;border:string;lightPill:string;
@@ -38,48 +38,21 @@ type ThemeState={
 const defaultPalette=base[0];
 const LegacyContext=createContext<ThemeState|null>(null);
 export function LegacyThemeProvider({children}:{children:ReactNode}){
- const [id,setId]=useState('rose');
- const [dark,setDark]=useState(false);
- useEffect(()=>{
-   if(Platform.OS!=='web'||typeof window==='undefined')return;
-   try{
-     const stored=window.localStorage.getItem(key);
-     if(stored&&base.some(x=>x.id===stored))setId(stored);
-     setDark(window.localStorage.getItem('echo-ui-dark')==='1');
-   }catch{/* Browser private mode can deny storage. */}
- },[]);
- const setPalette=(next:string)=>{
-   if(!base.some(p=>p.id===next))return;
-   setId(next);
-   if(Platform.OS==='web'&&typeof window!=='undefined'){
-     try{window.localStorage.setItem(key,next);}catch{/* Optional local preference */}
-   }
- };
- const toggleDark=()=>{
-   setDark(value=>{
-     const next=!value;
-     if(Platform.OS==='web'&&typeof window!=='undefined'){
-       try{window.localStorage.setItem('echo-ui-dark',next?'1':'0');}catch{/* Optional preference */}
-     }
-     return next;
-   });
- };
- const cyclePalette=()=>{
-   const index=base.findIndex(p=>p.id===id);
-   setPalette(base[(index+1)%base.length].id);
- };
+ const [store]=useState(()=>createThemePreferenceStore(AsyncStorage,base.map(p=>p.id)));
+ const {id,dark}=useSyncExternalStore(store.subscribe,store.getSnapshot,store.getServerSnapshot);
+ useEffect(()=>{void store.hydrate();},[store]);
  const value=useMemo<ThemeState>(()=>{
    const current=base.find(p=>p.id===id)||defaultPalette;
    return{
-     palette:current,dark,setPalette,cyclePalette,toggleDark,
+     palette:current,dark,setPalette:store.setPalette,cyclePalette:store.cyclePalette,toggleDark:store.toggleDark,
      bg:dark?'#0d0f17':'#fdf8f9',
      card:dark?'#181c28':'#fff',
      ink:dark?'#f8fafc':'#0f172a',
      muted:dark?'#94a3b8':'#64748b',
-     border:dark?'#23293b':'#f1e7ea',
-     lightPill:dark?'#2a1b28':'#fae8ed'
+     border:dark?'#23293b':`${current.primary}28`,
+     lightPill:dark?'#1a1e2b':`${current.primary}1a`
    };
- },[id,dark]);
+ },[id,dark,store]);
  return <LegacyContext.Provider value={value}>{children}</LegacyContext.Provider>;
 }
 export function useLegacyTheme():ThemeState{
