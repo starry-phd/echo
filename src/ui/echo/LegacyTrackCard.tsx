@@ -6,6 +6,7 @@ import {getApiBaseUrl} from '../../api/client';
 import {useLegacyTheme} from './legacyTheme';
 import {AnimatedNewcomerTag} from './AnimatedNewcomerTag';
 import {splitSpeakerNames} from './speakerNames';
+import {readDeviceFavorites,saveDeviceFavorites} from './deviceFavorites';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
  track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
@@ -14,6 +15,16 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const [open,setOpen]=useState(false);
  const [expanded,setExpanded]=useState(false);
  const [coverError,setCoverError]=useState(false);
+ const [favorite,setFavorite]=useState(false);
+ useEffect(()=>setFavorite(readDeviceFavorites().includes(track.id)),[track.id]);
+ const toggleFavorite=()=>{
+  setOpen(false);
+  const ids=new Set(readDeviceFavorites());
+  if(favorite)ids.delete(track.id);else ids.add(track.id);
+  const next=[...ids];saveDeviceFavorites(next);
+  setFavorite(ids.has(track.id));
+  onNotice(ids.has(track.id)?'已加入此裝置收藏（尚未與中央會員同步）。':'已取消此裝置的收藏。');
+ };
  const apiOrigin=getApiBaseUrl();
  const rawCover=track.coverUrl;
  const coverUri=rawCover&&apiOrigin
@@ -122,10 +133,8 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleDetails}>
     <Text style={[styles.popupText,{color:t.ink}]}>ⓘ　詳細內容</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>{
-    setOpen(false);onNotice('加入收藏需先串接繁星中央會員；目前不會假裝已儲存。');
-   }}>
-    <Text style={[styles.popupText,{color:t.ink}]}>♧　加入收藏</Text>
+   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleFavorite}>
+    <Text style={[styles.popupText,{color:t.ink}]}>{favorite?'▣　取消收藏':'♧　加入收藏'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}>
     <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡</Text>
