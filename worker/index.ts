@@ -165,7 +165,7 @@ const previewCover=async(c:{req:{raw:Request;param(name:string):string};env:Env}
  if(!/^cover\/[^/\\]{1,180}\.(?:jpe?g|png|webp)$/i.test(key))
   return json({code:'NOT_FOUND'},404,c.req.raw);
  const item=await c.env.MEDIA.get(key);
- if(!item||item.size<=0||item.size>2_000_000)return json({code:'NOT_FOUND'},404,c.req.raw);
+ if(!item||item.size<=0||item.size>5_000_000)return json({code:'NOT_FOUND'},404,c.req.raw);
  const mime=key.toLowerCase().endsWith('.png')?'image/png':
   key.toLowerCase().endsWith('.webp')?'image/webp':'image/jpeg';
  return new Response(item.body,{status:200,headers:{
