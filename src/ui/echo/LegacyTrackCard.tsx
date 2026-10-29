@@ -1,21 +1,33 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {router} from 'expo-router';
-import {Image,Pressable,Share,StyleSheet,Text,View} from 'react-native';
+import {Image,Modal,Pressable,ScrollView,Share,StyleSheet,Text,View} from 'react-native';
+import type {ViewInstance} from 'react-native';
 import type {EchoTrack} from '../../types';
 import {getApiBaseUrl} from '../../api/client';
 import {useLegacyTheme} from './legacyTheme';
 import {AnimatedNewcomerTag} from './AnimatedNewcomerTag';
 import {splitSpeakerNames} from './speakerNames';
 import {useDevicePreferences} from './DevicePreferences';
+import {useViewportDimensions} from '../useViewportDimensions';
+import {cardMenuLayout} from './cardMenuLayout';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
  track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
 }){
  const t=useLegacyTheme();
  const preferences=useDevicePreferences();
+ const viewport=useViewportDimensions();
+ const moreAnchor=useRef<ViewInstance>(null);
  const [open,setOpen]=useState(false);
+ const [menuPosition,setMenuPosition]=useState(()=>cardMenuLayout({x:0,y:0,width:32,height:32},{width:390,height:844}));
  const [coverError,setCoverError]=useState(false);
  const favorite=preferences.favoriteIds.includes(track.id);
+ useEffect(()=>setOpen(false),[track.id,viewport.width,viewport.height]);
+ const openMenu=()=>{
+  moreAnchor.current?.measureInWindow((x,y,width,height)=>{
+   setMenuPosition(cardMenuLayout({x,y,width,height},viewport));setOpen(true);
+  });
+ };
  const toggleFavorite=()=>{
   setOpen(false);
   const added=preferences.toggleFavorite(track.id);
@@ -116,12 +128,17 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     </View>
    </View>
   </View>
-  <Pressable accessibilityRole="button" accessibilityLabel="更多功能"
-   accessibilityState={{expanded:open}} onPress={()=>setOpen(o=>!o)}
+  <Pressable ref={moreAnchor} hitSlop={6} accessibilityRole="button" accessibilityLabel="更多功能"
+   accessibilityState={{expanded:open}} onPress={openMenu}
    style={[styles.more,{backgroundColor:t.card,borderColor:t.border}]}>
    <Text style={[styles.moreText,{color:t.muted}]}>⋮</Text>
   </Pressable>
-  {open&&<View style={[styles.popup,{backgroundColor:t.card,borderColor:t.border}]}>
+  <Modal visible={open} transparent animationType="fade" onRequestClose={()=>setOpen(false)}>
+   <View style={StyleSheet.absoluteFill}>
+    <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單背景"
+     onPress={()=>setOpen(false)} style={[StyleSheet.absoluteFill,styles.menuBackdrop]}/>
+    <View accessibilityViewIsModal style={[styles.popup,menuPosition,{backgroundColor:t.card,borderColor:t.border}]}>
+     <ScrollView contentContainerStyle={styles.popupContent}>
    <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
     <Text style={[styles.popupText,{color:t.muted}]}>✕　關閉選單</Text>
    </Pressable>
@@ -139,7 +156,10 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
     <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡</Text>
    </Pressable>
-  </View>}
+     </ScrollView>
+    </View>
+   </View>
+  </Modal>
  </View>;
 }
 const styles=StyleSheet.create({
@@ -172,9 +192,11 @@ const styles=StyleSheet.create({
  stat:{fontSize:11,fontWeight:'500'},
  more:{position:'absolute',right:9,top:9,width:32,height:32,borderWidth:1,borderRadius:17,alignItems:'center',justifyContent:'center',zIndex:11},
  moreText:{fontSize:23,lineHeight:26,fontWeight:'700'},
- popup:{position:'absolute',right:9,top:45,width:177,borderWidth:1,borderRadius:14,padding:5,
-  shadowColor:'#111827',shadowOpacity:.17,shadowRadius:13,elevation:13,zIndex:20},
- popupRow:{paddingVertical:10,paddingHorizontal:9},
+ menuBackdrop:{backgroundColor:'rgba(15,23,42,.12)'},
+ popup:{position:'absolute',borderWidth:1,borderRadius:14,overflow:'hidden',
+  shadowColor:'#111827',shadowOpacity:.17,shadowRadius:13,elevation:13},
+ popupContent:{padding:5},
+ popupRow:{minHeight:44,paddingVertical:10,paddingHorizontal:9,justifyContent:'center'},
  popupText:{fontSize:13,fontWeight:'700'},
  expanded:{paddingHorizontal:12,paddingVertical:11,borderTopWidth:1,borderBottomLeftRadius:20,borderBottomRightRadius:20,gap:5},
  expandedTitle:{fontSize:14,fontWeight:'800'},

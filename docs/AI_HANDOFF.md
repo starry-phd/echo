@@ -12,15 +12,19 @@
 - Cloudflare於2026-10-29 **08:55:23 UTC / 16:55:23台灣**：Deployment `8e709f30-f426-4ac3-a820-effa670911c4`，Version `c9cb0032-9d9a-4fc7-97a4-53da603c9fad`，100%流量。這是該次release證據，之後版本須查Issue。
 - 正式瀏覽器驗收：28/28圖片成功解碼、8個新人標籤、390×844 CSS viewport無水平溢出、桌面雙欄；收藏重載保留／取消、不喜歡28→27→重載27→還原28、拒絕分享、拆分講師連結通過。
 
-## 本輪後續安全移植
+## PR #19 已上線與後續修復
 
-分支 `feat/echo-device-library-filter-parity-20261029`：本裝置收藏清單 `/favorites`、全App共用收藏／隱藏狀態、Expo58相容AsyncStorage2.2.0（沿用既有Web keys）、獨立純資訊詳情 `/preview/[id]`、講師獎銜篩選、跨欄位多字AND搜尋、穩定分類選項、修正熱門排序的錯誤時間標籤。**是否已合併／部署必須查該PR與Issue #3最新紀錄；此文件提交時尚不能當作上線證據。**
+PR #19已合併並正式部署，release SHA `ed1262b2c1e0097a7a531aee6491d68008cc7a3c`：[PR CI #40848189420](https://github.com/starry-phd/echo/actions/runs/40848189420)、[main CI #40848492058](https://github.com/starry-phd/echo/actions/runs/40848492058)、[Production #40848841175](https://github.com/starry-phd/echo/actions/runs/40848841175)均success。Cloudflare deployment `59d2dd9a-f3a7-4705-ad4b-e01dcfba159b`，2026-10-29 09:22:44 UTC，version `dc61b95e-1f8b-4876-b041-0a26b3f4b7c9` 100%。
+
+該版新增本裝置收藏清單 `/favorites`、全App共用收藏／隱藏狀態、Expo58相容AsyncStorage2.2.0（沿用既有Web keys）、獨立純資訊詳情 `/preview/[id]`、講師獎銜篩選、跨欄位多字AND搜尋、穩定分類選項，修正熱門排序的時間標籤、Web彩虹循環及responsive hydration。
 
 - 偏好只存格式檢查後的音檔ID；不是會員同步或播放資格。讀取失敗時保留記憶體操作，不覆蓋未知的原偏好；儲存失敗向使用者明示。
 - 收藏／詳情只解析當前公開catalog或既有28筆whitelist；不以本機ID讀私人內容。純資訊詳情不建立audio source。
 - 講師獎銜是作品當時公開metadata的顯示篩選，不讀會員身份或提升權限；沿用原版去GAR／創辦人前綴規則。
 - 搜尋用bound JSON token list及SQLite JSON_each交集，不拼入使用者輸入。public+verified與preview白名單gate維持。
-- 本機68 tests、typecheck/lint、Web build及安全guards通過；遠端CI、該版正式UI與iOS/Android實測須另附證據。
+- 該版68 tests及完整遠端CI通過；正式390px UI實測照片28/28、獎銜篩出9張、多字交集13張、分類在無結果仍保留、收藏頁／詳情取消／首頁同步、詳情無audio元素。彩虹transform兩次影格不同，重新載入未再出現原hydration/native driver警告。原生iOS/Android實測仍未完成。
+- 21時續驗確認跨頁隱藏可由講師頁同步到首頁27張；同時找到桌面卡片彈出選單被下一排卡片遮住，造成部分選項點不到。不是儲存失效；修復改用React Native Modal及螢幕內定位。修復部署及重測狀態以Issue #3為準。
+- 後續分支 `test/echo-private-audio-integrity-20261029` 同時新增只讀112筆原檔／複本完整SHA-256+逐筆前8秒解碼，僅上傳彙總artifact；詳見 `docs/12-private-audio-integrity-audit.md`。本機73 tests通過。**實際112筆run未成功前不可填媒體驗收完成，更不可改公開權限。**
 
 ## 部署與保護
 

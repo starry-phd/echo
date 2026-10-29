@@ -10,6 +10,7 @@ const source = {
   guard: readFileSync(new URL('../scripts/check-release-safety.mjs', import.meta.url), 'utf8'),
   release: readFileSync(new URL('../.github/workflows/deploy-worker.yml', import.meta.url), 'utf8'),
   probe: readFileSync(new URL('../.github/workflows/probe-r2.yml', import.meta.url), 'utf8'),
+  audit: readFileSync(new URL('../.github/workflows/audit-private-audio.yml', import.meta.url), 'utf8'),
   manifest: readFileSync(new URL('../starry.app.json', import.meta.url), 'utf8'),
 };
 
@@ -21,6 +22,7 @@ function runGate(override = {}) {
     writeFileSync(join(temp, 'scripts', 'check-release-safety.mjs'), source.guard);
     writeFileSync(join(temp, '.github', 'workflows', 'deploy-worker.yml'), override.release ?? source.release);
     writeFileSync(join(temp, '.github', 'workflows', 'probe-r2.yml'), override.probe ?? source.probe);
+    writeFileSync(join(temp, '.github', 'workflows', 'audit-private-audio.yml'), override.audit ?? source.audit);
     writeFileSync(join(temp, 'starry.app.json'), override.manifest ?? source.manifest);
     return spawnSync(process.execPath, [join(temp, 'scripts', 'check-release-safety.mjs')], {
       encoding: 'utf8',
@@ -37,6 +39,12 @@ test('production guard passes the approved, non-deploying workflow', () => {
 });
 
 const cases = [
+  ['reject automatic triggering of the full private audio audit', () => ({
+    audit: source.audit.replace('  workflow_dispatch:\n','  push:\n  workflow_dispatch:\n'),
+  })],
+  ['reject uploading temporary private media instead of the aggregate report', () => ({
+    audit: source.audit.replace('path: /tmp/echo-private-audio-audit-summary.json','path: /tmp/'),
+  })],
   ['reject an automatic push deployment trigger', () => ({
     release: source.release.replace('  workflow_dispatch:\n', '  workflow_dispatch:\n  push:\n    branches: [main]\n'),
   })],

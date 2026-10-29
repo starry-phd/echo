@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const release=readFileSync(new URL('../.github/workflows/deploy-worker.yml',import.meta.url),'utf8');
 const probe=readFileSync(new URL('../.github/workflows/probe-r2.yml',import.meta.url),'utf8');
+const audit=readFileSync(new URL('../.github/workflows/audit-private-audio.yml',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../starry.app.json',import.meta.url),'utf8'));
 function triggers(yaml){
  const start=yaml.indexOf('\non:\n');
@@ -13,7 +14,7 @@ function triggers(yaml){
  assert.ok(end>0,'Workflow trigger boundary not found');
  return remaining.slice(0,end);
 }
-for(const [name,yaml] of [['production',release],['private-r2-probe',probe]]){
+for(const [name,yaml] of [['production',release],['private-r2-probe',probe],['private-audio-audit',audit]]){
  const block=triggers(yaml);
  const configuredEvents=[...block.matchAll(/^  ([A-Za-z_][A-Za-z0-9_-]*):/gm)].map(m=>m[1]);
  assert.deepEqual(configuredEvents,['workflow_dispatch'],name+' must expose exactly one manual trigger');
@@ -48,4 +49,8 @@ assert.match(finalGate,/git ls-remote --exit-code origin refs\/heads\/main/);
 assert.match(finalGate,/remote_main.*RELEASE_COMMIT_SHA/);
 assert.match(finalGate,/actual.*GITHUB_SHA/);
 assert.equal(manifest.monetization.adRequestsEnabled,false);
+for(const marker of ["github.ref == 'refs/heads/main'",'AUDIT-PRIVATE-ECHO-AUDIO-NO-PUBLICATION',
+ 'git ls-remote --exit-code origin refs/heads/main','environment: migration'])
+ assert.ok(audit.includes(marker),'Missing private audit guard: '+marker);
+assert.match(audit,/path: \/tmp\/echo-private-audio-audit-summary\.json\s*\n/,'Only the aggregate report may be uploaded');
 console.log('Manual-only production/R2 triggers and release safety guards validated.');

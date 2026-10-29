@@ -1,0 +1,67 @@
+name: Verify all 112 private Echo audio copies (no publication)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type AUDIT-PRIVATE-ECHO-AUDIO-NO-PUBLICATION'
+        required: true
+        type: string
+      approved_commit:
+        description: 'Exact 40-character main commit SHA reviewed for this read-only audit'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: echo-private-audio-probe
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: migration
+    timeout-minutes: 30
+    env:
+      AUDIT_CONFIRMATION: ${{ inputs.confirmation }}
+      AUDIT_COMMIT: ${{ inputs.approved_commit }}
+      RCLONE_CONFIG_OLD_TYPE: s3
+      RCLONE_CONFIG_OLD_PROVIDER: Cloudflare
+      RCLONE_CONFIG_OLD_NO_CHECK_BUCKET: 'true'
+      RCLONE_CONFIG_OLD_ENDPOINT: https://611de84062006fe96fafd0cf157f2ec0.r2.cloudflarestorage.com
+      RCLONE_CONFIG_OLD_ACCESS_KEY_ID: ${{ secrets.ECHO_OLD_R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY: ${{ secrets.ECHO_OLD_R2_SECRET_ACCESS_KEY }}
+      RCLONE_CONFIG_NEW_TYPE: s3
+      RCLONE_CONFIG_NEW_PROVIDER: Cloudflare
+      RCLONE_CONFIG_NEW_NO_CHECK_BUCKET: 'true'
+      RCLONE_CONFIG_NEW_ENDPOINT: https://9ff1b4c261141730ac2fe0683f730062.r2.cloudflarestorage.com
+      RCLONE_CONFIG_NEW_ACCESS_KEY_ID: ${{ secrets.ECHO_NEW_R2_ACCESS_KEY_ID }}
+      RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY: ${{ secrets.ECHO_NEW_R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require explicit read-only audit approval of current main
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$AUDIT_CONFIRMATION" = "AUDIT-PRIVATE-ECHO-AUDIO-NO-PUBLICATION"
+          [[ "$AUDIT_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_SHA" = "$AUDIT_COMMIT"
+          test "$(git rev-parse HEAD)" = "$AUDIT_COMMIT"
+          test "$(git ls-remote --exit-code origin refs/heads/main | cut -f1)" = "$AUDIT_COMMIT"
+          for variable in RCLONE_CONFIG_OLD_ACCESS_KEY_ID RCLONE_CONFIG_OLD_SECRET_ACCESS_KEY RCLONE_CONFIG_NEW_ACCESS_KEY_ID RCLONE_CONFIG_NEW_SECRET_ACCESS_KEY; do
+            test -n "${!variable}"
+          done
+      - name: Install audited distribution tools
+        run: sudo apt-get update -qq && sudo apt-get install -y rclone ffmpeg
+      - name: Compare private original/copy SHA-256 and decode a sample from every recording
+        run: python3 scripts/audit-private-audio.py --summary /tmp/echo-private-audio-audit-summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: echo-private-audio-aggregate-results
+          path: /tmp/echo-private-audio-audit-summary.json
+          if-no-files-found: ignore
+          retention-days: 30
