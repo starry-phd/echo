@@ -3,8 +3,15 @@ name: Deploy Echo public Web shell to Cloudflare Workers
 # Production deployment is intentionally manual until central ID/media acceptance.
 on:
   workflow_dispatch:
-  push:
-    branches: [release/echo-v13-owner-approved]
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY-ECHO-STARRY-PRODUCTION to confirm a production release'
+        required: true
+        type: string
+      approved_commit:
+        description: 'Exact 40-character main commit SHA approved for production deployment'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,9 +22,13 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: production
     env:
+      RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
+      RELEASE_COMMIT_SHA: ${{ inputs.approved_commit }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: 9ff1b4c261141730ac2fe0683f730062
       ECHO_URL: https://echo-starry.starry-phd.workers.dev
@@ -26,6 +37,39 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Require exact human-approved main commit and lifecycle permission
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
+            echo "::error::Manual workflow dispatch required"
+            exit 1
+          fi
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Only main is eligible for production deployment"
+            exit 1
+          fi
+          if [ "$RELEASE_CONFIRMATION" != "DEPLOY-ECHO-STARRY-PRODUCTION" ]; then
+            echo "::error::Owner must enter exact production confirmation"
+            exit 1
+          fi
+          if ! [[ "$RELEASE_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Full 40-character approved SHA required"
+            exit 1
+          fi
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$GITHUB_SHA" ]; then
+            echo "::error::Checked-out commit does not match explicit approval"
+            exit 1
+          fi
+          # Reject a queued approval if main moved after the workflow was dispatched.
+          # This is read-only; failure to resolve the current ref blocks deployment.
+          remote_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [ -z "$remote_main" ] || [ "$remote_main" != "$actual" ]; then
+            echo "::error::Approved SHA is no longer the current main HEAD"
+            exit 1
+          fi
+          node -e "const m=require('./starry.app.json');if(m.lifecycle.productionAuthorized!==true){console.error('Production remains locked until an explicitly approved release');process.exit(1)}"
       - name: Require Cloudflare credentials
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
@@ -33,6 +77,7 @@ jobs:
             exit 1
           fi
       - run: npm install --no-audit --no-fund
+      - run: npm run release:guard
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run expo:doctor
@@ -42,6 +87,16 @@ jobs:
       - run: npm run build:web
       - name: Verify Worker and Assets bundle before uploading
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
+      - name: Revalidate current main against the approved SHA before upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          remote_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [ -z "$remote_main" ] || [ "$remote_main" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$GITHUB_SHA" ]; then
+            echo "::error::Main HEAD moved or checked-out code differs from the explicitly approved release SHA"
+            exit 1
+          fi
       - name: Deploy Worker and complete Expo Web assets together
         run: npx --yes wrangler@4 deploy
       - name: "HTTP smoke test - homepage, API and private-media refusal"

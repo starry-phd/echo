@@ -18,7 +18,8 @@
     "monetization:check": "node scripts/check-v13-manifest.mjs",
     "api:generate": "node scripts/run-isolated-openapi-generator.mjs",
     "postinstall": "npm run api:generate",
-    "ui:check": "node scripts/check-ui-v13.mjs"
+    "ui:check": "node scripts/check-ui-v13.mjs",
+    "release:guard": "node scripts/check-release-safety.mjs"
   },
   "dependencies": {
     "expo": "~58.0.0",
