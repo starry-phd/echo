@@ -57,6 +57,19 @@ test('guest image endpoint reads R2 only for allowlisted metadata',async()=>{
  assert.match(sqlSeen[0],/visibility='private'/);
  assert.match(sqlSeen[0],/migration_status='copied'/);
 });
+test('legacy guest cover slightly above 2MB remains eligible but oversized media is refused',async()=>{
+ const {env}=envWithDb({firstRow:{cover_key:'cover/large.png'},MEDIA:{
+  async get(){return {size:2045487,body:new Uint8Array([137,80,78,71]),httpMetadata:{contentType:'image/png'}};}
+ }});
+ const r=await worker.fetch(new Request(origin+'/api/v1/previews/legacy-large-cover/cover'),env);
+ assert.equal(r.status,200);
+ assert.equal(r.headers.get('content-type'),'image/png');
+ const blocked=envWithDb({firstRow:{cover_key:'cover/too-large.png'},MEDIA:{
+  async get(){return {size:6000000,body:new Uint8Array([1])};}
+ }});
+ const no=await worker.fetch(new Request(origin+'/api/v1/previews/too-large/cover'),blocked.env);
+ assert.equal(no.status,404);
+});
 test('guest image endpoint denies unlisted, untrusted paths and avoids R2',async()=>{
  for(const cover_key of [null,'private/audio.mp3','cover/../../secret.jpg','cover/not-an-image.svg']){
   let reads=0;
