@@ -16,6 +16,7 @@ import {baseSpeakerRank,matchesCardFilters} from '../src/ui/echo/cardFilters';
 import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
+import {chooseSafeLuckyCard} from '../src/ui/echo/safeLuckyDraw';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -31,6 +32,7 @@ export default function CatalogScreen(){
  const [category,setCategory]=useState<string|null>(null);
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
+ const [luckyPreviewId,setLuckyPreviewId]=useState<string|null>(null);
  const [advanced,setAdvanced]=useState(false);
  const [speakerRank,setSpeakerRank]=useState<string|null>(null);
  const {dislikedIds,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
@@ -71,6 +73,10 @@ export default function CatalogScreen(){
  const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&matchesCardFilters(t,{
   query:debouncedQuery,category,speakerRank
  })),[tracks,dislikedIds,debouncedQuery,category,speakerRank]);
+ // A prior pick disappears immediately if hidden or excluded by new filters.
+ const luckyPreview=useMemo(()=>
+  visibleTracks.find(t=>t.id===luckyPreviewId&&t.playable===false&&t.legacySnapshot===true),
+  [visibleTracks,luckyPreviewId]);
  const ranks=useMemo(()=>[...new Set((previewsQuery.data??[]).map(t=>baseSpeakerRank(t.speakerRank??'')).filter(Boolean))].sort(),[previewsQuery.data]);
  const categories=useMemo(()=>[...new Set([
    ...(categoriesQuery.data??[]),
@@ -85,13 +91,21 @@ export default function CatalogScreen(){
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const draw=()=>{
-   const playable=visibleTracks.filter(t=>t.playable);
-   if(!playable.length){
-     setNotice('資訊卡已恢復，但目前沒有完成播放授權的音檔。');
+   const outcome=chooseSafeLuckyCard(visibleTracks,luckyPreviewId);
+   if(outcome.kind==='empty'){
+     setLuckyPreviewId(null);
+     setNotice('目前條件下沒有可抽選的已授權音檔或訪客資訊卡，請調整篩選。');
      return;
    }
-   const selected=playable[Math.floor(Math.random()*playable.length)];
-   router.push({pathname:'/track/[id]',params:{id:selected.id}});
+   if(outcome.kind==='playable'){
+     setLuckyPreviewId(null);
+     setNotice('');
+     router.push({pathname:'/track/[id]',params:{id:outcome.track.id}});
+     return;
+   }
+   // Metadata-only visitor discovery is NOT an audio draw or playback grant.
+   setNotice('');
+   setLuckyPreviewId(outcome.track.id);
  };
  return <ScrollView style={[styles.page,{backgroundColor:theme.bg}]}
    contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
@@ -159,6 +173,26 @@ export default function CatalogScreen(){
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
          onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
+     {!!luckyPreview&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+       backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
+       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 本次抽中訪客資訊卡</Text>
+       <Text style={[styles.luckyResultName,{color:theme.ink}]} numberOfLines={2}>{luckyPreview.title}</Text>
+       <Text style={[styles.luckyResultSpeaker,{color:theme.muted}]} numberOfLines={1}>{luckyPreview.speaker}</Text>
+       <Text style={[styles.teaserNote,{color:theme.muted}]}>
+         僅可查看已核准的照片及資訊，這不是可播放的繁星解答。
+       </Text>
+       <View style={styles.luckyActions}>
+         <Pressable accessibilityRole="button" accessibilityLabel="查看抽中的資訊卡"
+          onPress={()=>router.push({pathname:'/preview/[id]',params:{id:luckyPreview.id}})}
+          style={[styles.luckyDetailsButton,{backgroundColor:theme.palette.primary}]}>
+          <Text style={styles.retryText}>查看資訊卡</Text>
+         </Pressable>
+         <Pressable accessibilityRole="button" accessibilityLabel="關閉抽選結果"
+          onPress={()=>setLuckyPreviewId(null)} style={[styles.luckyCloseButton,{borderColor:theme.border}]}>
+          <Text style={[styles.restoreText,{color:theme.muted}]}>關閉</Text>
+         </Pressable>
+       </View>
+     </View>}
      {catalogPartialFailure&&catalogDisplay!=='failed'&&<View style={[styles.notice,{
        borderColor:theme.palette.primary,borderWidth:1,backgroundColor:theme.card}]}>
        <Text style={[styles.noticeText,{color:theme.ink}]}>
@@ -221,6 +255,13 @@ const styles=StyleSheet.create({
  teaserButton:{marginTop:8,paddingVertical:5,paddingHorizontal:12},
  teaserLink:{fontSize:15,fontWeight:'900',textAlign:'center'},
  teaserNote:{fontSize:11,textAlign:'center',marginTop:3,lineHeight:17},
+ luckyResult:{borderWidth:1,borderRadius:18,padding:14,marginVertical:10,alignItems:'center',gap:7},
+ luckyResultTitle:{fontSize:15,fontWeight:'900'},
+ luckyResultName:{fontSize:17,fontWeight:'800',textAlign:'center'},
+ luckyResultSpeaker:{fontSize:12,textAlign:'center'},
+ luckyActions:{flexDirection:'row',flexWrap:'wrap',gap:12,marginTop:7},
+ luckyDetailsButton:{minHeight:44,justifyContent:'center',alignItems:'center',paddingHorizontal:17,borderRadius:12},
+ luckyCloseButton:{minHeight:44,justifyContent:'center',alignItems:'center',paddingHorizontal:15,borderWidth:1,borderRadius:12},
  notice:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',padding:13,
    borderRadius:14,marginVertical:8,gap:10},noticeText:{fontSize:13,flex:1,lineHeight:20},
  cardGrid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',paddingTop:5},
