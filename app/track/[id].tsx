@@ -17,6 +17,8 @@ import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackShare';
 import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
+import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
+import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -100,6 +102,7 @@ function AudioPlayback({track}:{track:EchoTrack}){
 export default function TrackDetails(){
  const t=useLegacyTheme();
  const preferences=useDevicePreferences();
+ const sections=useDetailSectionJump();
  const {id}=useLocalSearchParams<{id:string}>();
  const trackId=typeof id==='string'&&id.length>0&&id.length<=200?id:null;
  const [hydrated,setHydrated]=useState(Platform.OS!=='web');
@@ -109,13 +112,13 @@ export default function TrackDetails(){
  const track=q.data;
  const speakerNames=splitSpeakerNames(track?.speaker);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
- return <ScrollView style={[styles.root,{backgroundColor:t.bg}]}
+ return <ScrollView ref={sections.scrollRef} style={[styles.root,{backgroundColor:t.bg}]}
    contentContainerStyle={styles.screen}>
-   <View style={styles.shell}>
+   <View style={styles.shell} onLayout={sections.onShellLayout}>
     <Pressable accessibilityRole="button" onPress={()=>router.push('/')} style={styles.back}>
      <Text style={[styles.backText,{color:t.palette.primary}]}>‹ 返回音檔列表</Text>
     </Pressable>
-    <View style={[styles.mainCard,{backgroundColor:t.card,borderColor:t.border}]}>
+    <View onLayout={sections.onCardLayout} style={[styles.mainCard,{backgroundColor:t.card,borderColor:t.border}]}>
      {!trackId?<Text style={[styles.notice,{color:t.muted}]}>無效的音檔連結。</Text>:
       q.isPending?<View style={styles.loading}>
        <ActivityIndicator color={t.palette.primary}/><Text style={[styles.notice,{color:t.muted}]}>載入音檔中…</Text>
@@ -166,11 +169,20 @@ export default function TrackDetails(){
         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
         <Text style={[styles.tagText,{color:t.palette.primary}]}>{category} ›</Text>
        </Pressable>)}</View>
-       {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
-       <LegacyLectureNotes track={track}/>
+       <LegacyDetailSectionNavigation showPlayback={track.playable} onJump={sections.jumpTo}/>
+       <View onLayout={sections.onSectionLayout('playback')}>
+        {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
+       </View>
+       <View onLayout={sections.onSectionLayout('notes')}>
+        <LegacyLectureNotes track={track}/>
+       </View>
        <LegacyVerifiedTrackShare track={track} routeId={trackId}/>
-       <LegacyEngagementDetail track={track}/>
-       <LegacyDetailDeviceActions track={track} routeId={trackId} source="public"/>
+       <View onLayout={sections.onSectionLayout('engagement')}>
+        <LegacyEngagementDetail track={track}/>
+       </View>
+       <View onLayout={sections.onSectionLayout('device')}>
+        <LegacyDetailDeviceActions track={track} routeId={trackId} source="public"/>
+       </View>
       </>}
     </View>
    </View>
