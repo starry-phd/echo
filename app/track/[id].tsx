@@ -13,6 +13,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
+import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -150,15 +151,14 @@ export default function TrackDetails(){
          <Text style={[styles.speakerCaption,{color:t.muted}]}>查看講師公開作品</Text>
         </View>
        </View>
-       <View style={styles.tags}>{track.categories.map((category,i)=><View key={category+i}
+       <View style={styles.tags}>{track.categories.map((category,i)=><Pressable key={category+i}
+        accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
+        onPress={()=>router.push({pathname:'/',params:{category}})}
         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-        <Text style={[styles.tagText,{color:t.palette.primary}]}>{category}</Text>
-       </View>)}</View>
+        <Text style={[styles.tagText,{color:t.palette.primary}]}>{category} ›</Text>
+       </Pressable>)}</View>
        {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
-       <View style={[styles.description,{borderTopColor:t.border}]}>
-        <Text style={[styles.sectionTitle,{color:t.ink}]}>詳細介紹</Text>
-        <Text style={[styles.body,{color:t.muted}]}>{track.description||'尚無介紹'}</Text>
-       </View>
+       <LegacyLectureNotes track={track}/>
        <View style={[styles.pendingRow,{backgroundColor:t.lightPill}]}>
         <Text style={[styles.pendingText,{color:t.muted}]}>
          ☆ 評價　♡ 按讚　▤ 心得　—　會員功能須待 Starry ID 授權後恢復
@@ -187,7 +187,7 @@ const styles=StyleSheet.create({
  speakerSeparator:{fontSize:14,fontWeight:'500'},
  speakerName:{fontSize:15,fontWeight:'900'},speakerCaption:{fontSize:11,marginTop:3},
  tags:{flexDirection:'row',flexWrap:'wrap',gap:5,marginBottom:10},
- tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,paddingVertical:5},
+ tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  tagText:{fontSize:11,fontWeight:'700'},
  player:{borderWidth:1,borderRadius:21,padding:15,alignItems:'center',marginVertical:12},
  playerPhoto:{height:108,width:108,borderRadius:19,alignItems:'center',justifyContent:'center'},
