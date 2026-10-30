@@ -9,6 +9,7 @@ import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
 import {InstallAppButton} from './InstallAppButton';
 import {useQuickActions} from './QuickActions';
+import {QuickDragHandle} from './QuickDragHandle';
 import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
 
@@ -24,6 +25,9 @@ export function LegacyHeader(){
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
  const [quickNotice,setQuickNotice]=useState('');
+ const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
+ const quickEditorOrder=[...chosenQuickActions,
+  ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
  const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
@@ -94,7 +98,7 @@ export function LegacyHeader(){
       {backgroundColor:colors.card,borderColor:colors.border,maxHeight:Math.max(300,height-160),
        right:10,width:layout.menuWidth}
     ]}>
-     <ScrollView contentContainerStyle={styles.menuContents}>
+     <ScrollView scrollEnabled={draggingQuickId===null} contentContainerStyle={styles.menuContents}>
        <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
          <View style={[styles.avatar,{backgroundColor:activeColor}]}><Text style={styles.avatarText}>♙</Text></View>
          <View style={styles.identityBody}>
@@ -140,10 +144,12 @@ export function LegacyHeader(){
        </View>
        <View style={[styles.quickEditor,{borderColor:colors.border,backgroundColor:colors.lightPill}]}>
         <Text style={[styles.itemLabel,{color:colors.ink,fontSize:fontSize(14)}]}>置頂快捷功能（{chosenQuickActions.length}/{quickLimits[quickDevice]}）</Text>
-        <Text style={[styles.quickHint,{color:colors.muted}]}>點選釘選或取消；已釘選項目可用箭頭調整順序。本機保存，不需會員登入。</Text>
+        <Text style={[styles.quickHint,{color:colors.muted}]}>點選釘選或取消；已釘選項目可長按 ☰ 約0.26秒後上下拖曳，或用 ↑↓ 調整順序。本機保存，不需會員登入。</Text>
         {quick.storageError&&<Text style={[styles.quickHint,{color:colors.muted}]}>本裝置快捷設定讀取或儲存失敗，變更可能不會保留。</Text>}
         {quickNotice.length>0&&<Text accessibilityLiveRegion="polite" style={[styles.quickHint,{color:activeColor}]}>{quickNotice}</Text>}
-        {allowedQuickActions.map(id=><View key={id} style={styles.quickChoiceRow}>
+        {quickEditorOrder.map(id=><View key={id} style={[
+         styles.quickChoiceRow,draggingQuickId===id&&{backgroundColor:colors.card,borderRadius:8}
+        ]}>
          <Pressable accessibilityRole="checkbox" accessibilityLabel={'置頂'+quickActions[id].label}
           accessibilityState={{checked:chosenQuickActions.includes(id),disabled:!quick.ready}}
           disabled={!quick.ready} onPress={()=>togglePin(id)}
@@ -153,6 +159,11 @@ export function LegacyHeader(){
           </Text>
          </Pressable>
          {chosenQuickActions.includes(id)&&<>
+          <QuickDragHandle id={id} index={chosenQuickActions.indexOf(id)}
+           count={chosenQuickActions.length} enabled={quick.ready}
+           color={activeColor}
+           onMove={(dragId,target)=>{quick.reorderPinned(quickDevice,dragId,target);setQuickNotice('已調整順序。');}}
+           onDragging={setDraggingQuickId}/>
           <Pressable accessibilityRole="button" accessibilityLabel={'上移'+quickActions[id].label}
            accessibilityState={{disabled:!quick.ready||chosenQuickActions[0]===id}}
            disabled={!quick.ready||chosenQuickActions[0]===id}

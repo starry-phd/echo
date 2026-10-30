@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {QUICK_PIN_KEY,allowedQuickActions,quickDeviceForWidth,quickLimits,normalizeQuickChoices,
- createQuickActionStore} from '../src/ui/echo/quickActionStore.ts';
+ createQuickActionStore,quickDragTargetIndex} from '../src/ui/echo/quickActionStore.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('original mobile/tablet/desktop quick action limits preserved for the safe authorized subset',()=>{
  assert.deepEqual(quickLimits,{mobile:3,tablet:5,desktop:7});
@@ -67,13 +67,54 @@ test('quick toolbar and editor are actual accessible navigation wired to root st
  assert.match(layout,/<QuickActionProvider><DevicePreferencesProvider><AppShell/);
  assert.match(header,/chosenQuickActions\.map\(id=><Pressable/);
  assert.match(header,/onPress=\{quickActions\[id\]\.run\}/);
- assert.match(header,/allowedQuickActions\.map\(id=><View/);
+ assert.match(header,/quickEditorOrder\.map\(id=><View/);
  assert.match(header,/quick\.togglePinned\(quickDevice,id\)/);
  assert.match(header,/quick\.movePinned\(quickDevice,id,-1\)/);
  assert.match(header,/quick\.movePinned\(quickDevice,id,1\)/);
+ assert.match(header,/<QuickDragHandle id=\{id\}/);
+ assert.match(header,/quick\.reorderPinned\(quickDevice,dragId,target\)/);
+ assert.match(header,/scrollEnabled=\{draggingQuickId===null\}/);
  assert.match(header,/accessibilityLabel=\{'置頂'\+quickActions\[id\]\.label\}/);
  assert.match(header,/accessibilityLabel="設定置頂快捷功能"/);
  assert.match(header,/quick\.storageError/);
  assert.doesNotMatch(header,/\/admin|\/audio-admin|\/stickers\/spend/);
  assert.doesNotMatch(read('src/ui/echo/quickActionStore.ts'),/['\"]notifications['\"]/);
+});
+
+test('drag displacement maps to valid pinned slots and clamps at both ends',()=>{
+ assert.equal(quickDragTargetIndex(1,0,3),1);
+ assert.equal(quickDragTargetIndex(1,25,3),2);
+ assert.equal(quickDragTargetIndex(2,-49,3),1);
+ assert.equal(quickDragTargetIndex(0,-900,3),0);
+ assert.equal(quickDragTargetIndex(2,900,3),2);
+ assert.equal(quickDragTargetIndex(1,Number.NaN,3),1);
+ assert.equal(quickDragTargetIndex(-1,48,3),-1);
+});
+test('drag reorders only pinned items, persisting once without changing other device kinds',async()=>{
+ const storage=new Map(),writes=[];
+ const api={getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{writes.push(v);storage.set(k,v);}};
+ const store=createQuickActionStore(api);
+ assert.equal(store.reorderPinned('mobile','speakers',0),false);
+ await store.hydrate();
+ assert.equal(store.reorderPinned('mobile','speakers',0),true);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['speakers','home','palette']);
+ assert.equal(store.reorderPinned('mobile','speakers',0),false);
+ assert.equal(store.reorderPinned('mobile','stats',0),false);
+ assert.equal(store.reorderPinned('mobile','speakers',9),false);
+ assert.equal(store.reorderPinned('mobile','speakers',1.5),false);
+ assert.equal(store.reorderPinned('mobile','admin',0),false);
+ assert.deepEqual(store.getSnapshot().choices.tablet,['home','palette','speakers','profile']);
+ await store.flush();assert.equal(writes.length,1);
+ const restored=createQuickActionStore(api);await restored.hydrate();
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['speakers','home','palette']);
+});
+test('dedicated drag responder has long-press cancel and retains accessible arrow controls',()=>{
+ const source=read('src/ui/echo/QuickDragHandle.tsx');
+ assert.match(source,/PanResponder\.create/);
+ assert.match(source,/HOLD_MS=260/);
+ assert.match(source,/CANCEL_DISTANCE=10/);
+ assert.match(source,/onPanResponderTerminationRequest/);
+ assert.match(source,/quickDragTargetIndex/);
+ assert.match(source,/clearTimeout/);
+ assert.doesNotMatch(source,/fetch\(|\/api\/|Audio\.|R2|localStorage/);
 });
