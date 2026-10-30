@@ -15,5 +15,7 @@ export function useDevicePreferences(){
  if(!store)throw new Error('Device preferences provider missing');
  const state=useSyncExternalStore(store.subscribe,store.getSnapshot,store.getServerSnapshot);
  return {...state,toggleFavorite:store.toggleFavorite,dislike:store.dislike,
-  restoreHiddenTrack:store.restoreHiddenTrack,restoreHidden:store.restoreHidden};
+  restoreHiddenTrack:store.restoreHiddenTrack,restoreHidden:store.restoreHidden,
+  hideSpeaker:store.hideSpeaker,restoreHiddenSpeaker:store.restoreHiddenSpeaker,
+  restoreAllSpeakers:store.restoreAllSpeakers};
 }
