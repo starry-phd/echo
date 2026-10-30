@@ -9,6 +9,7 @@ import {visualMetrics} from '../packages/ui/src/tokens';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {restorableHiddenCards} from '../src/ui/echo/dislikedTracks';
 import {isSpeakerHidden,restorableHiddenSpeakers} from '../src/ui/echo/hiddenSpeakers';
+import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 
 export default function DeviceFavorites(){
  const t=useLegacyTheme();
@@ -17,7 +18,8 @@ export default function DeviceFavorites(){
  const previews=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
  const catalog=useQuery({queryKey:['echo','favorite-public-catalog'],queryFn:({signal})=>getPublicTracks(signal),retry:1});
  // Saved IDs are not an access grant: resolve only through current authorized lists.
- const tracks=[...(catalog.data??[]),...(previews.data??[])].filter(track=>
+ const authorized=mergeAuthorizedCards(catalog.data??[],previews.data??[]);
+ const tracks=authorized.filter(track=>
   preferences.favoriteIds.includes(track.id)&&!preferences.dislikedIds.includes(track.id)&&
   !isSpeakerHidden(track.speaker,preferences.hiddenSpeakers));
  const publicSource={pending:catalog.isPending,failed:catalog.isError,count:catalog.data?.length??0};
@@ -27,7 +29,7 @@ export default function DeviceFavorites(){
  const pending=!preferences.ready||display==='loading';
  const hiddenCards=restorableHiddenCards(catalog.data??[],previews.data??[],preferences.dislikedIds);
  const missingHiddenCount=Math.max(0,preferences.dislikedIds.length-hiddenCards.length);
- const hiddenSpeakerNames=restorableHiddenSpeakers([...(catalog.data??[]),...(previews.data??[])],preferences.hiddenSpeakers);
+ const hiddenSpeakerNames=restorableHiddenSpeakers(authorized,preferences.hiddenSpeakers);
  const missingSpeakerCount=Math.max(0,preferences.hiddenSpeakers.length-hiddenSpeakerNames.length);
  const retry=()=>{void previews.refetch();void catalog.refetch();};
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
