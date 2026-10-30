@@ -24,10 +24,10 @@ import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/ec
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 
 /**
- * Home layout follows yukidu/Echo-Starry v141/v145:
- * rose logo in navigation, lucky-answer button beside a rose search field,
- * four buttons for category/time/popular/advanced, visitor teaser,
- * and a one/two-column image-led audio card grid. This is NOT a redesign.
+ * Home preserves the original rose logo, lucky button + search and cards.
+ * The sort bar now follows the latest yukidu/Echo-Starry main (v3.7):
+ * seven desktop or five portrait controls, not obsolete v145 four controls.
+ * Unverified permissions/stickers remain informational only.
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
@@ -240,8 +240,7 @@ export default function CatalogScreen(){
      </Pressable>
      {advanced&&<AdvancedCardFilters ranks={ranks} selectedRank={speakerRank} onRank={setSpeakerRank}/>}
      <LegacyFilterToolbar categories={categories} category={category}
-       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}
-       advanced={advanced} onAdvanced={()=>setAdvanced(value=>!value)}/>
+       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}/>
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>

@@ -3,63 +3,93 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {useLegacyTheme} from './legacyTheme';
 import {viewportLayout} from '../responsive';
+import {isAscendingOrder,legacySortLabels,nextLegacySortOrder,sortFieldForOrder,visibleLegacySortFields} from './legacySortFields';
+import type {LegacySortField} from './legacySortFields';
 import type {SortOrder} from './cardSorting';
 export type {SortOrder} from './cardSorting';
-export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice,advanced,onAdvanced}:{
+
+/**
+ * Current original (yukidu/Echo-Starry src/App.tsx) has seven controls on
+ * desktop/landscape, five on portrait phones. Never replace those with the
+ * superseded v145 four-button toolbar.
+ * Rights / stickers are intentionally read-only until authorized APIs exist.
+ */
+export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice}:{
  categories:string[];category:string|null;onCategory:(c:string|null)=>void;
  order:SortOrder;onOrder:(value:SortOrder)=>void;onNotice:(s:string)=>void;
- advanced:boolean;onAdvanced:()=>void;
 }){
  const {width}=useViewportDimensions(),t=useLegacyTheme();
- const [open,setOpen]=useState<'category'|'popular'|null>(null);
+ const [categoryOpen,setCategoryOpen]=useState(false);
  const layout=viewportLayout(width);
- const fields=[
-   {id:'category',label:category??'全部分類',press:()=>setOpen(open==='category'?null:'category')},
-   {id:'time',label:order==='oldest'?'最早上架':'最新上架',press:()=>{onOrder(order==='newest'?'oldest':'newest');setOpen(null);}},
-   {id:'popular',label:order==='rating'?'評價最高':order==='likes'?'按讚最多':order==='comments'?'心得最多':'熱門推薦',
-    press:()=>setOpen(open==='popular'?null:'popular')},
-   {id:'advanced',label:'進階篩選',press:()=>{setOpen(null);onAdvanced();}},
- ] as const;
- const options=open==='category'?[{label:'全部分類',action:()=>onCategory(null)},...categories.map(c=>({label:c,action:()=>onCategory(c)}))]:
-  open==='popular'?[{label:'評價最高（舊版）',action:()=>onOrder('rating')},
-    {label:'按讚最多（舊版）',action:()=>onOrder('likes')},
-    {label:'心得最多（舊版）',action:()=>onOrder('comments')},
-    {label:'收藏人數（待會員同步）',action:()=>onNotice('收藏人數排序尚未開放。')}]:[];
+ const fields=visibleLegacySortFields(width);
+ const active=sortFieldForOrder(order);
+ const onField=(field:LegacySortField)=>{
+  if(field==='category'){setCategoryOpen(value=>!value);return;}
+  setCategoryOpen(false);
+  const next=nextLegacySortOrder(order,field);
+  if(next){onOrder(next);return;}
+  onNotice(field==='permission'
+   ?'權限排序尚待中央會員與逐曲存取權限 API 正式驗證，暫不提供猜測結果。'
+   :'貼紙排序尚待正式貼紙／電池與每曲成本資料，暫不提供猜測結果。');
+ };
  return <View style={styles.root}>
-   <View style={styles.row}>
-     {fields.map((item,i)=><Pressable key={item.id}
-       accessibilityRole="button" accessibilityLabel={item.label}
-       accessibilityState={{expanded:item.id==='advanced'?advanced:item.id===open,
-        selected:item.id==='category'?Boolean(category):item.id==='time'?(order==='newest'||order==='oldest'):item.id==='popular'?['rating','likes','comments'].includes(order):advanced}}
-       onPress={item.press}
-       style={[styles.button,{backgroundColor:t.palette.primary,borderColor:t.palette.primaryHover,
-         paddingHorizontal:layout.phone?2:7},(item.id===open)&&styles.active]}>
-       <Text numberOfLines={1} adjustsFontSizeToFit style={[styles.buttonText,{fontSize:layout.filterFontSize}]}>
-         {item.label}{(i===0||i===3)?' ⌄':''}
-       </Text>
-     </Pressable>)}
-   </View>
-   {open&&<View style={[styles.menu,{backgroundColor:t.card,borderColor:t.border}]}>
-      <ScrollView nestedScrollEnabled style={{maxHeight:250}} contentContainerStyle={{padding:6}}>
-       {options.map((item,i)=><Pressable key={item.label+i} accessibilityRole="button" onPress={()=>{
-         item.action();setOpen(null);
-       }} style={[styles.option,{borderBottomColor:t.border}]}>
-         <Text style={[styles.optionText,{color:t.ink}]}>{item.label}</Text>
-         {open==='category'&&(category??'全部分類')===item.label&&
-         <Text style={{color:t.palette.primary,fontWeight:'900'}}>✓</Text>}
-       </Pressable>)}
-      </ScrollView>
-   </View>}
+  <View style={[styles.row,{backgroundColor:t.card,borderColor:t.border}]}>
+   {fields.map(field=>{
+    const selected=field===active||field==='category'&&Boolean(category);
+    const unavailable=field==='permission'||field==='stickers';
+    const label=legacySortLabels[field];
+    return <Pressable key={field} accessibilityRole="button"
+      accessibilityLabel={label+(unavailable?'（待權限資料）':'')}
+      accessibilityHint={unavailable?'目前無可信授權資料，點擊會顯示說明':undefined}
+      accessibilityState={{selected,expanded:field==='category'?categoryOpen:undefined}}
+      onPress={()=>onField(field)}
+      style={[styles.button,{backgroundColor:t.palette.primary,borderColor:selected?'#fff':t.palette.primaryHover,
+       opacity:unavailable ? 0.72 : 1,paddingHorizontal:layout.phone?0:4}]}>
+       <Text numberOfLines={1} adjustsFontSizeToFit
+         style={[styles.buttonText,{fontSize:layout.phone?10:12}]}>{label}</Text>
+       {selected&&field!=='category'&&
+         <View style={styles.direction}><Text style={[styles.arrow,{color:t.palette.primary}]}>
+          {isAscendingOrder(order)?'↑':'↓'}
+         </Text></View>}
+       {field==='category'&&<Text style={styles.categoryArrow}>⌄</Text>}
+    </Pressable>;
+   })}
+  </View>
+  {Boolean(category)&&<Pressable accessibilityRole="button" accessibilityLabel={'目前分類：'+category+'；點擊清除'}
+    onPress={()=>onCategory(null)} style={[styles.selectedCategory,{borderColor:t.border,backgroundColor:t.lightPill}]}>
+     <Text numberOfLines={1} style={{color:t.palette.primary,fontSize:12,fontWeight:'800'}}>分類：{category}　✕</Text>
+   </Pressable>}
+  {categoryOpen&&<View style={[styles.menu,{backgroundColor:t.palette.primary,borderColor:t.border,
+    width:Math.min(layout.usable,180)}]}>
+   <ScrollView nestedScrollEnabled style={{maxHeight:265}} contentContainerStyle={styles.options}>
+    {[null,...categories].map(value=><Pressable key={value??'all'}
+     accessibilityRole="button" accessibilityLabel={'選擇分類：'+(value??'全部')}
+     accessibilityState={{selected:category===value}}
+     onPress={()=>{onCategory(value);setCategoryOpen(false);}} style={styles.option}>
+      <Text style={styles.optionText} numberOfLines={2}>{value??'全部分類'}</Text>
+      {category===value&&<Text style={styles.optionText}>✓</Text>}
+    </Pressable>)}
+   </ScrollView>
+   <Pressable accessibilityRole="button" accessibilityLabel="關閉分類選單" onPress={()=>setCategoryOpen(false)}
+     style={styles.menuClose}><Text style={styles.optionText}>✕　關閉</Text></Pressable>
+  </View>}
  </View>;
 }
 const styles=StyleSheet.create({
- root:{zIndex:20,marginTop:10,marginBottom:5},
- row:{flexDirection:'row',gap:5,padding:4,borderRadius:19,backgroundColor:'#fff',borderWidth:1,borderColor:'#f1e7ea'},
- button:{flex:1,minWidth:0,height:47,borderRadius:14,borderWidth:1,justifyContent:'center',alignItems:'center',
- shadowColor:'#c13f6f',shadowOpacity:.17,shadowRadius:6,elevation:2},
- active:{borderColor:'#fff',borderWidth:2},buttonText:{color:'#fff',fontWeight:'900',textAlign:'center'},
- menu:{position:'absolute',top:57,left:0,right:0,maxWidth:340,borderRadius:14,borderWidth:1,overflow:'hidden',
- shadowColor:'#111',shadowOpacity:.15,shadowRadius:18,elevation:10,zIndex:100},
- option:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',padding:13,borderBottomWidth:StyleSheet.hairlineWidth},
- optionText:{fontSize:13,fontWeight:'700'}
+ root:{zIndex:20,marginTop:8,marginBottom:5},
+ row:{flexDirection:'row',gap:3,padding:2,borderRadius:14,borderWidth:1},
+ button:{flex:1,minWidth:0,minHeight:46,borderRadius:11,borderWidth:1,
+  flexDirection:'row',justifyContent:'center',alignItems:'center',gap:1,
+  shadowColor:'#c13f6f',shadowOpacity:.12,shadowRadius:4,elevation:1},
+ buttonText:{color:'#fff',fontWeight:'900',textAlign:'center',flexShrink:1},
+ direction:{width:17,height:17,borderRadius:9,backgroundColor:'#fff',alignItems:'center',justifyContent:'center'},
+ arrow:{fontSize:15,fontWeight:'900',lineHeight:17},
+ categoryArrow:{color:'#fff',fontSize:13,fontWeight:'900'},
+ selectedCategory:{alignSelf:'flex-end',marginTop:5,borderWidth:1,borderRadius:12,paddingHorizontal:10,minHeight:35,justifyContent:'center'},
+ menu:{position:'absolute',top:53,right:0,maxWidth:'100%',borderRadius:13,borderWidth:1,
+  overflow:'hidden',shadowColor:'#111827',shadowOpacity:.2,shadowRadius:16,elevation:12,zIndex:100},
+ options:{paddingVertical:4},
+ option:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',minHeight:42,paddingHorizontal:12,paddingVertical:7},
+ optionText:{color:'#fff',fontSize:12,fontWeight:'800',flexShrink:1},
+ menuClose:{borderTopWidth:1,borderTopColor:'#ffffff55',minHeight:44,alignItems:'center',justifyContent:'center'}
 });
