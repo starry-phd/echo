@@ -43,3 +43,23 @@ test('a failed save reports persistence limits without losing current selection'
  await store.hydrate();store.toggleFavorite('safe');await store.flush();
  assert.deepEqual(store.getSnapshot().favoriteIds,['safe']);assert.equal(store.getSnapshot().storageError,true);
 });
+
+test('restoreHiddenTrack removes only one stored local dislike and preserves favorites',async()=>{
+ const saved=new Map([[DEVICE_FAVORITES_KEY,'["a"]'],[DISLIKED_STORAGE_KEY,'["x","y","z"]']]);
+ const store=createDevicePreferenceStore({
+  async getItem(key){return saved.get(key)??null;},
+  async setItem(key,value){saved.set(key,value);}
+ });
+ assert.equal(store.restoreHiddenTrack('x'),false);
+ await store.hydrate();
+ assert.equal(store.restoreHiddenTrack('not-hidden'),false);
+ assert.equal(store.restoreHiddenTrack(''),false);
+ assert.equal(store.restoreHiddenTrack('y'),true);
+ await store.flush();
+ assert.deepEqual(store.getSnapshot().dislikedIds,['x','z']);
+ assert.deepEqual(store.getSnapshot().favoriteIds,['a']);
+ assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),['x','z']);
+ store.restoreHiddenTrack('x');store.dislike('k');store.restoreHiddenTrack('z');
+ await store.flush();
+ assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),['k']);
+});

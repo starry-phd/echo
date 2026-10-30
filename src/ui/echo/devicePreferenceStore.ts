@@ -43,6 +43,14 @@ export function createDevicePreferenceStore(storage:Storage){
    const dislikedIds=sanitizeDislikedTrackIds([...state.dislikedIds,id]);
    publish({...state,dislikedIds});persist(DISLIKED_STORAGE_KEY,dislikedIds);
   },
+  restoreHiddenTrack:(id:string):boolean=>{
+   // A local preference can be undone individually without touching any
+   // central member, D1 row, server access control or private media path.
+   if(!state.ready||!sanitizeDislikedTrackIds([id]).length||!state.dislikedIds.includes(id))return false;
+   const dislikedIds=state.dislikedIds.filter(value=>value!==id);
+   publish({...state,dislikedIds});persist(DISLIKED_STORAGE_KEY,dislikedIds);
+   return true;
+  },
   restoreHidden:()=>{
    if(!state.ready)return;
    publish({...state,dislikedIds:[]});persist(DISLIKED_STORAGE_KEY,[]);
