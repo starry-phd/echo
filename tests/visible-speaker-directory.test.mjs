@@ -45,6 +45,6 @@ test('home, speaker list and speaker profile wait for device preferences before 
  assert.match(list,/\(!ready\|\|display==='loading'\)/);
  assert.match(list,/visibleSpeakerDirectory\(/);
  assert.match(profile,/\(!ready\|\|display==='loading'\)/);
- assert.match(profile,/ready&&!speakerHidden\?p\.data\?\.find/);
+ assert.match(profile,/const photo=showBio\?p\.data\?\.find/);
  assert.match(profile,/!dislikedIds\.includes\(x\.id\)/);
 });
