@@ -14,11 +14,11 @@ export function LegacyHeader(){
  const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
- const go=(path:'/'|'/speaker'|'/profile'|'/favorites')=>{setOpen(false);router.push(path);};
+ const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
-  ['首頁',()=>go('/')],['講師作品',()=>go('/speaker')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
+  ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['講師作品',()=>go('/speaker')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
    <View style={styles.main}>
@@ -95,7 +95,7 @@ export function LegacyHeader(){
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
-       {['通知','我的貼紙','音檔管理','統計中心'].map(label=><View key={label} style={styles.menuItem}>
+       {['通知','我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>
        </View>)}
