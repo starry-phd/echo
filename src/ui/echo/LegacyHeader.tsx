@@ -7,6 +7,7 @@ import type {LegacyPalette} from './legacyTheme';
 import {visualMetrics} from '../../../packages/ui/src/tokens';
 import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
+import {InstallAppButton} from './InstallAppButton';
 import {useQuickActions} from './QuickActions';
 import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
@@ -169,6 +170,7 @@ export function LegacyHeader(){
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
+       <InstallAppButton/>
        {['通知','我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>
