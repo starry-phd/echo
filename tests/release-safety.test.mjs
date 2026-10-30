@@ -33,7 +33,7 @@ function runGate(override = {}) {
   }
 }
 
-test('production guard passes the approved, non-deploying workflow', () => {
+test('production guard permits only green main CI auto-release or explicit manual dispatch', () => {
   const result = runGate();
   assert.equal(result.status, 0, result.stderr || result.error?.message);
 });
@@ -51,6 +51,27 @@ const cases = [
   ['reject an extra workflow_call entry point', () => ({
     release: source.release.replace('  workflow_dispatch:\n', '  workflow_dispatch:\n  workflow_call:\n'),
   })],
+  ['reject auto release triggered by PR CI instead of a main push', () => ({
+    release: source.release.replace("github.event.workflow_run.event == 'push'", "github.event.workflow_run.event == 'pull_request'"),
+  })],
+  ['reject auto release without successful CI', () => ({
+    release: source.release.replace("github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.conclusion != 'failure'"),
+  })],
+  ['reject auto release from non-main branches', () => ({
+    release: source.release.replace("github.event.workflow_run.head_branch == 'main'", "github.event.workflow_run.head_branch != 'blocked'"),
+  })],
+  ['reject untrusted cross-repo CI as a deploy trigger', () => ({
+    release: source.release.replace("github.event.workflow_run.head_repository.full_name == github.repository", "github.event.workflow_run.head_repository.full_name != github.repository"),
+  })],
+  ['reject floating main checkout instead of tested SHA pin', () => ({
+    release: source.release.replace('ref: ${{ env.RELEASE_COMMIT_SHA }}', 'ref: main'),
+  })],
+  ['reject skipping the main CI source repository guard in the job', () => ({
+    release: source.release.replace('[ "$RELEASE_CI_REPOSITORY" != "$GITHUB_REPOSITORY" ]', '[ "$RELEASE_CI_REPOSITORY" != "unrelated" ]'),
+  })],
+  ['reject removing mandatory public media 404 smoke test', () => ({
+    release: source.release.replace('node scripts/check-production-guest.mjs', 'echo skipped'),
+  })],
   ['reject automatic triggering of private R2 sampling', () => ({
     probe: source.probe.replace('  workflow_dispatch:\n', '  workflow_dispatch:\n  schedule:\n    - cron: "0 0 * * *"\n'),
   })],
@@ -61,7 +82,7 @@ const cases = [
     release: source.release.replace('productionAuthorized!==true', 'productionAuthorized!==false'),
   })],
   ['reject removal of the second, late remote-main SHA verification', () => ({
-    release: source.release.replace('name: Revalidate current main against the approved SHA before upload', 'name: Skip the second SHA verification'),
+    release: source.release.replace('name: Revalidate current main against the tested or approved SHA before upload', 'name: Skip the second SHA verification'),
   })],
   ['reject activation of advertising requests', () => {
     const manifest = JSON.parse(source.manifest);
