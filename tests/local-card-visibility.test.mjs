@@ -30,6 +30,7 @@ test('both detail screens guard rendering after authorized fetch and before artw
   assert.match(route,/hidden\?<View/);
   assert.match(route,/router\.push\('\/favorites'\)/);
  }
- assert.ok(preview.indexOf('hidden?<View')<preview.indexOf('track.coverUrl&&origin'));
+ assert.ok(preview.indexOf('hidden?<View')<preview.indexOf('<LegacyDetailSpeakerPortrait track={track}/>'));
+ assert.match(preview,/LegacyDetailSpeakerPortrait track=\{track\}\/>/);
  assert.ok(player.indexOf('hidden?<View')<player.indexOf('<AudioPlayback track={track}/>'));
 });
