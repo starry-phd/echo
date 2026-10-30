@@ -39,10 +39,13 @@ test('failed reads keep memory functional without overwriting unknown saved data
  assert.equal(store.getSnapshot().storageError,true);
  assert.deepEqual(store.getSnapshot().favoriteIds,['safe']);assert.equal(writes,0);
 });
-test('a failed save reports persistence limits without losing current selection',async()=>{
- const store=createDevicePreferenceStore({async getItem(){return 'invalid json';},async setItem(){throw Error('Full');}});
+test('unparseable saved preferences remain untouched while memory changes are allowed',async()=>{
+ let writes=0;
+ const store=createDevicePreferenceStore({async getItem(){return 'invalid json';},async setItem(){writes++;}});
  await store.hydrate();store.toggleFavorite('safe');await store.flush();
- assert.deepEqual(store.getSnapshot().favoriteIds,['safe']);assert.equal(store.getSnapshot().storageError,true);
+ assert.deepEqual(store.getSnapshot().favoriteIds,['safe']);
+ assert.equal(store.getSnapshot().storageError,true);
+ assert.equal(writes,0);
 });
 
 test('restoreHiddenTrack removes only one stored local dislike and preserves favorites',async()=>{
@@ -95,4 +98,52 @@ test('speaker hiding still works in memory when storage cannot be read',async()=
  assert.deepEqual(store.getSnapshot().hiddenSpeakers,['安全講師']);
  assert.equal(store.getSnapshot().storageError,true);
  assert.equal(writes,0);
+});
+
+test('one new speaker-key read failure does not wipe previously saved favorites or dislikes',async()=>{
+ const saved=new Map([
+  [DEVICE_FAVORITES_KEY,'["favorite-old"]'],
+  [DISLIKED_STORAGE_KEY,'["disliked-old"]'],
+  [HIDDEN_SPEAKERS_KEY,'["unknown-private-local-value"]']
+ ]);
+ const writes=[];
+ const store=createDevicePreferenceStore({
+  async getItem(key){if(key===HIDDEN_SPEAKERS_KEY)throw Error('speaker key unreadable');return saved.get(key)??null;},
+  async setItem(key,value){writes.push(key);saved.set(key,value);}
+ });
+ await store.hydrate();
+ assert.deepEqual(store.getSnapshot(),{
+  favoriteIds:['favorite-old'],dislikedIds:['disliked-old'],hiddenSpeakers:[],ready:true,storageError:true
+ });
+ store.toggleFavorite('new-favorite');
+ store.dislike('new-dislike');
+ store.hideSpeaker('新講師');
+ await store.flush();
+ assert.deepEqual(JSON.parse(saved.get(DEVICE_FAVORITES_KEY)),['favorite-old','new-favorite']);
+ assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),['disliked-old','new-dislike']);
+ assert.equal(saved.get(HIDDEN_SPEAKERS_KEY),'["unknown-private-local-value"]');
+ assert.deepEqual(writes,[DEVICE_FAVORITES_KEY,DISLIKED_STORAGE_KEY]);
+});
+test('invalid stored JSON/type blocks only its own key, preserving other valid keys',async()=>{
+ const saved=new Map([
+  [DEVICE_FAVORITES_KEY,'{"unexpected":"object"}'],
+  [DISLIKED_STORAGE_KEY,'["old-hidden"]'],
+  [HIDDEN_SPEAKERS_KEY,'["王小明"]']
+ ]);
+ const store=createDevicePreferenceStore({
+  async getItem(key){return saved.get(key)??null;},
+  async setItem(key,value){saved.set(key,value);}
+ });
+ await store.hydrate();
+ assert.equal(store.getSnapshot().storageError,true);
+ assert.deepEqual(store.getSnapshot().favoriteIds,[]);
+ assert.deepEqual(store.getSnapshot().dislikedIds,['old-hidden']);
+ assert.deepEqual(store.getSnapshot().hiddenSpeakers,['王小明']);
+ store.toggleFavorite('memory-only');
+ store.restoreHiddenTrack('old-hidden');
+ store.hideSpeaker('林美麗');
+ await store.flush();
+ assert.equal(saved.get(DEVICE_FAVORITES_KEY),'{"unexpected":"object"}');
+ assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),[]);
+ assert.deepEqual(JSON.parse(saved.get(HIDDEN_SPEAKERS_KEY)),['王小明','林美麗']);
 });
