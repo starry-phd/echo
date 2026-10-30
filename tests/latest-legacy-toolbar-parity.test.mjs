@@ -17,7 +17,9 @@ test('latest original home toolbar is 7 desktop controls and 5 portrait-phone co
 
 test('only trustworthy metrics can sort, each repeat tap toggles ascending and descending',()=>{
  for(const [field,order] of [['time','newest'],['rating','rating'],['comments','comments'],['likes','likes']]){
-  const first=nextLegacySortOrder('newest',field);
+  // Switching *from another field* selects its descending default;
+  // tapping current 'newest' time instead correctly switches to 'oldest'.
+  const first=nextLegacySortOrder(field==='time'?'rating':'newest',field);
   assert.equal(first,order);
   const second=nextLegacySortOrder(first,field);
   assert.equal(second,field==='time'?'oldest':field+'-asc');
