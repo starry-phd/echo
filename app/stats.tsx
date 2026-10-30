@@ -1,3 +1,4 @@
+import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
@@ -22,6 +23,7 @@ import {visualMetrics} from '../packages/ui/src/tokens';
  */
 export default function LegacyRankings(){
  const t=useLegacyTheme();
+ const {fontSize}=useFontZoom();
  const {width}=useViewportDimensions();
  const preferences=useDevicePreferences();
  const [tab,setTab]=useState<RankingTab>('model');
@@ -44,46 +46,46 @@ export default function LegacyRankings(){
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]}
    contentContainerStyle={styles.page}>
   <View style={styles.shell}>
-   <Text style={[styles.title,{color:t.ink}]}>排行榜</Text>
-   <Text style={[styles.note,{color:t.muted}]}>依舊版五個分頁排列。尚未接入中央會員的排名會清楚標示，不展示私人會員或未授權錄音。</Text>
+   <Text style={[styles.title,{color:t.ink,fontSize:fontSize(24)}]}>排行榜</Text>
+   <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>依舊版五個分頁排列。尚未接入中央會員的排名會清楚標示，不展示私人會員或未授權錄音。</Text>
    <View style={styles.tabs} accessibilityRole="tablist">
     {legacyRankingTabs.map(item=><Pressable key={item.id}
      accessibilityRole="tab" accessibilityState={{selected:tab===item.id}}
      accessibilityLabel={item.label} onPress={()=>setTab(item.id)}
      style={[styles.tab,{backgroundColor:tab===item.id?t.card:t.lightPill,
       borderColor:tab===item.id?t.palette.primary:t.border,width:width<600?'48%':'19%'}]}>
-     <Text style={[styles.tabText,{color:tab===item.id?t.palette.primary:t.ink}]}>{item.label}</Text>
+     <Text style={[styles.tabText,{color:tab===item.id?t.palette.primary:t.ink,fontSize:fontSize(11)}]}>{item.label}</Text>
     </Pressable>)}
    </View>
    {tab!=='hot-tracks'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-    <Text style={[styles.gatedTitle,{color:t.palette.primary}]}>{legacyRankingTabs.find(x=>x.id===tab)?.label}</Text>
-    <Text style={[styles.gatedBody,{color:t.muted}]}>{gatedRankingCopy[tab]}</Text>
-    <Text style={[styles.small,{color:t.muted}]}>此頁目前為介面移植階段；沒有使用舊版會員資料或虛構名次。</Text>
+    <Text style={[styles.gatedTitle,{color:t.palette.primary,fontSize:fontSize(17)}]}>{legacyRankingTabs.find(x=>x.id===tab)?.label}</Text>
+    <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>{gatedRankingCopy[tab]}</Text>
+    <Text style={[styles.small,{color:t.muted,fontSize:fontSize(11)}]}>此頁目前為介面移植階段；沒有使用舊版會員資料或虛構名次。</Text>
    </View>:<>
     <View style={styles.metrics}>
      {metrics.map(x=><Pressable key={x.id} accessibilityRole="button"
       accessibilityLabel={'依'+x.label+'排序'} accessibilityState={{selected:metric===x.id}}
       onPress={()=>setMetric(x.id)} style={[styles.metric,{
        backgroundColor:metric===x.id?t.palette.primary:t.card,borderColor:t.border}]}>
-      <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink}]}>{x.label}</Text>
+      <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink,fontSize:fontSize(12)}]}>{x.label}</Text>
      </Pressable>)}
     </View>
-    <Text style={[styles.note,{color:t.muted}]}>以下僅排序目前獲准公開的作品或訪客資訊卡，其評價／按讚／心得數字是舊版歷史唯讀紀錄，並非即時會員排行或播放授權。</Text>
+    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下僅排序目前獲准公開的作品或訪客資訊卡，其評價／按讚／心得數字是舊版歷史唯讀紀錄，並非即時會員排行或播放授權。</Text>
     {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
     {partial&&<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-     <Text style={[styles.gatedBody,{color:t.muted}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
+     <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
      <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.palette.primary}}>重新讀取</Text></Pressable>
     </View>}
     {!preferences.ready||display==='loading'?<ActivityIndicator color={t.palette.primary} style={styles.loading}/>:
      display==='failed'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-      <Text style={[styles.gatedBody,{color:t.muted}]}>部分合法作品無法讀取，現在不能判定排行榜是否有結果。</Text>
+      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分合法作品無法讀取，現在不能判定排行榜是否有結果。</Text>
       <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.palette.primary}}>重試載入</Text></Pressable>
      </View>:
      display==='empty'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-       <Text style={[styles.gatedBody,{color:t.muted}]}>目前沒有符合公開條件的作品資料。</Text>
+       <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有符合公開條件的作品資料。</Text>
      </View>:
      ranked.map((track,index)=><View key={track.id} style={styles.trackRow}>
-      <Text style={[styles.rank,{color:t.palette.primary}]} accessibilityLabel={'名次 '+(index+1)}>#{index+1}</Text>
+      <Text style={[styles.rank,{color:t.palette.primary,fontSize:fontSize(14)}]} accessibilityLabel={'名次 '+(index+1)}>#{index+1}</Text>
       <View style={styles.cardWrap}>
        <LegacyTrackCard track={track} onNotice={setNotice}
         onDislike={id=>{preferences.dislike(id);setNotice('已在本裝置隱藏這張卡，可到我的收藏還原。');}}/>
