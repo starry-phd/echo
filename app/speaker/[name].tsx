@@ -11,6 +11,7 @@ import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
 import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
+import {mergeAuthorizedCards} from '../../src/ui/echo/mergeAuthorizedCards';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
@@ -35,7 +36,7 @@ export default function PublicSpeakerTracks(){
  // Check current approved metadata and both local visibility preferences.
  const speakerHidden=Boolean(speaker&&isSpeakerHidden(speaker,hiddenSpeakers));
  const visibleTracks=authorizedSpeakerProfileTracks(speaker,
-  [...(q.data??[]),...(p.data??[])],dislikedIds,hiddenSpeakers);
+  mergeAuthorizedCards(q.data??[],p.data??[]),dislikedIds,hiddenSpeakers);
  const origin=getApiBaseUrl();
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:p.isPending,failed:p.isError,count:p.data?.length??0};
