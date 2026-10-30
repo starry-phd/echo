@@ -26,7 +26,7 @@ function AppShell(){
        <Stack.Screen name="notifications" />
        <Stack.Screen name="preview/[id]" />
        <Stack.Screen name="speaker/index" />
-       <Stack.Screen name="speaker/[name]" />
+       <Stack.Screen name="speaker/[name]" options={{presentation:'transparentModal',animation:'fade',contentStyle:{backgroundColor:'transparent'}}}/>
        <Stack.Screen name="track/[id]" />
      </Stack>
    </View>

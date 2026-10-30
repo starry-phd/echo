@@ -1,14 +1,15 @@
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getApiBaseUrl,getPublicTracks,getGuestPreviewTracks} from '../../src/api/client';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
+import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
 import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
@@ -17,7 +18,15 @@ import {speakerProfileSections,speakerBioUnavailableText,speakerQaUnavailableTex
 import type {SpeakerProfileSection} from '../../src/ui/echo/speakerProfileSections';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
+ const {height}=useViewportDimensions();
  const {fontSize}=useFontZoom();
+ const close=()=>router.canGoBack()?router.back():router.replace('/');
+ useEffect(()=>{
+  if(Platform.OS!=='web'||typeof document==='undefined')return;
+  const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();close();}};
+  document.addEventListener('keydown',onKey);
+  return ()=>document.removeEventListener('keydown',onKey);
+ },[]);
  const [notice,setNotice]=useState('');
  const [section,setSection]=useState<SpeakerProfileSection>('audio');
  const {dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
@@ -51,10 +60,22 @@ export default function PublicSpeakerTracks(){
  const showBio=ready&&display==='ready'&&!speakerHidden;
  const photo=showBio?p.data?.find(track=>
   visibleTracks.some(approved=>approved.id===track.id)&&track.coverUrl)?.coverUrl:null;
- return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
+ return <View style={styles.overlay} accessibilityLabel="演講者個人資訊視窗">
+  <Pressable accessibilityRole="button" accessibilityLabel="關閉演講者資料視窗背景"
+   onPress={close} style={StyleSheet.absoluteFill}/>
+  <View style={[styles.modalPanel,{backgroundColor:t.bg,borderColor:t.border,
+   height:Math.max(260,Math.round(Math.max(320,height-80)*0.79))}]}>
+   <View style={[styles.modalHeader,{borderBottomColor:t.border}]}>
+    <Text style={[styles.modalTitle,{color:t.ink,fontSize:fontSize(14)}]}>演講者個人資訊</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel="關閉演講者資料視窗"
+     onPress={close} style={styles.closeButton}>
+     <Text style={[styles.closeText,{color:t.muted}]}>✕</Text>
+    </Pressable>
+   </View>
+   <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
-   <Pressable accessibilityRole="button" onPress={()=>router.push('/speaker')} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回講師列表</Text>
+   <Pressable accessibilityRole="button" onPress={close} style={styles.back}>
+    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回上一頁</Text>
    </Pressable>
    {showBio&&<View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
@@ -120,9 +141,16 @@ export default function PublicSpeakerTracks(){
     原版會員限定的講師資料、AI 問答及私人錄音仍須授權驗證；本站只顯示已核准公開內容。
    </Text>
   </View>
- </ScrollView>;
+   </ScrollView>
+  </View>
+ </View>;
 }
 const styles=StyleSheet.create({
+ overlay:{flex:1,backgroundColor:'rgba(15,23,42,.55)',alignItems:'center',justifyContent:'center',paddingHorizontal:12,paddingVertical:12},
+ modalPanel:{width:'100%',maxWidth:570,borderWidth:1,borderRadius:18,overflow:'hidden',elevation:12},
+ modalHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderBottomWidth:1,minHeight:48,paddingLeft:14,paddingRight:6},
+ modalTitle:{fontWeight:'800'},closeButton:{width:48,height:48,justifyContent:'center',alignItems:'center'},
+ closeText:{fontSize:22,fontWeight:'700'},
  root:{flex:1},content:{paddingHorizontal:12,paddingBottom:32,alignItems:'center'},
  shell:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',paddingTop:10},
  back:{alignSelf:'flex-start',minHeight:44,justifyContent:'center',paddingHorizontal:5},

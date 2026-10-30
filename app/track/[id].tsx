@@ -153,14 +153,14 @@ export default function TrackDetails(){
          {speakerNames.length?<View style={styles.speakerLinks}>
           {speakerNames.map((name,i)=><View key={name} style={styles.speakerLinkItem}>
            {i>0&&<Text style={[styles.speakerSeparator,{color:t.muted}]}> & </Text>}
-           <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的講師公開作品'}
+           <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
             onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})}
             style={styles.speakerLink}>
             <Text style={[styles.speakerName,{color:t.palette.primary}]}>{name} ›</Text>
            </Pressable>
           </View>)}
          </View>:<Text style={[styles.speakerName,{color:t.muted}]}>講師資料待補</Text>}
-         <Text style={[styles.speakerCaption,{color:t.muted}]}>查看講師公開作品</Text>
+         <Text style={[styles.speakerCaption,{color:t.muted}]}>查看演講者資料</Text>
         </View>
        </View>
        <View style={styles.tags}>{track.categories.map((category,i)=><Pressable key={category+i}
