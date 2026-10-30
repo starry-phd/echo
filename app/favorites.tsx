@@ -6,6 +6,7 @@ import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
+import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 
 export default function DeviceFavorites(){
  const t=useLegacyTheme();
@@ -16,8 +17,12 @@ export default function DeviceFavorites(){
  // Saved IDs are not an access grant: resolve only through current authorized lists.
  const tracks=[...(catalog.data??[]),...(previews.data??[])].filter(track=>
   preferences.favoriteIds.includes(track.id)&&!preferences.dislikedIds.includes(track.id));
- const pending=!preferences.ready||previews.isPending||catalog.isPending;
- const failed=previews.isError||catalog.isError;
+ const publicSource={pending:catalog.isPending,failed:catalog.isError,count:catalog.data?.length??0};
+ const previewSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
+ const display=getCatalogDisplayState(publicSource,previewSource,tracks.length);
+ const partial=hasPartialCatalogFailure(publicSource,previewSource);
+ const pending=!preferences.ready||display==='loading';
+ const retry=()=>{void previews.refetch();void catalog.refetch();};
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Text style={[styles.title,{color:t.ink}]}>我的收藏</Text>
@@ -28,12 +33,18 @@ export default function DeviceFavorites(){
     style={[styles.restore,{borderColor:t.border}]}>
     <Text style={{color:t.palette.primary}}>還原本裝置隱藏（{preferences.dislikedIds.length} 張）</Text>
    </Pressable>}
-   {failed&&<Pressable accessibilityRole="button" onPress={()=>{void previews.refetch();void catalog.refetch();}}
-    style={[styles.restore,{borderColor:t.border}]}>
-    <Text style={{color:t.palette.primary}}>部分收藏暫時無法載入，點此重試</Text>
-   </Pressable>}
+   {partial&&<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
+    <Text style={[styles.note,{color:t.muted}]}>部分收藏來源暫時讀取失敗，以下內容可能不完整。</Text>
+    <Pressable accessibilityRole="button" onPress={retry} accessibilityLabel="重新讀取收藏"
+     style={styles.retry}><Text style={{color:t.palette.primary,fontWeight:'800'}}>重新讀取</Text></Pressable>
+   </View>}
    {pending?<ActivityIndicator color={t.palette.primary}/>:
-    tracks.length?tracks.map(track=><LegacyTrackCard key={track.id} track={track} onNotice={setNotice}
+    display==='failed'?<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
+     <Text style={[styles.note,{color:t.muted}]}>收藏資訊暫時無法完整讀取，不能判斷是否有可顯示的作品；本機收藏紀錄仍保留。</Text>
+     <Pressable accessibilityRole="button" onPress={retry} accessibilityLabel="重試載入收藏"
+      style={styles.retry}><Text style={{color:t.palette.primary,fontWeight:'800'}}>重試載入</Text></Pressable>
+    </View>:
+    display==='ready'?tracks.map(track=><LegacyTrackCard key={track.id} track={track} onNotice={setNotice}
      onDislike={id=>{preferences.dislike(id);setNotice('已在此裝置隱藏卡片。');}}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.emptyTitle,{color:t.ink}]}>目前沒有可顯示的收藏</Text>
@@ -48,5 +59,7 @@ const styles=StyleSheet.create({
  page:{alignItems:'center',padding:12,paddingBottom:32},shell:{maxWidth:visualMetrics.contentMaxWidth,width:'100%'},
  title:{fontSize:23,fontWeight:'900',marginTop:8},note:{fontSize:12,lineHeight:20,marginVertical:10},
  notice:{paddingVertical:12,fontSize:13},restore:{minHeight:44,borderWidth:1,borderRadius:12,padding:12,marginBottom:12},
+ warning:{borderWidth:1,borderRadius:14,padding:12,marginBottom:10},
+ retry:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:8},
  empty:{borderWidth:1,borderStyle:'dashed',borderRadius:20,padding:20},emptyTitle:{fontSize:16,fontWeight:'800'}
 });

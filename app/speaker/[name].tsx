@@ -8,6 +8,7 @@ import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
+import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
@@ -31,6 +32,12 @@ export default function PublicSpeakerTracks(){
  const tracks=[...(q.data??[]),...(p.data??[])];
  const photo=p.data?.find(x=>x.coverUrl)?.coverUrl;
  const origin=getApiBaseUrl();
+ const visibleTracks=tracks.filter(track=>!dislikedIds.includes(track.id));
+ const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
+ const guestSource={pending:p.isPending,failed:p.isError,count:p.data?.length??0};
+ const display=getCatalogDisplayState(publicSource,guestSource,visibleTracks.length);
+ const partial=hasPartialCatalogFailure(publicSource,guestSource);
+ const retry=()=>{void q.refetch();void p.refetch();};
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/speaker')} style={styles.back}>
@@ -52,10 +59,21 @@ export default function PublicSpeakerTracks(){
    {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
     restoreHidden();setNotice('已還原此裝置隱藏的卡片。');
    }}><Text style={[styles.backText,{color:t.palette.primary}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
+   {!!speaker&&partial&&display!=='failed'&&<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
+     <Text style={[styles.message,{color:t.muted}]}>部分講師作品暫時無法讀取，目前只顯示成功取得的資料。</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
+      <Text style={[styles.backText,{color:t.palette.primary}]}>重新讀取</Text>
+     </Pressable>
+    </View>}
    {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
-    (q.isPending||p.isPending)?<ActivityIndicator color={t.palette.primary}/>:
-    (q.isError&&p.isError)?<Text style={[styles.message,{color:t.muted}]}>讀取暫時失敗，請稍後再試。</Text>:
-    tracks.some(track=>!dislikedIds.includes(track.id))? tracks.filter(track=>!dislikedIds.includes(track.id)).map(track=><LegacyTrackCard key={track.id} track={track}
+    display==='loading'?<ActivityIndicator color={t.palette.primary}/>:
+    display==='failed'?<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
+     <Text style={[styles.message,{color:t.muted}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
+      <Text style={[styles.backText,{color:t.palette.primary}]}>重試載入</Text>
+     </Pressable>
+    </View>:
+    display==='ready'? visibleTracks.map(track=><LegacyTrackCard key={track.id} track={track}
       onNotice={setNotice} onDislike={hide}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted}]}>目前沒有可瀏覽的講者作品資訊。</Text>
@@ -77,6 +95,8 @@ const styles=StyleSheet.create({
  initial:{fontSize:32,fontWeight:'900'},
  bioText:{flex:1},title:{fontSize:22,fontWeight:'900'},
  note:{fontSize:12,marginTop:8},section:{fontSize:18,fontWeight:'900',marginVertical:18},
+ warning:{borderWidth:1,borderRadius:14,padding:8,marginBottom:10},
+ retry:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:10},
  empty:{borderWidth:1,borderStyle:'dashed',borderRadius:19,minHeight:130,alignItems:'center',justifyContent:'center'},
  message:{fontSize:13,textAlign:'center',lineHeight:22,padding:10},
  disclaimer:{fontSize:11,lineHeight:18,marginTop:12,textAlign:'center'}

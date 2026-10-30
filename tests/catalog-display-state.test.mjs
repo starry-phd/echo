@@ -24,3 +24,17 @@ test('a fully healthy catalog never signals a partial failure',()=>{
  assert.equal(getCatalogDisplayState(state(0),state(28),28),'ready');
  assert.equal(hasPartialCatalogFailure(state(0),state(28)),false);
 });
+
+test('speaker list/profile and device favorites never describe failed API as true absence',()=>{
+ const healthyEmpty={pending:false,failed:false,count:0};
+ const publicFailed={pending:false,failed:true,count:0};
+ const guestFailed={pending:false,failed:true,count:0};
+ const approvedSpeakerCards={pending:false,failed:false,count:28};
+ assert.equal(getCatalogDisplayState(healthyEmpty,guestFailed,0),'failed');
+ assert.equal(getCatalogDisplayState(publicFailed,healthyEmpty,0),'failed');
+ assert.equal(getCatalogDisplayState(healthyEmpty,healthyEmpty,0),'empty');
+ assert.equal(getCatalogDisplayState(publicFailed,approvedSpeakerCards,3),'ready');
+ assert.equal(hasPartialCatalogFailure(publicFailed,approvedSpeakerCards),true);
+ assert.equal(getCatalogDisplayState(healthyEmpty,guestFailed,0),'failed');
+ assert.equal(getCatalogDisplayState(healthyEmpty,{...approvedSpeakerCards,pending:true},3),'loading');
+});
