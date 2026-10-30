@@ -8,7 +8,7 @@ test('original mobile/tablet/desktop quick action limits preserved for the safe 
  assert.deepEqual(quickLimits,{mobile:3,tablet:5,desktop:7});
  assert.deepEqual([320,390,599,600,820,899,900,1440].map(quickDeviceForWidth),
   ['mobile','mobile','mobile','tablet','tablet','tablet','desktop','desktop']);
- assert.deepEqual(allowedQuickActions,['home','palette','speakers','stats','favorites','profile','theme']);
+ assert.deepEqual(allowedQuickActions,['home','palette','stats','favorites','profile','theme']);
 });
 test('untrusted saved IDs, duplicates and over-capacity items are dropped',()=>{
  const choices=normalizeQuickChoices({
@@ -16,8 +16,8 @@ test('untrusted saved IDs, duplicates and over-capacity items are dropped',()=>{
   tablet:['stats','profile','favorites','speakers','palette','theme'],
   desktop:['theme','stats','favorites']
  });
- assert.deepEqual(choices.mobile,['home','palette','speakers']);
- assert.deepEqual(choices.tablet,['stats','profile','favorites','speakers','palette']);
+ assert.deepEqual(choices.mobile,['home','palette','profile']);
+ assert.deepEqual(choices.tablet,['stats','profile','favorites','palette','theme']);
  assert.deepEqual(choices.desktop,['theme','stats','favorites']);
 });
 test('pin/unpin at capacity and up/down reorder persist in separate device configurations',async()=>{
@@ -26,20 +26,20 @@ test('pin/unpin at capacity and up/down reorder persist in separate device confi
  const store=createQuickActionStore(api);
  assert.equal(store.togglePinned('mobile','stats'),false,'changes disabled before hydration');
  await store.hydrate();
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette','speakers']);
- assert.equal(store.togglePinned('mobile','stats'),false,'mobile already has three');
+ assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette']);
+ assert.equal(store.togglePinned('mobile','stats'),true,'mobile has a free slot');
+ assert.equal(store.togglePinned('mobile','profile'),false,'mobile reaches the original three-slot limit');
  assert.equal(store.togglePinned('mobile','palette'),true);
- assert.equal(store.togglePinned('mobile','stats'),true);
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','speakers','stats']);
- assert.equal(store.movePinned('mobile','stats',-1),true);
+ assert.equal(store.togglePinned('mobile','profile'),true);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['home','stats','profile']);
  assert.equal(store.movePinned('mobile','stats',-1),true);
  assert.equal(store.movePinned('mobile','stats',-1),false);
- assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','speakers']);
- assert.deepEqual(store.getSnapshot().choices.desktop,['home','palette','speakers','profile']);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','profile']);
+ assert.deepEqual(store.getSnapshot().choices.desktop,['home','palette','profile']);
  await store.flush();
  const next=createQuickActionStore(api);await next.hydrate();
- assert.deepEqual(next.getSnapshot().choices.mobile,['stats','home','speakers']);
- assert.deepEqual(next.getSnapshot().choices.desktop,['home','palette','speakers','profile']);
+ assert.deepEqual(next.getSnapshot().choices.mobile,['stats','home','profile']);
+ assert.deepEqual(next.getSnapshot().choices.desktop,['home','palette','profile']);
  assert.ok(storage.get(QUICK_PIN_KEY));
 });
 test('a failed AsyncStorage read never overwrites a possibly recoverable preferences file',async()=>{
@@ -91,22 +91,24 @@ test('drag displacement maps to valid pinned slots and clamps at both ends',()=>
  assert.equal(quickDragTargetIndex(-1,48,3),-1);
 });
 test('drag reorders only pinned items, persisting once without changing other device kinds',async()=>{
- const storage=new Map(),writes=[];
+ const storage=new Map([[QUICK_PIN_KEY,JSON.stringify({
+  mobile:['home','palette','stats'],tablet:['home','palette','profile'],desktop:['home','palette','profile']
+ })]]),writes=[];
  const api={getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{writes.push(v);storage.set(k,v);}};
  const store=createQuickActionStore(api);
- assert.equal(store.reorderPinned('mobile','speakers',0),false);
- await store.hydrate();
- assert.equal(store.reorderPinned('mobile','speakers',0),true);
- assert.deepEqual(store.getSnapshot().choices.mobile,['speakers','home','palette']);
- assert.equal(store.reorderPinned('mobile','speakers',0),false);
  assert.equal(store.reorderPinned('mobile','stats',0),false);
- assert.equal(store.reorderPinned('mobile','speakers',9),false);
- assert.equal(store.reorderPinned('mobile','speakers',1.5),false);
+ await store.hydrate();
+ assert.equal(store.reorderPinned('mobile','stats',0),true);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','palette']);
+ assert.equal(store.reorderPinned('mobile','stats',0),false);
+ assert.equal(store.reorderPinned('mobile','speakers',0),false);
+ assert.equal(store.reorderPinned('mobile','stats',9),false);
+ assert.equal(store.reorderPinned('mobile','stats',1.5),false);
  assert.equal(store.reorderPinned('mobile','admin',0),false);
- assert.deepEqual(store.getSnapshot().choices.tablet,['home','palette','speakers','profile']);
+ assert.deepEqual(store.getSnapshot().choices.tablet,['home','palette','profile']);
  await store.flush();assert.equal(writes.length,1);
  const restored=createQuickActionStore(api);await restored.hydrate();
- assert.deepEqual(restored.getSnapshot().choices.mobile,['speakers','home','palette']);
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['stats','home','palette']);
 });
 test('dedicated drag responder has long-press cancel and retains accessible arrow controls',()=>{
  const source=read('src/ui/echo/QuickDragHandle.tsx');

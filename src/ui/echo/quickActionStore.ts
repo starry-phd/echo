@@ -1,14 +1,14 @@
 type Storage={getItem(key:string):Promise<string|null>;setItem(key:string,value:string):Promise<unknown>};
 export const QUICK_PIN_KEY='echo-ui-pinned-quick-actions-v1';
-export const allowedQuickActions=['home','palette','speakers','stats','favorites','profile','theme'] as const;
+export const allowedQuickActions=['home','palette','stats','favorites','profile','theme'] as const;
 export type QuickActionId=(typeof allowedQuickActions)[number];
 export type QuickDeviceKind='mobile'|'tablet'|'desktop';
 export type QuickActionChoices=Record<QuickDeviceKind,QuickActionId[]>;
 export const quickLimits:Record<QuickDeviceKind,number>={mobile:3,tablet:5,desktop:7};
 const defaults:QuickActionChoices={
- mobile:['home','palette','speakers'],
- tablet:['home','palette','speakers','profile'],
- desktop:['home','palette','speakers','profile']
+ mobile:['home','palette'],
+ tablet:['home','palette','profile'],
+ desktop:['home','palette','profile']
 };
 /** The device viewport controls available quick-bar slots, not a member rank. */
 export function quickDeviceForWidth(width:number):QuickDeviceKind{
