@@ -33,13 +33,12 @@ test('pin/unpin at capacity and up/down reorder persist in separate device confi
  assert.equal(store.togglePinned('mobile','profile'),true);
  assert.deepEqual(store.getSnapshot().choices.mobile,['home','stats','profile']);
  assert.equal(store.movePinned('mobile','stats',-1),true);
- assert.equal(store.movePinned('mobile','stats',-1),true);
  assert.equal(store.movePinned('mobile','stats',-1),false);
  assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','profile']);
  assert.deepEqual(store.getSnapshot().choices.desktop,['home','palette','profile']);
  await store.flush();
  const next=createQuickActionStore(api);await next.hydrate();
- assert.deepEqual(next.getSnapshot().choices.mobile,['stats','home','speakers']);
+ assert.deepEqual(next.getSnapshot().choices.mobile,['stats','home','profile']);
  assert.deepEqual(next.getSnapshot().choices.desktop,['home','palette','profile']);
  assert.ok(storage.get(QUICK_PIN_KEY));
 });
@@ -92,23 +91,24 @@ test('drag displacement maps to valid pinned slots and clamps at both ends',()=>
  assert.equal(quickDragTargetIndex(-1,48,3),-1);
 });
 test('drag reorders only pinned items, persisting once without changing other device kinds',async()=>{
- const storage=new Map(),writes=[];
+ const storage=new Map([[QUICK_PIN_KEY,JSON.stringify({
+  mobile:['home','palette','stats'],tablet:['home','palette','profile'],desktop:['home','palette','profile']
+ })]]),writes=[];
  const api={getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{writes.push(v);storage.set(k,v);}};
  const store=createQuickActionStore(api);
  assert.equal(store.reorderPinned('mobile','stats',0),false);
  await store.hydrate();
- assert.equal(store.togglePinned('mobile','stats'),true);
  assert.equal(store.reorderPinned('mobile','stats',0),true);
  assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','palette']);
  assert.equal(store.reorderPinned('mobile','stats',0),false);
- assert.equal(store.reorderPinned('mobile','stats',0),false);
+ assert.equal(store.reorderPinned('mobile','speakers',0),false);
  assert.equal(store.reorderPinned('mobile','stats',9),false);
  assert.equal(store.reorderPinned('mobile','stats',1.5),false);
  assert.equal(store.reorderPinned('mobile','admin',0),false);
- assert.deepEqual(store.getSnapshot().choices.tablet,['home','palette','speakers','profile']);
+ assert.deepEqual(store.getSnapshot().choices.tablet,['home','palette','profile']);
  await store.flush();assert.equal(writes.length,1);
  const restored=createQuickActionStore(api);await restored.hydrate();
- assert.deepEqual(restored.getSnapshot().choices.mobile,['speakers','home','palette']);
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['stats','home','palette']);
 });
 test('dedicated drag responder has long-press cancel and retains accessible arrow controls',()=>{
  const source=read('src/ui/echo/QuickDragHandle.tsx');
