@@ -10,6 +10,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
 import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
+import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
@@ -19,7 +20,7 @@ export default function PublicSpeakerTracks(){
   setNotice('已在此裝置隱藏卡片。');
  };
  const {name}=useLocalSearchParams<{name:string}>();
- const speaker=typeof name==='string'&&name.length>0&&name.length<=80?name:null;
+ const speaker=publicSpeakerRouteName(name);
  const p=useQuery({
   queryKey:['echo','guest-previews'],
   queryFn:({signal})=>getGuestPreviewTracks(signal),
@@ -30,23 +31,26 @@ export default function PublicSpeakerTracks(){
   queryKey:['echo','public-speaker-recordings',speaker],
   queryFn:({signal})=>getPublicTracks(signal,{speaker:speaker!}),enabled:Boolean(speaker),retry:1,
  });
- const tracks=[...(q.data??[]),...(p.data??[])];
+ // A name in a URL is not evidence that the API currently approves it.
+ // Check current approved metadata and both local visibility preferences.
  const speakerHidden=Boolean(speaker&&isSpeakerHidden(speaker,hiddenSpeakers));
- const photo=ready&&!speakerHidden?p.data?.find(x=>
-  !dislikedIds.includes(x.id)&&!isSpeakerHidden(x.speaker,hiddenSpeakers)&&x.coverUrl)?.coverUrl:null;
+ const visibleTracks=authorizedSpeakerProfileTracks(speaker,
+  [...(q.data??[]),...(p.data??[])],dislikedIds,hiddenSpeakers);
  const origin=getApiBaseUrl();
- const visibleTracks=tracks.filter(track=>!speakerHidden&&!dislikedIds.includes(track.id)&&!isSpeakerHidden(track.speaker,hiddenSpeakers));
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:p.isPending,failed:p.isError,count:p.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,visibleTracks.length);
  const partial=hasPartialCatalogFailure(publicSource,guestSource);
  const retry=()=>{void q.refetch();void p.refetch();};
+ const showBio=ready&&display==='ready'&&!speakerHidden;
+ const photo=showBio?p.data?.find(track=>
+  visibleTracks.some(approved=>approved.id===track.id)&&track.coverUrl)?.coverUrl:null;
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/speaker')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary}]}>‹ 返回講師列表</Text>
    </Pressable>
-   <View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
+   {showBio&&<View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
      {photo&&origin?<Image source={{uri:origin+photo}} resizeMode="cover"
       style={styles.photo} accessibilityLabel={'原版講者封面：'+speaker}/>:
@@ -56,7 +60,7 @@ export default function PublicSpeakerTracks(){
      <Text style={[styles.title,{color:t.ink}]}>{speaker??'無效的講師名稱'}</Text>
      <Text style={[styles.note,{color:t.muted}]}>原版可瀏覽作品；播放須另行授權</Text>
     </View>
-   </View>
+   </View>}
    <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
    {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
