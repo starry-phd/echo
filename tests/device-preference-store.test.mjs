@@ -9,7 +9,7 @@ test('hydration preserves prior web keys and ignores actions until loading compl
  let release;
  const gate=new Promise(resolve=>{release=resolve;});
  const store=createDevicePreferenceStore({
-  async getItem(key){await gate;return key===DEVICE_FAVORITES_KEY?'["old","old",null]':'["hidden"]';},
+  async getItem(key){await gate;return key===DEVICE_FAVORITES_KEY?'["old","old",null]':key===DISLIKED_STORAGE_KEY?'["hidden"]':null;},
   async setItem(){throw Error('No writes expected');}
  });
  const loading=store.hydrate();
