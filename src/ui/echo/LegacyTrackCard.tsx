@@ -10,6 +10,7 @@ import {splitSpeakerNames} from './speakerNames';
 import {useDevicePreferences} from './DevicePreferences';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {cardMenuLayout} from './cardMenuLayout';
+import {legacyAudioCardSizing} from './legacyAudioCardSizing';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
 import {categoryFromRoute} from './publicCategoryNavigation';
@@ -23,6 +24,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const {fontSize}=useFontZoom();
  const preferences=useDevicePreferences();
  const viewport=useViewportDimensions();
+ const cardSizing=legacyAudioCardSizing(viewport.width);
  const moreAnchor=useRef<ViewInstance>(null);
  const [open,setOpen]=useState(false);
  const [menuPosition,setMenuPosition]=useState(()=>cardMenuLayout({x:0,y:0,width:32,height:32},{width:390,height:844}));
@@ -81,11 +83,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  };
  return <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
   <View style={styles.body}>
-   <View style={styles.mediaSide}>
+   <View style={[styles.mediaSide,{width:cardSizing.cover}]}>
     <Pressable onPress={playFromPhoto}
      accessibilityRole="button"
      accessibilityLabel={track.playable?'點擊照片開始播放':'音檔尚未開放播放'}
-     style={[styles.portrait,{backgroundColor:t.dark?'#344052':'#f8e6ed'}]}>
+     style={[styles.portrait,{width:cardSizing.cover,height:cardSizing.cover},
+      {backgroundColor:t.dark?'#344052':'#f8e6ed'}]}>
      {coverUri&&!coverError
       ?<Image source={{uri:coverUri}} resizeMode="cover" onError={()=>setCoverError(true)}
          accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>
@@ -104,7 +107,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    <View style={styles.details}>
     <Pressable onPress={toggleDetails} accessibilityRole="button"
      accessibilityLabel={'查看音檔資訊：'+track.title}>
-     <Text numberOfLines={2} style={[styles.title,{color:t.palette.primary,fontSize:fontSize(20),lineHeight:fontSize(24)}]}>{track.title}</Text>
+     <Text numberOfLines={1} style={[styles.title,{color:t.ink,fontSize:fontSize(cardSizing.titleFont),lineHeight:fontSize(cardSizing.titleLineHeight)}]}>{track.title}</Text>
     </Pressable>
     <View style={styles.speakerLinks}>
      {speakerNames.map((name,i)=>
@@ -214,7 +217,7 @@ const styles=StyleSheet.create({
  permissionText:{color:'#fff',fontWeight:'700',fontSize:12},
  duration:{fontSize:11,fontWeight:'500',marginTop:6,textAlign:'center'},
  details:{flex:1,minWidth:0,paddingRight:23,minHeight:138},
- title:{fontSize:20,fontWeight:'900',lineHeight:24},
+ title:{fontSize:16,fontWeight:'900',lineHeight:17},
  speakerLinks:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',marginTop:4},
  speakerPart:{flexDirection:'row',alignItems:'center'},
  rankLink:{minHeight:44,justifyContent:'center'},
