@@ -8,6 +8,8 @@ import {clampSeekTime,formatAudioTime} from '../../src/media/playback';
 import type {EchoTrack} from '../../src/types';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
+import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
+import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -63,6 +65,7 @@ function AudioPlayback({track}:{track:EchoTrack}){
 }
 export default function TrackDetails(){
  const t=useLegacyTheme();
+ const preferences=useDevicePreferences();
  const {id}=useLocalSearchParams<{id:string}>();
  const trackId=typeof id==='string'&&id.length>0&&id.length<=200?id:null;
  const [hydrated,setHydrated]=useState(Platform.OS!=='web');
@@ -70,6 +73,7 @@ export default function TrackDetails(){
  const q=useQuery({queryKey:['echo','public-track',trackId],enabled:Boolean(trackId),
   queryFn:({signal})=>getPublicTrack(trackId!,signal),retry:1});
  const track=q.data;
+ const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]}
    contentContainerStyle={styles.screen}>
    <View style={styles.shell}>
@@ -85,6 +89,16 @@ export default function TrackDetails(){
        <Pressable accessibilityRole="button" onPress={()=>void q.refetch()}
         style={[styles.retry,{backgroundColor:t.palette.primary}]}><Text style={styles.retryText}>重新載入</Text></Pressable>
       </View>:!track?<Text style={[styles.notice,{color:t.muted}]}>音檔尚未完成驗證或未獲公開授權。</Text>:
+      !preferences.ready?<View style={styles.loading}>
+       <ActivityIndicator color={t.palette.primary}/>
+       <Text style={[styles.notice,{color:t.muted}]}>載入本裝置隱藏設定中…</Text>
+      </View>:hidden?<View style={styles.loading}>
+       <Text style={[styles.notice,{color:t.muted}]}>這部音檔已依本裝置的「我不喜歡」設定隱藏；公開播放權限不受此設定影響。</Text>
+       <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
+        onPress={()=>router.push('/favorites')} style={[styles.retry,{backgroundColor:t.palette.primary}]}>
+        <Text style={styles.retryText}>前往我的收藏管理隱藏設定</Text>
+       </Pressable>
+      </View>:
       <>
        <Text style={[styles.title,{color:t.ink}]}>{track.title}</Text>
        <Pressable accessibilityRole="button"
