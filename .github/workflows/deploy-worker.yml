@@ -1,7 +1,11 @@
 name: Deploy Echo public Web shell to Cloudflare Workers
 
-# Production deployment is intentionally manual until central ID/media acceptance.
+# Only a successful main-branch push CI can auto-release the public-only shell.
+# Private media migration, Starry ID, payments and private R2 audit stay separate.
 on:
+  workflow_run:
+    workflows: [Echo App checks]
+    types: [completed]
   workflow_dispatch:
     inputs:
       confirmation:
@@ -22,51 +26,72 @@ concurrency:
 
 jobs:
   deploy:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'workflow_run' &&
+         github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.event == 'push' &&
+         github.event.workflow_run.head_branch == 'main' &&
+         github.event.workflow_run.head_repository.full_name == github.repository)
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
     env:
       RELEASE_CONFIRMATION: ${{ inputs.confirmation }}
-      RELEASE_COMMIT_SHA: ${{ inputs.approved_commit }}
+      RELEASE_COMMIT_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.approved_commit }}
+      RELEASE_CI_EVENT: ${{ github.event.workflow_run.event }}
+      RELEASE_CI_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      RELEASE_CI_BRANCH: ${{ github.event.workflow_run.head_branch }}
+      RELEASE_CI_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: 9ff1b4c261141730ac2fe0683f730062
       ECHO_URL: https://echo-starry.starry-phd.workers.dev
     steps:
+      # workflow_run's GITHUB_SHA may be the default-branch tip, not the tested
+      # commit. Always pin checkout to the successful CI run's exact head SHA.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_COMMIT_SHA }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Require exact human-approved main commit and lifecycle permission
+      - name: Require successful main CI or exact manual confirmation and lifecycle permission
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ]; then
-            echo "::error::Manual workflow dispatch required"
-            exit 1
-          fi
-          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
-            echo "::error::Only main is eligible for production deployment"
-            exit 1
-          fi
-          if [ "$RELEASE_CONFIRMATION" != "DEPLOY-ECHO-STARRY-PRODUCTION" ]; then
-            echo "::error::Owner must enter exact production confirmation"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            if [ "$RELEASE_CI_EVENT" != "push" ] || [ "$RELEASE_CI_CONCLUSION" != "success" ] || [ "$RELEASE_CI_BRANCH" != "main" ] || [ "$RELEASE_CI_REPOSITORY" != "$GITHUB_REPOSITORY" ]; then
+              echo "::error::Automatic release requires a successful trusted main push CI"
+              exit 1
+            fi
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ] || [ "$RELEASE_CONFIRMATION" != "DEPLOY-ECHO-STARRY-PRODUCTION" ]; then
+              echo "::error::Manual release requires main and explicit confirmation"
+              exit 1
+            fi
+          else
+            echo "::error::Untrusted production workflow trigger"
             exit 1
           fi
           if ! [[ "$RELEASE_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::Full 40-character approved SHA required"
+            echo "::error::Exact 40-character release SHA required"
             exit 1
           fi
           actual="$(git rev-parse HEAD)"
-          if [ "$actual" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$GITHUB_SHA" ]; then
-            echo "::error::Checked-out commit does not match explicit approval"
+          if [ "$actual" != "$RELEASE_COMMIT_SHA" ]; then
+            echo "::error::Checked-out commit does not match tested/approved release SHA"
             exit 1
           fi
-          # Reject a queued approval if main moved after the workflow was dispatched.
-          # This is read-only; failure to resolve the current ref blocks deployment.
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$actual" != "$GITHUB_SHA" ]; then
+            echo "::error::Manual release commit differs from workflow dispatch SHA"
+            exit 1
+          fi
+          # Fail closed if a newer commit landed while CI or approval was queued.
           remote_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
           if [ -z "$remote_main" ] || [ "$remote_main" != "$actual" ]; then
-            echo "::error::Approved SHA is no longer the current main HEAD"
+            echo "::error::Release SHA is no longer current main HEAD"
             exit 1
           fi
           node -e "const m=require('./starry.app.json');if(m.lifecycle.productionAuthorized!==true){console.error('Production remains locked until an explicitly approved release');process.exit(1)}"
@@ -87,14 +112,18 @@ jobs:
       - run: npm run build:web
       - name: Verify Worker and Assets bundle before uploading
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
-      - name: Revalidate current main against the approved SHA before upload
+      - name: Revalidate current main against the tested or approved SHA before upload
         shell: bash
         run: |
           set -euo pipefail
           actual="$(git rev-parse HEAD)"
           remote_main="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
-          if [ -z "$remote_main" ] || [ "$remote_main" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$GITHUB_SHA" ]; then
-            echo "::error::Main HEAD moved or checked-out code differs from the explicitly approved release SHA"
+          if [ -z "$remote_main" ] || [ "$remote_main" != "$RELEASE_COMMIT_SHA" ] || [ "$actual" != "$RELEASE_COMMIT_SHA" ]; then
+            echo "::error::Main HEAD moved or checked-out code differs from tested/approved release SHA"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$actual" != "$GITHUB_SHA" ]; then
+            echo "::error::Manual release SHA differs from dispatch revision"
             exit 1
           fi
       - name: Deploy Worker and complete Expo Web assets together
