@@ -10,6 +10,7 @@ import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
+import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -73,6 +74,7 @@ export default function TrackDetails(){
  const q=useQuery({queryKey:['echo','public-track',trackId],enabled:Boolean(trackId),
   queryFn:({signal})=>getPublicTrack(trackId!,signal),retry:1});
  const track=q.data;
+ const speakerNames=splitSpeakerNames(track?.speaker);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]}
    contentContainerStyle={styles.screen}>
@@ -101,17 +103,24 @@ export default function TrackDetails(){
       </View>:
       <>
        <Text style={[styles.title,{color:t.ink}]}>{track.title}</Text>
-       <Pressable accessibilityRole="button"
-        onPress={()=>router.push({pathname:'/speaker/[name]',params:{name:track.speaker}})}
-        style={styles.speakerRow}>
+       <View style={styles.speakerRow}>
         <View style={[styles.speakerAvatar,{backgroundColor:t.lightPill}]}>
-         <Text style={[styles.speakerInitial,{color:t.palette.primary}]}>{Array.from(track.speaker)[0]??'♪'}</Text>
+         <Text style={[styles.speakerInitial,{color:t.palette.primary}]}>{Array.from(speakerNames[0]??'♪')[0]??'♪'}</Text>
         </View>
         <View style={styles.speakerText}>
-         <Text style={[styles.speakerName,{color:t.palette.primary}]}>{track.speaker} ›</Text>
+         {speakerNames.length?<View style={styles.speakerLinks}>
+          {speakerNames.map((name,i)=><View key={name} style={styles.speakerLinkItem}>
+           {i>0&&<Text style={[styles.speakerSeparator,{color:t.muted}]}> & </Text>}
+           <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的講師公開作品'}
+            onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})}
+            style={styles.speakerLink}>
+            <Text style={[styles.speakerName,{color:t.palette.primary}]}>{name} ›</Text>
+           </Pressable>
+          </View>)}
+         </View>:<Text style={[styles.speakerName,{color:t.muted}]}>講師資料待補</Text>}
          <Text style={[styles.speakerCaption,{color:t.muted}]}>查看講師公開作品</Text>
         </View>
-       </Pressable>
+       </View>
        <View style={styles.tags}>{track.categories.map((category,i)=><View key={category+i}
         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
         <Text style={[styles.tagText,{color:t.palette.primary}]}>{category}</Text>
@@ -143,6 +152,10 @@ const styles=StyleSheet.create({
  speakerAvatar:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},
  speakerInitial:{fontSize:20,fontWeight:'800'},
  speakerText:{flex:1},
+ speakerLinks:{flexDirection:'row',flexWrap:'wrap',alignItems:'center'},
+ speakerLinkItem:{flexDirection:'row',alignItems:'center'},
+ speakerLink:{minHeight:44,justifyContent:'center'},
+ speakerSeparator:{fontSize:14,fontWeight:'500'},
  speakerName:{fontSize:15,fontWeight:'900'},speakerCaption:{fontSize:11,marginTop:3},
  tags:{flexDirection:'row',flexWrap:'wrap',gap:5,marginBottom:10},
  tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,paddingVertical:5},
