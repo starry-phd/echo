@@ -12,23 +12,26 @@ import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
+import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
+import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
  const t=useLegacyTheme(),preferences=useDevicePreferences();
  const {fontSize}=useFontZoom();
+ const sections=useDetailSectionJump();
  const {id}=useLocalSearchParams<{id:string}>();
  const valid=typeof id==='string'&&id.length>0&&id.length<=200;
  const q=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),enabled:valid,retry:1});
  const track=q.data?.find(item=>item.id===id);
  const origin=getApiBaseUrl();
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
- return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
-  <View style={styles.shell}>
+ return <ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
+  <View style={styles.shell} onLayout={sections.onShellLayout}>
    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回音檔列表</Text>
    </Pressable>
-   <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
+   <View onLayout={sections.onCardLayout} style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
     {!valid?<Text style={{color:t.muted}}>無效的音檔連結。</Text>:
      q.isPending?<ActivityIndicator color={t.palette.primary}/>:
      q.isError?<Pressable accessibilityRole="button" onPress={()=>void q.refetch()} style={styles.back}>
@@ -67,9 +70,16 @@ export default function GuestPreviewDetails(){
          ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
          :<Text style={{color:t.palette.primary,fontSize:fontSize(13)}}>{category} ›</Text>}
        </Pressable>)}</View>
-      <LegacyLectureNotes track={track}/>
-      <LegacyEngagementDetail track={track}/>
-      <LegacyDetailDeviceActions track={track} routeId={id} source="preview"/>
+      <LegacyDetailSectionNavigation showPlayback={false} onJump={sections.jumpTo}/>
+      <View onLayout={sections.onSectionLayout('notes')}>
+       <LegacyLectureNotes track={track}/>
+      </View>
+      <View onLayout={sections.onSectionLayout('engagement')}>
+       <LegacyEngagementDetail track={track}/>
+      </View>
+      <View onLayout={sections.onSectionLayout('device')}>
+       <LegacyDetailDeviceActions track={track} routeId={id} source="preview"/>
+      </View>
       <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>這張卡片僅展示演講資訊；錄音播放、分享、心得與評價尚未開放。</Text>
      </>}
    </View>
