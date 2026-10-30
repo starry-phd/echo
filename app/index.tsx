@@ -17,6 +17,7 @@ import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
+import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -28,6 +29,7 @@ export default function CatalogScreen(){
  const theme=useLegacyTheme();
  const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
+ const [searchSuggestionsOpen,setSearchSuggestionsOpen]=useState(false);
  const [debouncedQuery,setDebouncedQuery]=useState('');
  const [category,setCategory]=useState<string|null>(null);
  const [order,setOrder]=useState<SortOrder>('newest');
@@ -103,6 +105,16 @@ export default function CatalogScreen(){
    ...(categoriesQuery.data??[]),
    ...(previewsQuery.data??[]).flatMap(t=>t.categories)
  ])],[categoriesQuery.data,previewsQuery.data]);
+ const categorySuggestions=useMemo(()=>
+   publicCategorySuggestions(categories,query),[categories,query]);
+ const selectSuggestedCategory=(value:string)=>{
+   // Same path as the legacy category chip, without pretending user keywords
+   // or private speaker data are available.
+   setCategory(value);
+   setQuery('');
+   setDebouncedQuery('');
+   setSearchSuggestionsOpen(false);
+ };
  const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError,count:tracksQuery.data?.length??0};
  const previewSource={pending:previewsQuery.isPending,failed:previewsQuery.isError,count:previewsQuery.data?.length??0};
  const catalogDisplay=getCatalogDisplayState(publicSource,previewSource,visibleTracks.length);
@@ -178,7 +190,12 @@ export default function CatalogScreen(){
            accessibilityLabel="搜尋演講者、主題、分類或獎銜"
            placeholder={layout.phone?'搜尋演講者、主題、分類...':'搜尋演講者、主題、分類或獎銜...'}
            placeholderTextColor="rgba(255,255,255,.75)"
-           style={styles.input} value={query} onChangeText={setQuery}
+           style={styles.input} value={query}
+           onFocus={()=>setSearchSuggestionsOpen(true)}
+           onChangeText={value=>{setQuery(value);setSearchSuggestionsOpen(true);}}
+           onKeyPress={event=>{
+             if(event.nativeEvent.key==='Escape')setSearchSuggestionsOpen(false);
+           }}
            maxLength={100} returnKeyType="search" autoCapitalize="none"/>
          {query.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="清除搜尋"
            onPress={()=>setQuery('')} style={styles.clear}>
@@ -186,6 +203,24 @@ export default function CatalogScreen(){
          </Pressable>}
        </View>
      </View>
+     {searchSuggestionsOpen&&categorySuggestions.length>0&&
+      <View style={[styles.suggestions,{backgroundColor:theme.card,borderColor:theme.border}]}>
+       <View style={styles.suggestionHeading}>
+        <Text style={[styles.suggestionTitle,{color:theme.muted}]}>🏷️ 分類標籤（已核准）</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="關閉搜尋建議"
+         onPress={()=>setSearchSuggestionsOpen(false)} style={styles.suggestionClose}>
+         <Text style={[styles.restoreText,{color:theme.muted}]}>✕ 關閉</Text>
+        </Pressable>
+       </View>
+       <View style={styles.suggestionChoices}>
+        {categorySuggestions.map(label=><Pressable key={label}
+         accessibilityRole="button" accessibilityLabel={'依分類搜尋：'+label}
+         onPress={()=>selectSuggestedCategory(label)}
+         style={[styles.suggestionChip,{backgroundColor:theme.lightPill,borderColor:theme.border}]}>
+         <Text style={[styles.suggestionChipText,{color:theme.palette.primary}]}>#{label}</Text>
+        </Pressable>)}
+       </View>
+      </View>}
      <Pressable accessibilityRole="button"
        accessibilityState={{expanded:advanced}}
        onPress={()=>setAdvanced(value=>!value)}
@@ -320,6 +355,14 @@ const styles=StyleSheet.create({
  searchIcon:{color:'#fff',fontSize:25,marginRight:4},
  input:{color:'#fff',fontSize:13,flex:1,paddingVertical:9,minWidth:0},
  clear:{padding:7},clearText:{color:'#fff',fontWeight:'900'},
+ suggestions:{borderWidth:1,borderRadius:16,padding:12,marginTop:8,gap:8},
+ suggestionHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
+ suggestionTitle:{fontSize:11,fontWeight:'800'},
+ suggestionClose:{minHeight:44,minWidth:60,alignItems:'center',justifyContent:'center'},
+ suggestionChoices:{flexDirection:'row',flexWrap:'wrap',gap:7},
+ suggestionChip:{borderWidth:1,borderRadius:12,paddingHorizontal:11,
+   minHeight:44,justifyContent:'center',alignItems:'center'},
+ suggestionChipText:{fontSize:12,fontWeight:'700'},
  advancedHint:{marginTop:10,paddingVertical:7,paddingHorizontal:3},
  advancedHintText:{fontSize:13,fontWeight:'800'},
  teaser:{marginTop:9,marginBottom:10,borderRadius:23,padding:14,borderWidth:1,alignItems:'center',
