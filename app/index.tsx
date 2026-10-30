@@ -258,6 +258,10 @@ export default function CatalogScreen(){
          還原隱藏（本裝置 {dislikedIds.length} 張）
         </Text>
        </Pressable>}
+     {dislikedIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="逐張管理本裝置隱藏的音檔卡"
+      onPress={()=>router.push('/favorites')} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
+      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>管理不喜歡的音檔卡（可個別還原）</Text>
+     </Pressable>}
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
        backgroundColor:theme.card}]}>
        <Text style={[styles.noticeText,{color:theme.ink}]}>{notice}</Text>
