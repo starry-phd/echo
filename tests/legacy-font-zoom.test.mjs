@@ -79,7 +79,8 @@ test('old font controls are accessible, saved once and applied across home and d
  assert.match(header,/onPress=\{decrease\}/);
  assert.match(header,/zoom>=1\.4/);
  assert.match(header,/zoom<=1/);
- assert.match(card,/fontSize:fontSize\(20\),lineHeight:fontSize\(24\)/);
+ assert.match(card,/fontSize:fontSize\(cardSizing\.titleFont\),lineHeight:fontSize\(cardSizing\.titleLineHeight\)/);
+ assert.match(card,/legacyAudioCardSizing\(viewport\.width\)/);
  for(const file of ['app/index.tsx','app/speaker/[name].tsx','app/stats.tsx','app/preview/[id].tsx']){
   const code=read(file);
   assert.match(code,/useFontZoom\(\)/,file);
