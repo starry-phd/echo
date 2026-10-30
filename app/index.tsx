@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
-import {router} from 'expo-router';
+import {router,useLocalSearchParams} from 'expo-router';
 import {AccessibilityInfo,ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
@@ -18,6 +18,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
+import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
@@ -33,11 +34,12 @@ import {useFontZoom} from '../src/ui/echo/FontZoom';
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
  const {fontSize}=useFontZoom();
+ const {category:linkedCategory}=useLocalSearchParams<{category?:string}>();
  const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [searchSuggestionsOpen,setSearchSuggestionsOpen]=useState(false);
  const [debouncedQuery,setDebouncedQuery]=useState('');
- const [category,setCategory]=useState<string|null>(null);
+ const [category,setCategory]=useState<string|null>(()=>categoryFromRoute(linkedCategory));
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
  const [luckyPreviewId,setLuckyPreviewId]=useState<string|null>(null);
@@ -56,6 +58,14 @@ export default function CatalogScreen(){
   restoreHidden();
   setNotice('已還原此裝置隱藏的音檔卡。');
  };
+ // Original clickable detail category chips return to the approved catalog.
+ // A URL param is a filter request, never a private catalog authorization.
+ useEffect(()=>{
+  setCategory(categoryFromRoute(linkedCategory));
+  setQuery('');
+  setDebouncedQuery('');
+  setSearchSuggestionsOpen(false);
+ },[linkedCategory]);
  useEffect(()=>{
    const timer=setTimeout(()=>setDebouncedQuery(query),250);
    return ()=>clearTimeout(timer);
