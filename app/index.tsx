@@ -20,6 +20,7 @@ import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '.
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
+import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 
 /**
@@ -125,6 +126,7 @@ export default function CatalogScreen(){
  const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError,count:tracksQuery.data?.length??0};
  const previewSource={pending:previewsQuery.isPending,failed:previewsQuery.isError,count:previewsQuery.data?.length??0};
  const catalogDisplay=getCatalogDisplayState(publicSource,previewSource,visibleTracks.length);
+ const currentDisplay=currentCatalogDisplayState(ready,query,debouncedQuery,catalogDisplay);
  const catalogPartialFailure=hasPartialCatalogFailure(publicSource,previewSource);
  const retryCatalog=()=>{void tracksQuery.refetch();void previewsQuery.refetch();};
  const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank));
@@ -138,7 +140,7 @@ export default function CatalogScreen(){
    setLuckyPhase('idle');
  };
  const draw=()=>{
-   if(!ready||luckyPhase==='spin')return;
+   if(!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin'))return;
    const outcome=chooseSafeLuckyCard(visibleTracks,luckyPreviewId);
    resetLucky();
    if(outcome.kind==='empty'){
@@ -186,8 +188,8 @@ export default function CatalogScreen(){
    <View style={styles.shell}>
      <View style={styles.searchRow}>
        <Pressable accessibilityRole="button" accessibilityLabel="召喚繁星解答"
-         accessibilityState={{disabled:!ready||luckyPhase==='spin'}}
-         disabled={!ready||luckyPhase==='spin'} onPress={draw}
+         accessibilityState={{disabled:!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')}}
+         disabled={!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')} onPress={draw}
          style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
          <Text numberOfLines={2} style={styles.luckyText}>{luckyPhase==='spin'?'💫抽選中…':'💫召喚繁星解答'}</Text>
        </Pressable>
@@ -243,7 +245,7 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{ready?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {ready?visibleTracks.filter(t=>t.playable).length:'—'} 部
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
@@ -294,7 +296,7 @@ export default function CatalogScreen(){
          <Text style={[styles.restoreText,{color:theme.muted}]}>取消抽選</Text>
        </Pressable>
      </View>}
-     {!!luckyPreview&&luckyPhase==='win'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+     {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
        <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
        <Text style={[styles.luckyResultName,{color:theme.ink}]} numberOfLines={2}>{luckyPreview.title}</Text>
@@ -314,7 +316,7 @@ export default function CatalogScreen(){
          </Pressable>
        </View>
      </View>}
-     {catalogPartialFailure&&catalogDisplay!=='failed'&&<View style={[styles.notice,{
+     {catalogPartialFailure&&currentDisplay!=='failed'&&currentDisplay!=='loading'&&<View style={[styles.notice,{
        borderColor:theme.palette.primary,borderWidth:1,backgroundColor:theme.card}]}>
        <Text style={[styles.noticeText,{color:theme.ink}]}>
          部分音檔資訊暫時無法更新，畫面只顯示目前成功讀取的資料。
@@ -323,17 +325,17 @@ export default function CatalogScreen(){
          <Text style={{color:theme.palette.primary,fontWeight:'900'}}>重試</Text>
        </Pressable>
      </View>}
-     {(!ready||catalogDisplay==='loading')?<View style={styles.loading}>
+     {currentDisplay==='loading'?<View style={styles.loading}>
        <ActivityIndicator color={theme.palette.primary} size="large"/>
        <Text style={[styles.loadingText,{color:theme.muted}]}>讀取音檔清單中…</Text>
-     </View>:catalogDisplay==='failed'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:currentDisplay==='failed'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          音檔資訊暫時無法完整讀取，並非沒有音檔。請重試。
        </Text>
        <Pressable accessibilityRole="button" onPress={retryCatalog} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
-     </View>:catalogDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
+     </View>:currentDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted}]}>
          {emptyCopy.title}
        </Text>
