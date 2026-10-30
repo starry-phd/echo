@@ -76,6 +76,7 @@ export function LegacyHeader(){
    <View style={[styles.quickRow,{borderTopColor:colors.border}]}>
     {chosenQuickActions.map(id=><Pressable key={id} accessibilityRole="button"
      accessibilityLabel={'快捷功能：'+quickActions[id].label}
+     accessibilityState={{selected:id==='home'&&isHome}}
      onPress={quickActions[id].run} style={styles.quick}>
      <Text numberOfLines={1} adjustsFontSizeToFit
       style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>
