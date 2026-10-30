@@ -8,6 +8,7 @@ import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {restorableHiddenCards} from '../src/ui/echo/dislikedTracks';
+import {isSpeakerHidden,restorableHiddenSpeakers} from '../src/ui/echo/hiddenSpeakers';
 
 export default function DeviceFavorites(){
  const t=useLegacyTheme();
@@ -17,7 +18,8 @@ export default function DeviceFavorites(){
  const catalog=useQuery({queryKey:['echo','favorite-public-catalog'],queryFn:({signal})=>getPublicTracks(signal),retry:1});
  // Saved IDs are not an access grant: resolve only through current authorized lists.
  const tracks=[...(catalog.data??[]),...(previews.data??[])].filter(track=>
-  preferences.favoriteIds.includes(track.id)&&!preferences.dislikedIds.includes(track.id));
+  preferences.favoriteIds.includes(track.id)&&!preferences.dislikedIds.includes(track.id)&&
+  !isSpeakerHidden(track.speaker,preferences.hiddenSpeakers));
  const publicSource={pending:catalog.isPending,failed:catalog.isError,count:catalog.data?.length??0};
  const previewSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,previewSource,tracks.length);
@@ -25,6 +27,8 @@ export default function DeviceFavorites(){
  const pending=!preferences.ready||display==='loading';
  const hiddenCards=restorableHiddenCards(catalog.data??[],previews.data??[],preferences.dislikedIds);
  const missingHiddenCount=Math.max(0,preferences.dislikedIds.length-hiddenCards.length);
+ const hiddenSpeakerNames=restorableHiddenSpeakers([...(catalog.data??[]),...(previews.data??[])],preferences.hiddenSpeakers);
+ const missingSpeakerCount=Math.max(0,preferences.hiddenSpeakers.length-hiddenSpeakerNames.length);
  const retry=()=>{void previews.refetch();void catalog.refetch();};
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
@@ -55,6 +59,27 @@ export default function DeviceFavorites(){
       preferences.restoreHidden();setNotice('已還原此裝置全部隱藏的卡片。');
      }} style={[styles.restore,{borderColor:t.border}]}>
      <Text style={{color:t.palette.primary}}>還原全部（{preferences.dislikedIds.length} 張）</Text>
+    </Pressable>
+   </View>}
+   {preferences.hiddenSpeakers.length>0&&<View style={[styles.hiddenSection,{backgroundColor:t.card,borderColor:t.border}]}>
+    <Text style={[styles.hiddenTitle,{color:t.ink}]}>不喜歡的演講者（本裝置）</Text>
+    <Text style={[styles.note,{color:t.muted}]}>只顯示目前仍獲核准資料的講者名稱。夫妻或共同講者可能一併隱藏；不會同步至會員。</Text>
+    {!pending&&hiddenSpeakerNames.map(name=><View key={name} style={[styles.hiddenRow,{borderTopColor:t.border}]}>
+     <Text style={[styles.hiddenName,styles.hiddenDetails,{color:t.ink}]} numberOfLines={2}>{name}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel={'取消隱藏演講者：'+name}
+      disabled={!preferences.ready} onPress={()=>{
+       if(preferences.restoreHiddenSpeaker(name))setNotice('已取消隱藏此演講者。');
+      }} style={[styles.hiddenRestore,{borderColor:t.palette.primary}]}>
+      <Text style={[styles.hiddenRestoreText,{color:t.palette.primary}]}>取消隱藏</Text>
+     </Pressable>
+    </View>)}
+    {!pending&&missingSpeakerCount>0&&<Text style={[styles.note,{color:t.muted}]}>
+     另有 {missingSpeakerCount} 項隱藏講者目前無法顯示名稱（可能已停止公開或資料暫時無法讀取）。
+    </Text>}
+    <Pressable accessibilityRole="button" accessibilityLabel="還原所有本裝置隱藏的演講者"
+     disabled={!preferences.ready} onPress={()=>{preferences.restoreAllSpeakers();setNotice('已還原本裝置隱藏的演講者。');}}
+     style={[styles.restore,{borderColor:t.border}]}>
+     <Text style={{color:t.palette.primary}}>還原全部演講者（{preferences.hiddenSpeakers.length} 項）</Text>
     </Pressable>
    </View>}
    {partial&&<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
