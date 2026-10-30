@@ -1,3 +1,4 @@
+import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
@@ -16,6 +17,7 @@ import {speakerProfileSections,speakerBioUnavailableText,speakerQaUnavailableTex
 import type {SpeakerProfileSection} from '../../src/ui/echo/speakerProfileSections';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
+ const {fontSize}=useFontZoom();
  const [notice,setNotice]=useState('');
  const [section,setSection]=useState<SpeakerProfileSection>('audio');
  const {dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
@@ -52,7 +54,7 @@ export default function PublicSpeakerTracks(){
  return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.push('/speaker')} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary}]}>‹ 返回講師列表</Text>
+    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回講師列表</Text>
    </Pressable>
    {showBio&&<View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
@@ -61,12 +63,12 @@ export default function PublicSpeakerTracks(){
       <Text style={[styles.initial,{color:t.palette.primary}]}>{Array.from(speaker??'♪')[0]??'♪'}</Text>}
     </View>
     <View style={styles.bioText}>
-     <Text style={[styles.title,{color:t.ink}]}>{speaker??'無效的講師名稱'}</Text>
-     <Text style={[styles.note,{color:t.muted}]}>原版可瀏覽作品；播放須另行授權</Text>
+     <Text style={[styles.title,{color:t.ink,fontSize:fontSize(22)}]}>{speaker??'無效的講師名稱'}</Text>
+     <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>原版可瀏覽作品；播放須另行授權</Text>
     </View>
     <View style={[styles.biography,{borderTopColor:t.border}]}>
-     <Text style={[styles.biographyTitle,{color:t.ink}]}>綜合人物摘要</Text>
-     <Text style={[styles.biographyText,{color:t.muted}]}>{speakerBioUnavailableText}</Text>
+     <Text style={[styles.biographyTitle,{color:t.ink,fontSize:fontSize(14)}]}>綜合人物摘要</Text>
+     <Text style={[styles.biographyText,{color:t.muted,fontSize:fontSize(12)}]}>{speakerBioUnavailableText}</Text>
     </View>
    </View>}
    {showBio&&<View style={styles.tabList} accessibilityRole="tablist" accessibilityLabel="講師資料分頁">
@@ -75,44 +77,44 @@ export default function PublicSpeakerTracks(){
      onPress={()=>setSection(item.id)}
      style={[styles.tab,{borderColor:section===item.id?t.palette.primary:t.border,
       backgroundColor:section===item.id?t.palette.primary:t.card}]}>
-     <Text style={[styles.tabText,{color:section===item.id?'#fff':t.ink}]}>
+     <Text style={[styles.tabText,{color:section===item.id?'#fff':t.ink,fontSize:fontSize(13)}]}>
       {item.id==='audio'?`所有錄音（${visibleTracks.length}）`:'歷史問答'}
      </Text>
     </Pressable>)}
    </View>}
-   {showBio&&section==='audio'&&<Text style={[styles.tabHint,{color:t.muted}]}>
+   {showBio&&section==='audio'&&<Text style={[styles.tabHint,{color:t.muted,fontSize:fontSize(12)}]}>
     僅列出目前已核准展示的作品；未取得公開播放授權的錄音只顯示資訊卡。
    </Text>}
    {showBio&&section==='qa'&&<View style={[styles.qaEmpty,{backgroundColor:t.card,borderColor:t.border}]}>
-    <Text style={[styles.qaTitle,{color:t.ink}]}>歷史問答</Text>
-    <Text style={[styles.qaDescription,{color:t.muted}]}>{speakerQaUnavailableText}</Text>
+    <Text style={[styles.qaTitle,{color:t.ink,fontSize:fontSize(16)}]}>歷史問答</Text>
+    <Text style={[styles.qaDescription,{color:t.muted,fontSize:fontSize(12)}]}>{speakerQaUnavailableText}</Text>
    </View>}
-   {section==='audio'&&<Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>}
+   {section==='audio'&&<Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>演講音檔</Text>}
    {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
+    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
    </Pressable>}
-   {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary}]}>{notice}</Text>}
+   {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary,fontSize:fontSize(13)}]}>{notice}</Text>}
    {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
     restoreHidden();setNotice('已還原此裝置隱藏的卡片。');
-   }}><Text style={[styles.backText,{color:t.palette.primary}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
+   }}><Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
    {!!speaker&&partial&&display!=='failed'&&<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
-     <Text style={[styles.message,{color:t.muted}]}>部分講師作品暫時無法讀取，目前只顯示成功取得的資料。</Text>
+     <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>部分講師作品暫時無法讀取，目前只顯示成功取得的資料。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
-      <Text style={[styles.backText,{color:t.palette.primary}]}>重新讀取</Text>
+      <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重新讀取</Text>
      </Pressable>
     </View>}
-   {section==='qa'&&showBio?null:!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
+   {section==='qa'&&showBio?null:!speaker?<Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>講師連結不正確。</Text>:
     (!ready||display==='loading')?<ActivityIndicator color={t.palette.primary}/>:
     display==='failed'?<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
-     <Text style={[styles.message,{color:t.muted}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
+     <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
-      <Text style={[styles.backText,{color:t.palette.primary}]}>重試載入</Text>
+      <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重試載入</Text>
      </Pressable>
     </View>:
     display==='ready'? visibleTracks.map(track=><LegacyTrackCard key={track.id} track={track}
       onNotice={setNotice} onDislike={hide}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
-     <Text style={[styles.message,{color:t.muted}]}>目前沒有可瀏覽的講者作品資訊。</Text>
+     <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有可瀏覽的講者作品資訊。</Text>
     </View>}
    <Text style={[styles.disclaimer,{color:t.muted}]}>
     原版會員限定的講師資料、AI 問答及私人錄音仍須授權驗證；本站只顯示已核准公開內容。

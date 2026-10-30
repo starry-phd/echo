@@ -22,6 +22,7 @@ import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
+import {useFontZoom} from '../src/ui/echo/FontZoom';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -31,6 +32,7 @@ import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
+ const {fontSize}=useFontZoom();
  const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [searchSuggestionsOpen,setSearchSuggestionsOpen]=useState(false);
@@ -215,7 +217,7 @@ export default function CatalogScreen(){
      {searchSuggestionsOpen&&categorySuggestions.length>0&&
       <View style={[styles.suggestions,{backgroundColor:theme.card,borderColor:theme.border}]}>
        <View style={styles.suggestionHeading}>
-        <Text style={[styles.suggestionTitle,{color:theme.muted}]}>🏷️ 分類標籤（已核准）</Text>
+        <Text style={[styles.suggestionTitle,{color:theme.muted,fontSize:fontSize(11)}]}>🏷️ 分類標籤（已核准）</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="關閉搜尋建議"
          onPress={()=>setSearchSuggestionsOpen(false)} style={styles.suggestionClose}>
          <Text style={[styles.restoreText,{color:theme.muted}]}>✕ 關閉</Text>
@@ -243,14 +245,14 @@ export default function CatalogScreen(){
        onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}/>
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
-       <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
+       <Text style={[styles.teaserText,{color:theme.ink,fontSize:fontSize(14)}]}>
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary,fontSize:fontSize(19)}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
          <Text style={[styles.teaserLink,{color:theme.palette.primary}]}>查看會員整合進度 →</Text>
        </Pressable>
-       <Text style={[styles.teaserNote,{color:theme.muted}]}>
+       <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
        </Text>
      </View>
@@ -258,7 +260,7 @@ export default function CatalogScreen(){
       onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
       <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
      </Pressable>}
-     {storageError&&<Text style={[styles.teaserNote,{color:theme.muted}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
+     {storageError&&<Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
      {dislikedIds.length>0&&<Pressable
        accessibilityRole="button" accessibilityLabel="還原本裝置隱藏的音檔卡"
        disabled={!ready} onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
@@ -277,17 +279,17 @@ export default function CatalogScreen(){
      </Pressable>}
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
        backgroundColor:theme.card}]}>
-       <Text style={[styles.noticeText,{color:theme.ink}]}>{notice}</Text>
+       <Text style={[styles.noticeText,{color:theme.ink,fontSize:fontSize(13)}]}>{notice}</Text>
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
          onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
      {luckyPhase==='spin'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
        <ActivityIndicator color={theme.palette.primary}/>
-       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>
+       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary,fontSize:fontSize(16)}]}>
          正在從符合條件的訪客資訊卡中抽選…
        </Text>
-       <Text style={[styles.teaserNote,{color:theme.muted}]}>
+       <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          這是僅供瀏覽的視覺抽選；不會讀取或播放私人音訊。
        </Text>
        <Pressable accessibilityRole="button" accessibilityLabel="取消抽選"
@@ -297,10 +299,10 @@ export default function CatalogScreen(){
      </View>}
      {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
-       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
-       <Text style={[styles.luckyResultName,{color:theme.ink}]} numberOfLines={2}>{luckyPreview.title}</Text>
-       <Text style={[styles.luckyResultSpeaker,{color:theme.muted}]} numberOfLines={1}>{luckyPreview.speaker}</Text>
-       <Text style={[styles.teaserNote,{color:theme.muted}]}>
+       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary,fontSize:fontSize(16)}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
+       <Text style={[styles.luckyResultName,{color:theme.ink,fontSize:fontSize(17)}]} numberOfLines={2}>{luckyPreview.title}</Text>
+       <Text style={[styles.luckyResultSpeaker,{color:theme.muted,fontSize:fontSize(13)}]} numberOfLines={1}>{luckyPreview.speaker}</Text>
+       <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          僅可查看已核准的照片及資訊，這不是可播放的繁星解答。
        </Text>
        <View style={styles.luckyActions}>
@@ -317,7 +319,7 @@ export default function CatalogScreen(){
      </View>}
      {catalogPartialFailure&&currentDisplay!=='failed'&&currentDisplay!=='loading'&&<View style={[styles.notice,{
        borderColor:theme.palette.primary,borderWidth:1,backgroundColor:theme.card}]}>
-       <Text style={[styles.noticeText,{color:theme.ink}]}>
+       <Text style={[styles.noticeText,{color:theme.ink,fontSize:fontSize(13)}]}>
          部分音檔資訊暫時無法更新，畫面只顯示目前成功讀取的資料。
        </Text>
        <Pressable accessibilityRole="button" accessibilityLabel="重新讀取全部音檔資訊" onPress={retryCatalog}>
@@ -326,19 +328,19 @@ export default function CatalogScreen(){
      </View>}
      {currentDisplay==='loading'?<View style={styles.loading}>
        <ActivityIndicator color={theme.palette.primary} size="large"/>
-       <Text style={[styles.loadingText,{color:theme.muted}]}>讀取音檔清單中…</Text>
+       <Text style={[styles.loadingText,{color:theme.muted,fontSize:fontSize(13)}]}>讀取音檔清單中…</Text>
      </View>:currentDisplay==='failed'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
-       <Text style={[styles.emptyText,{color:theme.muted}]}>
+       <Text style={[styles.emptyText,{color:theme.muted,fontSize:fontSize(15)}]}>
          音檔資訊暫時無法完整讀取，並非沒有音檔。請重試。
        </Text>
        <Pressable accessibilityRole="button" onPress={retryCatalog} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
      </View>:currentDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
-       <Text style={[styles.emptyText,{color:theme.muted}]}>
+       <Text style={[styles.emptyText,{color:theme.muted,fontSize:fontSize(15)}]}>
          {emptyCopy.title}
        </Text>
-       <Text style={[styles.emptyExplanation,{color:theme.muted}]}>
+       <Text style={[styles.emptyExplanation,{color:theme.muted,fontSize:fontSize(12)}]}>
          {emptyCopy.detail}
        </Text>
      </View>:<View style={styles.cardGrid}>
@@ -352,7 +354,7 @@ export default function CatalogScreen(){
        </View>)}
      </View>}
      <View style={styles.footer}>
-       <Text style={[styles.footerText,{color:theme.muted}]}>
+       <Text style={[styles.footerText,{color:theme.muted,fontSize:fontSize(12)}]}>
          繁星回聲 · 訪客資訊卡（唯讀）　│　播放須另經授權　│　廣告關閉
        </Text>
      </View>

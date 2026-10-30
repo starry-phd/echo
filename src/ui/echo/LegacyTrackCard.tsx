@@ -10,11 +10,13 @@ import {splitSpeakerNames} from './speakerNames';
 import {useDevicePreferences} from './DevicePreferences';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {cardMenuLayout} from './cardMenuLayout';
+import {useFontZoom} from './FontZoom';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
  track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
 }){
  const t=useLegacyTheme();
+ const {fontSize}=useFontZoom();
  const preferences=useDevicePreferences();
  const viewport=useViewportDimensions();
  const moreAnchor=useRef<ViewInstance>(null);
@@ -89,31 +91,31 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
       <Text style={styles.permissionText}>{track.playable?'公開播放':'播放未開放'}</Text>
      </View>
     </Pressable>
-    <Text style={[styles.duration,{color:t.muted}]}>
+    <Text style={[styles.duration,{color:t.muted,fontSize:fontSize(11)}]}>
      ◷ {duration>0?'約 '+Math.max(1,Math.round(duration/60))+' 分鐘':'時間待確認'}
     </Text>
    </View>
    <View style={styles.details}>
     <Pressable onPress={toggleDetails} accessibilityRole="button"
      accessibilityLabel={'查看音檔資訊：'+track.title}>
-     <Text numberOfLines={2} style={[styles.title,{color:t.palette.primary}]}>{track.title}</Text>
+     <Text numberOfLines={2} style={[styles.title,{color:t.palette.primary,fontSize:fontSize(20),lineHeight:fontSize(24)}]}>{track.title}</Text>
     </Pressable>
     <View style={styles.speakerLinks}>
      {speakerNames.map((name,i)=>
       <View key={name+i} style={styles.speakerPart}>
-       {i>0&&<Text style={[styles.speaker,{color:t.ink}]}> & </Text>}
+       {i>0&&<Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> & </Text>}
        <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
         onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})}>
-        <Text style={[styles.speaker,{color:t.ink}]}>{name}</Text>
+        <Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}>{name}</Text>
        </Pressable>
       </View>)}
-     {!!speakerRank&&<Text numberOfLines={1} style={[styles.speaker,{color:t.ink}]}> {speakerRank}</Text>}
+     {!!speakerRank&&<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> {speakerRank}</Text>}
     </View>
     <View style={styles.tags}>
      {track.categories.slice(0,3).map((c,i)=>c.trim()==='新人'?
       <AnimatedNewcomerTag key={c+i} fill={t.lightPill} textColor={t.palette.primary}/>:
       <View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-       <Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary}]}>{c}</Text>
+       <Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(10)}]}>{c}</Text>
       </View>)}
     </View>
     <View style={[styles.stats,{borderTopColor:t.border}]}>
@@ -122,17 +124,17 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
        ?'★'.repeat(Math.max(0,Math.min(5,Math.round(track.rating))))+
         '☆'.repeat(5-Math.max(0,Math.min(5,Math.round(track.rating))))
        :'☆☆☆☆☆'}</Text>
-      <Text style={[styles.ratingValue,{color:t.muted}]}>
+      <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(11)}]}>
        {legacy&&typeof track.rating==='number'
         ?track.rating.toFixed(1)+' ('+(track.ratingCount??0)+')':'—'}
       </Text>
      </View>
-     <Text style={[styles.snapshot,{color:t.muted}]}>
+     <Text style={[styles.snapshot,{color:t.muted,fontSize:fontSize(9)}]}>
       {legacy?'舊版統計（唯讀）':'評價待同步'}
      </Text>
      <View style={styles.statRow}>
-      <Text style={[styles.stat,{color:t.muted}]}>▤ 心得 {legacy?(track.commentsCount??0):'—'}</Text>
-      <Text style={[styles.stat,{color:t.muted}]}>♡ 按讚 {legacy?(track.likes??0):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>▤ 心得 {legacy?(track.commentsCount??0):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>♡ 按讚 {legacy?(track.likes??0):'—'}</Text>
      </View>
     </View>
    </View>
@@ -149,27 +151,27 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     <View accessibilityViewIsModal style={[styles.popup,menuPosition,{backgroundColor:t.card,borderColor:t.border}]}>
      <ScrollView contentContainerStyle={styles.popupContent}>
    <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
-    <Text style={[styles.popupText,{color:t.muted}]}>✕　關閉選單</Text>
+    <Text style={[styles.popupText,{color:t.muted,fontSize:fontSize(13)}]}>✕　關閉選單</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>void share()}>
-    <Text style={[styles.popupText,{color:t.ink}]}>⇧　{track.playable?'分享音檔':'分享尚未開放'}</Text>
+    <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>⇧　{track.playable?'分享音檔':'分享尚未開放'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleDetails}>
-    <Text style={[styles.popupText,{color:t.ink}]}>ⓘ　詳細內容</Text>
+    <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>ⓘ　詳細內容</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleFavorite}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.ink}]}>{favorite?'▣　取消收藏':'♧　加入收藏'}</Text>
+    <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>{favorite?'▣　取消收藏':'♧　加入收藏'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡這張卡片</Text>
+    <Text style={[styles.popupText,{color:t.palette.primary,fontSize:fontSize(13)}]}>⊘　我不喜歡這張卡片</Text>
    </Pressable>
    {speakerNames.map(name=><Pressable key={name}
     accessibilityRole="button" accessibilityLabel={'隱藏演講者：'+name}
     style={styles.popupRow} onPress={()=>hideOneSpeaker(name)}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　不喜歡講師：{name}（本裝置）</Text>
+    <Text style={[styles.popupText,{color:t.palette.primary,fontSize:fontSize(13)}]}>⊘　不喜歡講師：{name}（本裝置）</Text>
    </Pressable>)}
      </ScrollView>
     </View>
