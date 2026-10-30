@@ -296,7 +296,7 @@ export default function CatalogScreen(){
          <Text style={[styles.restoreText,{color:theme.muted}]}>取消抽選</Text>
        </Pressable>
      </View>}
-     {!!luckyPreview&&luckyPhase==='win'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+     {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
        <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
        <Text style={[styles.luckyResultName,{color:theme.ink}]} numberOfLines={2}>{luckyPreview.title}</Text>
