@@ -39,9 +39,9 @@ test('home, speaker list and speaker profile wait for device preferences before 
  const home=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
  const list=readFileSync(new URL('../app/speaker/index.tsx',import.meta.url),'utf8');
  const profile=readFileSync(new URL('../app/speaker/[name].tsx',import.meta.url),'utf8');
- assert.match(home,/\(!ready\|\|catalogDisplay==='loading'\)/);
- assert.match(home,/disabled=\{!ready\|\|luckyPhase==='spin'\}/);
- assert.match(home,/if\(!ready\|\|luckyPhase==='spin'\)return/);
+ assert.match(home,/currentCatalogDisplayState\(ready,query,debouncedQuery,catalogDisplay\)/);
+ assert.match(home,/disabled=\{!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\}/);
+ assert.match(home,/if\(!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\)return/);
  assert.match(list,/\(!ready\|\|display==='loading'\)/);
  assert.match(list,/visibleSpeakerDirectory\(/);
  assert.match(profile,/\(!ready\|\|display==='loading'\)/);
