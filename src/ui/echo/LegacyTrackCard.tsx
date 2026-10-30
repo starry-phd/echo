@@ -22,6 +22,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const [menuPosition,setMenuPosition]=useState(()=>cardMenuLayout({x:0,y:0,width:32,height:32},{width:390,height:844}));
  const [coverError,setCoverError]=useState(false);
  const favorite=preferences.favoriteIds.includes(track.id);
+ const speakerNames=splitSpeakerNames(track.speaker);
  useEffect(()=>setOpen(false),[track.id,viewport.width,viewport.height]);
  const openMenu=()=>{
   moreAnchor.current?.measureInWindow((x,y,width,height)=>{
@@ -62,10 +63,13 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
   catch{onNotice('目前無法使用系統分享。');}
  };
  const noLike=()=>{setOpen(false);onDislike(track.id);};
- const noSpeaker=()=>{
+ const hideOneSpeaker=(name:string)=>{
   setOpen(false);
-  const added=preferences.hideSpeaker(track.speaker);
-  onNotice(added?'已在此裝置隱藏這位講師的核准作品；可在我的收藏中還原。':'此講師已在本裝置的隱藏清單。');
+  // Multi-speaker cards must not silently blacklist every co-presenter.
+  const added=preferences.hideSpeaker(name);
+  onNotice(added
+   ?'已在本裝置隱藏「'+name+'」的核准作品（含共同講師作品），可在我的收藏中還原。'
+   :'未新增隱藏「'+name+'」（可能已在清單或已達上限）。');
  };
  return <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
   <View style={styles.body}>
@@ -95,7 +99,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
      <Text numberOfLines={2} style={[styles.title,{color:t.palette.primary}]}>{track.title}</Text>
     </Pressable>
     <View style={styles.speakerLinks}>
-     {splitSpeakerNames(track.speaker).map((name,i)=>
+     {speakerNames.map((name,i)=>
       <View key={name+i} style={styles.speakerPart}>
        {i>0&&<Text style={[styles.speaker,{color:t.ink}]}> & </Text>}
        <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
@@ -161,11 +165,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
     <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡這張卡片</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" accessibilityLabel={'隱藏這位演講者：'+track.speaker}
-    style={styles.popupRow} onPress={noSpeaker}
+   {speakerNames.map(name=><Pressable key={name}
+    accessibilityRole="button" accessibilityLabel={'隱藏演講者：'+name}
+    style={styles.popupRow} onPress={()=>hideOneSpeaker(name)}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　不喜歡這位演講者（本裝置）</Text>
-   </Pressable>
+    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　不喜歡講師：{name}（本裝置）</Text>
+   </Pressable>)}
      </ScrollView>
     </View>
    </View>
