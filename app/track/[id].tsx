@@ -16,6 +16,7 @@ import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackShare';
+import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -128,6 +129,12 @@ export default function TrackDetails(){
        <Text style={[styles.notice,{color:t.muted}]}>載入本裝置隱藏設定中…</Text>
       </View>:hidden?<View style={styles.loading}>
        <Text style={[styles.notice,{color:t.muted}]}>這部音檔已依本裝置的「我不喜歡」設定隱藏；公開播放權限不受此設定影響。</Text>
+       {preferences.dislikedIds.includes(track.id)&&<Pressable accessibilityRole="button"
+        accessibilityLabel="還原此張音檔卡的本裝置隱藏"
+        onPress={()=>preferences.restoreHiddenTrack(track.id)}
+        style={[styles.retry,{backgroundColor:t.palette.primary}]}>
+        <Text style={styles.retryText}>還原此張卡片</Text>
+       </Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
         onPress={()=>router.push('/favorites')} style={[styles.retry,{backgroundColor:t.palette.primary}]}>
         <Text style={styles.retryText}>前往我的收藏管理隱藏設定</Text>
@@ -163,6 +170,7 @@ export default function TrackDetails(){
        <LegacyLectureNotes track={track}/>
        <LegacyVerifiedTrackShare track={track} routeId={trackId}/>
        <LegacyEngagementDetail track={track}/>
+       <LegacyDetailDeviceActions track={track} routeId={trackId} source="public"/>
       </>}
     </View>
    </View>
