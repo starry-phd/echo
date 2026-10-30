@@ -23,6 +23,7 @@ function AppShell(){
        <Stack.Screen name="profile" />
        <Stack.Screen name="favorites" />
        <Stack.Screen name="stats" />
+       <Stack.Screen name="notifications" />
        <Stack.Screen name="preview/[id]" />
        <Stack.Screen name="speaker/index" />
        <Stack.Screen name="speaker/[name]" />

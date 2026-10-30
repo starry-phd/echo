@@ -77,7 +77,8 @@ test('quick toolbar and editor are actual accessible navigation wired to root st
  assert.match(header,/accessibilityLabel=\{'置頂'\+quickActions\[id\]\.label\}/);
  assert.match(header,/accessibilityLabel="設定置頂快捷功能"/);
  assert.match(header,/quick\.storageError/);
- assert.doesNotMatch(header,/\/admin|\/notifications|\/audio-admin|\/stickers\/spend/);
+ assert.doesNotMatch(header,/\/admin|\/audio-admin|\/stickers\/spend/);
+ assert.doesNotMatch(read('src/ui/echo/quickActionStore.ts'),/['\"]notifications['\"]/);
 });
 
 test('drag displacement maps to valid pinned slots and clamps at both ends',()=>{
