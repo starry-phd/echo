@@ -11,6 +11,9 @@ import {useDevicePreferences} from './DevicePreferences';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {cardMenuLayout} from './cardMenuLayout';
 import {useFontZoom} from './FontZoom';
+import {approvedPublicTrackShareMessage} from './publicTrackSharing';
+import {categoryFromRoute} from './publicCategoryNavigation';
+import {readHistoricalEngagement,historicalCountLabel} from './legacyEngagementSnapshot';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
  track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
@@ -44,6 +47,8 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const duration=Math.max(0,Math.floor(track.durationSeconds));
  const speakerRank=track.speakerRank?.trim()||'';
  const legacy=track.legacySnapshot===true;
+ const historical=readHistoricalEngagement(track);
+ const publicShareMessage=approvedPublicTrackShareMessage(track,track.id,apiOrigin);
  const toggleDetails=()=>{
   setOpen(false);
   if(track.playable){router.push({pathname:'/track/[id]',params:{id:track.id}});return;}
@@ -59,9 +64,8 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  };
  const share=async()=>{
   setOpen(false);
-  if(!track.playable){onNotice('此音檔尚未取得公開分享與播放授權。');return;}
-  if(!apiOrigin){onNotice('尚未設定公開分享網址。');return;}
-  try{await Share.share({message:track.title+' · '+track.speaker+'\n'+apiOrigin+'/track/'+encodeURIComponent(track.id)});}
+  if(!publicShareMessage){onNotice('此音檔尚未取得有效的已核准公開分享網址。');return;}
+  try{await Share.share({message:publicShareMessage,title:track.title});}
   catch{onNotice('目前無法使用系統分享。');}
  };
  const noLike=()=>{setOpen(false);onDislike(track.id);};
@@ -85,7 +89,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
          accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>
       :<Text style={[styles.portraitIcon,{color:t.palette.primary}]}>🎙</Text>}
      <View style={[styles.rewardBar,{backgroundColor:track.playable?t.palette.primary:'#76455d'}]}>
-      <Text style={styles.rewardText}>{track.playable?'寫心得可得獎勵':'僅展示資訊'}</Text>
+      <Text style={styles.rewardText}>{track.playable?'已核准公開':'僅展示資訊'}</Text>
      </View>
      <View style={styles.permissionBar}>
       <Text style={styles.permissionText}>{track.playable?'公開播放':'播放未開放'}</Text>
@@ -112,29 +116,38 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
      {!!speakerRank&&<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> {speakerRank}</Text>}
     </View>
     <View style={styles.tags}>
-     {track.categories.slice(0,3).map((c,i)=>c.trim()==='新人'?
-      <AnimatedNewcomerTag key={c+i} fill={t.lightPill} textColor={t.palette.primary}/>:
-      <View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-       <Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(10)}]}>{c}</Text>
-      </View>)}
+     {track.categories.slice(0,3).map((c,i)=>{
+      const selected=categoryFromRoute(c);
+      return selected?<Pressable key={c+i} accessibilityRole="link"
+       accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
+       onPress={()=>router.push({pathname:'/',params:{category:selected}})}
+       style={[styles.tag,styles.clickableTag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+       {selected==='新人'
+        ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
+        :<Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(10)}]}>{selected} ›</Text>}
+      </Pressable>:<View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+       <Text numberOfLines={1} style={[styles.tagText,{color:t.muted,fontSize:fontSize(10)}]}>{c}</Text>
+      </View>;
+     })}
     </View>
     <View style={[styles.stats,{borderTopColor:t.border}]}>
      <View style={styles.ratingRow}>
-      <Text style={styles.stars}>{legacy&&typeof track.rating==='number'
-       ?'★'.repeat(Math.max(0,Math.min(5,Math.round(track.rating))))+
-        '☆'.repeat(5-Math.max(0,Math.min(5,Math.round(track.rating))))
-       :'☆☆☆☆☆'}</Text>
+      <Text style={styles.stars}>{historical?.rating!==null&&historical?.rating!==undefined
+       ?'★'.repeat(Math.max(0,Math.min(5,Math.round(historical.rating))))+
+        '☆'.repeat(5-Math.max(0,Math.min(5,Math.round(historical.rating))))
+       :'—'}</Text>
       <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(11)}]}>
-       {legacy&&typeof track.rating==='number'
-        ?track.rating.toFixed(1)+' ('+(track.ratingCount??0)+')':'—'}
+       {historical?.rating!==null&&historical?.rating!==undefined
+        ?historical.rating.toFixed(1)+' ('+historicalCountLabel(historical.ratingCount)+')'
+        :historical?'未提供':'—'}
       </Text>
      </View>
      <Text style={[styles.snapshot,{color:t.muted,fontSize:fontSize(9)}]}>
       {legacy?'舊版統計（唯讀）':'評價待同步'}
      </Text>
      <View style={styles.statRow}>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>▤ 心得 {legacy?(track.commentsCount??0):'—'}</Text>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>♡ 按讚 {legacy?(track.likes??0):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>▤ 心得 {historical?historicalCountLabel(historical.commentsCount):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>♡ 按讚 {historical?historicalCountLabel(historical.likes):'—'}</Text>
      </View>
     </View>
    </View>
@@ -153,8 +166,9 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
     <Text style={[styles.popupText,{color:t.muted,fontSize:fontSize(13)}]}>✕　關閉選單</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>void share()}>
-    <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>⇧　{track.playable?'分享音檔':'分享尚未開放'}</Text>
+   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>void share()}
+    accessibilityState={{disabled:!publicShareMessage}}>
+    <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>⇧　{publicShareMessage?'分享公開音檔頁面':'分享尚未開放'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleDetails}>
     <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>ⓘ　詳細內容</Text>
@@ -199,6 +213,7 @@ const styles=StyleSheet.create({
  speaker:{fontSize:14,fontWeight:'500',marginTop:2},
  tags:{flexDirection:'row',gap:4,marginTop:8,flexWrap:'wrap',alignItems:'center'},
  tag:{borderWidth:1,borderRadius:999,paddingHorizontal:7,paddingVertical:4},
+ clickableTag:{minHeight:44,justifyContent:'center'},
  tagText:{fontSize:10,fontWeight:'500'},
  stats:{marginTop:'auto',paddingTop:7,borderTopWidth:1},
  ratingRow:{flexDirection:'row',gap:5,alignItems:'center',flexWrap:'wrap'},
