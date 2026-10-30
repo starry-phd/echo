@@ -73,7 +73,7 @@ export function InstallAppButton(){
   <Modal visible={guideOpen} transparent animationType="fade" onRequestClose={()=>setGuideOpen(false)}>
    <View style={styles.overlay}>
     <Pressable accessibilityRole="button" accessibilityLabel="關閉安裝說明背景"
-     onPress={()=>setGuideOpen(false)} style={StyleSheet.absoluteFillObject}/>
+     onPress={()=>setGuideOpen(false)} style={StyleSheet.absoluteFill}/>
     <View accessibilityViewIsModal style={[styles.dialog,{backgroundColor:theme.card,borderColor:theme.border}]}>
      <Text style={[styles.title,{color:theme.ink}]}>安裝繁星回聲</Text>
      <Text style={[styles.body,{color:theme.muted}]}>{manualInstallHelp[device]}</Text>
