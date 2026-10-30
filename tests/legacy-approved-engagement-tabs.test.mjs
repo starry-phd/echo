@@ -16,11 +16,14 @@ test('approved historical counts allow true zero, but not absent, negative or in
  assert.deepEqual(readHistoricalEngagement({...base,legacySnapshot:true,rating:4.3,ratingCount:0,commentsCount:7,likes:99}),{
   rating:4.3,ratingCount:0,commentsCount:7,likes:99
  });
- for(const bad of [NaN,Infinity,-2,1.5,Number.MAX_SAFE_INTEGER+1]){
+ for(const bad of [NaN,Infinity,-2,Number.MAX_SAFE_INTEGER+1]){
   const result=readHistoricalEngagement({...base,legacySnapshot:true,
    rating:bad,ratingCount:bad,commentsCount:bad,likes:bad});
   assert.deepEqual(result,{rating:null,ratingCount:null,commentsCount:null,likes:null});
  }
+ const fractional=readHistoricalEngagement({...base,legacySnapshot:true,
+  rating:1.5,ratingCount:1.5,commentsCount:1.5,likes:1.5});
+ assert.deepEqual(fractional,{rating:1.5,ratingCount:null,commentsCount:null,likes:null});
  assert.equal(historicalCountLabel(null),'未提供');
  assert.equal(historicalCountLabel(0),'0');
 });
