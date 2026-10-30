@@ -32,6 +32,8 @@ test('underlying approved profile permission gates and old tabs survive modal co
  assert.doesNotMatch(profile,/getPublicStreamUrl|R2\.get|privateAudio|\/api\/speaker-profiles\/view/);
  for(const path of ['src/ui/echo/LegacyTrackCard.tsx','app/preview/[id].tsx','app/track/[id].tsx']){
   const source=read(path);
-  assert.match(source,/pathname:'\/speaker\/\[name\]'/);
+  assert.match(source,/pathname:'\\/speaker\\/\\[name\\]'/);
+  assert.match(source,/accessibilityLabel=\\{'查看'\\+name\\+'的演講者資料'\\}/);
  }
+ assert.match(read('app/track/[id].tsx'),/查看演講者資料<\\/Text>/);
 });
