@@ -142,15 +142,15 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     </View>
     <View style={[styles.stats,{borderTopColor:t.border}]}>
      <View style={styles.statRow}>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>▤ 心得 {historical?historicalCountLabel(historical.commentsCount):'—'}</Text>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>♡ 按讚 {historical?historicalCountLabel(historical.likes):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>▤ 心得 {historical?historicalCountLabel(historical.commentsCount):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>♡ 按讚 {historical?historicalCountLabel(historical.likes):'—'}</Text>
      </View>
      <View style={styles.ratingRow}>
-      <Text style={styles.stars}>{historical?.rating!==null&&historical?.rating!==undefined
+      <Text style={[styles.stars,{fontSize:fontSize(cardSizing.starFont)}]}>{historical?.rating!==null&&historical?.rating!==undefined
        ?'★'.repeat(Math.max(0,Math.min(5,Math.round(historical.rating))))+
         '☆'.repeat(5-Math.max(0,Math.min(5,Math.round(historical.rating))))
        :'—'}</Text>
-      <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(11)}]}>
+      <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>
        {historical?.rating!==null&&historical?.rating!==undefined
         ?historical.rating.toFixed(1)+' ('+historicalCountLabel(historical.ratingCount)+')'
         :historical?'未提供':'—'}
