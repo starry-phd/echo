@@ -9,7 +9,7 @@ test('original navbar has no standalone speaker directory and this menu no longe
  assert.doesNotMatch(header,/講師作品|go\('\/speaker'\)|speakers:\{label:/);
  assert.ok(!allowedQuickActions.includes('speakers'));
  const directSpeakerPage=read('app/speaker/index.tsx');
- assert.match(directSpeakerPage,/<Redirect href="\\/"\/>/);
+ assert.ok(directSpeakerPage.includes('<Redirect href="/" />'));
  assert.doesNotMatch(directSpeakerPage,/FlatList|visibleSpeakerDirectory|getPublicSpeakers/);
  const choices=normalizeQuickChoices({
   mobile:['speakers','theme','home'],
