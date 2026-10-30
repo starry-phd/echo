@@ -19,6 +19,7 @@ import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/ca
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
+import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
@@ -34,12 +35,12 @@ import {useFontZoom} from '../src/ui/echo/FontZoom';
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
  const {fontSize}=useFontZoom();
- const {category:linkedCategory}=useLocalSearchParams<{category?:string}>();
+ const {category:linkedCategory,rank:linkedSpeakerRank}=useLocalSearchParams<{category?:string;rank?:string}>();
  const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [searchSuggestionsOpen,setSearchSuggestionsOpen]=useState(false);
  const [debouncedQuery,setDebouncedQuery]=useState('');
- const [category,setCategory]=useState<string|null>(()=>categoryFromRoute(linkedCategory));
+ const [category,setCategory]=useState<string|null>(()=>speakerRankFromRoute(linkedSpeakerRank)?null:categoryFromRoute(linkedCategory));
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
  const [luckyPreviewId,setLuckyPreviewId]=useState<string|null>(null);
@@ -47,8 +48,8 @@ export default function CatalogScreen(){
  const [luckyPhase,setLuckyPhase]=useState<'idle'|'spin'|'win'>('idle');
  const luckyGeneration=useRef(0);
  const luckyTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
- const [advanced,setAdvanced]=useState(false);
- const [speakerRank,setSpeakerRank]=useState<string|null>(null);
+ const [advanced,setAdvanced]=useState(()=>Boolean(speakerRankFromRoute(linkedSpeakerRank)));
+ const [speakerRank,setSpeakerRank]=useState<string|null>(()=>speakerRankFromRoute(linkedSpeakerRank));
  const {dislikedIds,hiddenSpeakers,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
  const dislikeTrack=(id:string)=>{
   dislike(id);
@@ -58,14 +59,17 @@ export default function CatalogScreen(){
   restoreHidden();
   setNotice('已還原此裝置隱藏的音檔卡。');
  };
- // Original clickable detail category chips return to the approved catalog.
- // A URL param is a filter request, never a private catalog authorization.
+ // Route category or speaker rank narrows currently approved cards only.
+ // Rank deep links take precedence so a stale category never masks the rank.
  useEffect(()=>{
-  setCategory(categoryFromRoute(linkedCategory));
+  const linkedRank=speakerRankFromRoute(linkedSpeakerRank);
+  setCategory(linkedRank?null:categoryFromRoute(linkedCategory));
+  setSpeakerRank(linkedRank);
+  if(linkedRank)setAdvanced(true);
   setQuery('');
   setDebouncedQuery('');
   setSearchSuggestionsOpen(false);
- },[linkedCategory]);
+ },[linkedCategory,linkedSpeakerRank]);
  useEffect(()=>{
    const timer=setTimeout(()=>setDebouncedQuery(query),250);
    return ()=>clearTimeout(timer);

@@ -20,9 +20,9 @@ test('both source-authorized detail routes offer true clickable category links',
   assert.match(src,/router\.push\(\{pathname:'\/',params:\{category\}\}\)/);
  }
  const home=read('app/index.tsx');
- assert.match(home,/useLocalSearchParams<\{category\?:string\}>\(\)/);
+ assert.match(home,/useLocalSearchParams<\{category\?:string;rank\?:string\}>\(\)/);
  assert.match(home,/categoryFromRoute\(linkedCategory\)/);
- assert.match(home,/setCategory\(categoryFromRoute\(linkedCategory\)\)/);
+ assert.match(home,/setCategory\(linkedRank\?null:categoryFromRoute\(linkedCategory\)\)/);
  assert.match(home,/getPublicTracks\(signal,/);
  assert.match(home,/getGuestPreviewTracks\(signal\)/);
  assert.match(home,/matchesCardFilters\(t,/);
