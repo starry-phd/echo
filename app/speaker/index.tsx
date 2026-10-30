@@ -3,39 +3,22 @@ import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
 import {ActivityIndicator,FlatList,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {getApiBaseUrl,getPublicSpeakers,getGuestPreviewTracks} from '../../src/api/client';
-import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
-import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
+import {visibleSpeakerDirectory} from '../../src/ui/echo/visibleSpeakerDirectory';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 
 export default function SpeakerDirectory(){
  const t=useLegacyTheme();
- const {hiddenSpeakers}=useDevicePreferences();
+ const {hiddenSpeakers,dislikedIds,ready}=useDevicePreferences();
  const q=useQuery({queryKey:['echo','public-speakers'],queryFn:({signal})=>getPublicSpeakers(signal),retry:1});
  const previews=useQuery({queryKey:['echo','guest-previews'],
   queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
  const origin=getApiBaseUrl();
- const speakers=useMemo(()=>{
-  const found=new Map<string,{name:string;trackCount:number;coverUrl:string|null}>();
-  for(const entry of q.data??[]){
-   if(isSpeakerHidden(entry.name,hiddenSpeakers))continue;
-   for(const name of splitSpeakerNames(entry.name)){
-    const prev=found.get(name);
-    found.set(name,{name,trackCount:(prev?.trackCount||0)+entry.trackCount,coverUrl:prev?.coverUrl||null});
-   }
-  }
-  for(const track of previews.data??[]){
-   if(isSpeakerHidden(track.speaker,hiddenSpeakers))continue;
-   for(const name of splitSpeakerNames(track.speaker)){
-    const prev=found.get(name);
-    found.set(name,{name,trackCount:(prev?.trackCount||0)+1,
-     coverUrl:prev?.coverUrl||track.coverUrl||null});
-   }
-  }
-  return [...found.values()].sort((a,b)=>b.trackCount-a.trackCount||a.name.localeCompare(b.name));
- },[q.data,previews.data,hiddenSpeakers]);
+ const speakers=useMemo(()=>visibleSpeakerDirectory(
+  q.data??[],previews.data??[],dislikedIds,hiddenSpeakers
+ ),[q.data,previews.data,dislikedIds,hiddenSpeakers]);
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,speakers.length);
@@ -52,7 +35,7 @@ export default function SpeakerDirectory(){
      <Text style={[styles.retryText,{color:t.palette.primary}]}>重新讀取</Text>
     </Pressable>
    </View>}
-  {display==='loading'?<ActivityIndicator color={t.palette.primary} style={styles.loading}/>:
+  {(!ready||display==='loading')?<ActivityIndicator color={t.palette.primary} style={styles.loading}/>:
    display==='failed'?<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
     <Text style={[styles.notice,{color:t.muted}]}>講師資料暫時無法完整讀取，並非沒有講師作品。</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師資料" onPress={retry} style={styles.retry}>
