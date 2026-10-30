@@ -23,7 +23,7 @@ test('public-track detail has separately accessible linked names, not whole-grou
  assert.match(src,/import \{splitSpeakerNames\} from '\.\.\/\.\.\/src\/ui\/echo\/speakerNames'/);
  assert.match(src,/const speakerNames=splitSpeakerNames\(track\?\.speaker\)/);
  assert.match(src,/speakerNames\.map\(\(name,i\)=>/);
- assert.match(src,/accessibilityRole="link" accessibilityLabel=\{'查看'\+name\+'的講師公開作品'\}/);
+ assert.match(src,/accessibilityRole="link" accessibilityLabel=\{'查看'\+name\+'的演講者資料'\}/);
  assert.match(src,/params:\{name\}\}\)/);
  assert.doesNotMatch(src,/params:\{name:track\.speaker\}/);
  assert.match(src,/speakerLink:\{minHeight:44/);
