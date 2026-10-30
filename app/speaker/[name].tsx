@@ -12,9 +12,12 @@ import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo
 import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
 import {mergeAuthorizedCards} from '../../src/ui/echo/mergeAuthorizedCards';
+import {speakerProfileSections,speakerBioUnavailableText,speakerQaUnavailableText} from '../../src/ui/echo/speakerProfileSections';
+import type {SpeakerProfileSection} from '../../src/ui/echo/speakerProfileSections';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
+ const [section,setSection]=useState<SpeakerProfileSection>('audio');
  const {dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
  const hide=(id:string)=>{
   dislike(id);
@@ -61,8 +64,30 @@ export default function PublicSpeakerTracks(){
      <Text style={[styles.title,{color:t.ink}]}>{speaker??'無效的講師名稱'}</Text>
      <Text style={[styles.note,{color:t.muted}]}>原版可瀏覽作品；播放須另行授權</Text>
     </View>
+    <View style={[styles.biography,{borderTopColor:t.border}]}>
+     <Text style={[styles.biographyTitle,{color:t.ink}]}>綜合人物摘要</Text>
+     <Text style={[styles.biographyText,{color:t.muted}]}>{speakerBioUnavailableText}</Text>
+    </View>
    </View>}
-   <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
+   {showBio&&<View style={styles.tabList} accessibilityRole="tablist" accessibilityLabel="講師資料分頁">
+    {speakerProfileSections.map(item=><Pressable key={item.id} accessibilityRole="tab"
+     accessibilityLabel={item.label} accessibilityState={{selected:section===item.id}}
+     onPress={()=>setSection(item.id)}
+     style={[styles.tab,{borderColor:section===item.id?t.palette.primary:t.border,
+      backgroundColor:section===item.id?t.palette.primary:t.card}]}>
+     <Text style={[styles.tabText,{color:section===item.id?'#fff':t.ink}]}>
+      {item.id==='audio'?`所有錄音（${visibleTracks.length}）`:'歷史問答'}
+     </Text>
+    </Pressable>)}
+   </View>}
+   {showBio&&section==='audio'&&<Text style={[styles.tabHint,{color:t.muted}]}>
+    僅列出目前已核准展示的作品；未取得公開播放授權的錄音只顯示資訊卡。
+   </Text>}
+   {showBio&&section==='qa'&&<View style={[styles.qaEmpty,{backgroundColor:t.card,borderColor:t.border}]}>
+    <Text style={[styles.qaTitle,{color:t.ink}]}>歷史問答</Text>
+    <Text style={[styles.qaDescription,{color:t.muted}]}>{speakerQaUnavailableText}</Text>
+   </View>}
+   {section==='audio'&&<Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>}
    {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
    </Pressable>}
@@ -76,7 +101,7 @@ export default function PublicSpeakerTracks(){
       <Text style={[styles.backText,{color:t.palette.primary}]}>重新讀取</Text>
      </Pressable>
     </View>}
-   {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
+   {section==='qa'&&showBio?null:!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
     (!ready||display==='loading')?<ActivityIndicator color={t.palette.primary}/>:
     display==='failed'?<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
@@ -90,7 +115,7 @@ export default function PublicSpeakerTracks(){
      <Text style={[styles.message,{color:t.muted}]}>目前沒有可瀏覽的講者作品資訊。</Text>
     </View>}
    <Text style={[styles.disclaimer,{color:t.muted}]}>
-    舊版講師簡介、AI 問答及會員權限資料尚待授權驗證，因此暫不顯示。
+    原版會員限定的講師資料、AI 問答及私人錄音仍須授權驗證；本站只顯示已核准公開內容。
    </Text>
   </View>
  </ScrollView>;
@@ -100,7 +125,15 @@ const styles=StyleSheet.create({
  shell:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',paddingTop:10},
  back:{alignSelf:'flex-start',minHeight:44,justifyContent:'center',paddingHorizontal:5},
  backText:{fontSize:14,fontWeight:'800'},
- bio:{borderWidth:1,borderRadius:20,padding:15,flexDirection:'row',alignItems:'center',gap:12,minHeight:106},
+ bio:{borderWidth:1,borderRadius:20,padding:15,flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:12,minHeight:106},
+ biography:{width:'100%',borderTopWidth:1,paddingTop:13,marginTop:5,gap:6},
+ biographyTitle:{fontSize:14,fontWeight:'900'},biographyText:{fontSize:12,lineHeight:20},
+ tabList:{flexDirection:'row',gap:8,marginTop:15},
+ tab:{flex:1,minHeight:48,borderWidth:1,borderRadius:13,alignItems:'center',justifyContent:'center',paddingHorizontal:6},
+ tabText:{fontWeight:'900',fontSize:13,textAlign:'center'},
+ tabHint:{fontSize:12,lineHeight:20,marginTop:10},
+ qaEmpty:{borderWidth:1,borderRadius:17,padding:18,marginTop:14,marginBottom:12,gap:9,minHeight:145,justifyContent:'center'},
+ qaTitle:{fontSize:16,fontWeight:'900'},qaDescription:{fontSize:12,lineHeight:21},
  avatar:{width:72,height:72,borderRadius:19,justifyContent:'center',alignItems:'center',overflow:'hidden'},
  photo:{width:72,height:72},
  initial:{fontSize:32,fontWeight:'900'},
