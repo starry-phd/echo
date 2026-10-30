@@ -14,6 +14,7 @@ import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
+import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -159,11 +160,7 @@ export default function TrackDetails(){
        </Pressable>)}</View>
        {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
        <LegacyLectureNotes track={track}/>
-       <View style={[styles.pendingRow,{backgroundColor:t.lightPill}]}>
-        <Text style={[styles.pendingText,{color:t.muted}]}>
-         ☆ 評價　♡ 按讚　▤ 心得　—　會員功能須待 Starry ID 授權後恢復
-        </Text>
-       </View>
+       <LegacyEngagementDetail track={track}/>
       </>}
     </View>
    </View>
