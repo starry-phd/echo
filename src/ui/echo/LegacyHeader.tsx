@@ -7,21 +7,41 @@ import type {LegacyPalette} from './legacyTheme';
 import {visualMetrics} from '../../../packages/ui/src/tokens';
 import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
+import {useQuickActions} from './QuickActions';
+import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
+import type {QuickActionId} from './quickActionStore';
 
 export function LegacyHeader(){
  const colors=useLegacyTheme();
  const {zoom,ready:fontReady,increase,decrease,fontSize}=useFontZoom();
+ const quick=useQuickActions();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
+ const quickDevice=quickDeviceForWidth(width);
+ const chosenQuickActions=quick.choices[quickDevice];
  const pathname=usePathname();
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
+ const [quickNotice,setQuickNotice]=useState('');
  const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
   ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['講師作品',()=>go('/speaker')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
+ const quickActions:Record<QuickActionId,{label:string;glyph:string;run:()=>void}>={
+  home:{label:'首頁',glyph:'⌂',run:()=>go('/')},
+  palette:{label:'好心情',glyph:'✦',run:colors.cyclePalette},
+  speakers:{label:'講師作品',glyph:'♫',run:()=>go('/speaker')},
+  stats:{label:'排行榜',glyph:'▥',run:()=>go('/stats')},
+  favorites:{label:'我的收藏',glyph:'♡',run:()=>go('/favorites')},
+  profile:{label:'會員',glyph:'♙',run:()=>go('/profile')},
+  theme:{label:colors.dark?'淺色模式':'深色模式',glyph:'◐',run:colors.toggleDark}
+ };
+ const togglePin=(id:QuickActionId)=>{
+  const ok=quick.togglePinned(quickDevice,id);
+  setQuickNotice(ok?'已更新本裝置快捷列。':('目前最多可放 '+quickLimits[quickDevice]+' 個快捷功能，請先取消一個釘選。'));
+ };
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
    <View style={styles.main}>
      <Pressable accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
@@ -54,18 +74,19 @@ export function LegacyHeader(){
      </Pressable>
    </View>
    <View style={[styles.quickRow,{borderTopColor:colors.border}]}>
-     <Pressable onPress={()=>go('/')} style={styles.quick} accessibilityRole="button">
-       <Text style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>{isHome?'⌂ 首頁':'⌂ 返回首頁'}</Text>
-     </Pressable>
-     <Pressable accessibilityRole="button" onPress={colors.cyclePalette} style={styles.quick}>
-       <Text style={[styles.quickText,{color:activeColor}]}>✦ 好心情</Text>
-     </Pressable>
-     <Pressable accessibilityRole="button" onPress={()=>go('/speaker')} style={styles.quick}>
-       <Text style={[styles.quickText,{color:activeColor}]}>♫ 講師作品</Text>
-     </Pressable>
-     <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={styles.quick}>
-       <Text style={[styles.quickText,{color:activeColor}]}>♙ 會員</Text>
-     </Pressable>
+    {chosenQuickActions.map(id=><Pressable key={id} accessibilityRole="button"
+     accessibilityLabel={'快捷功能：'+quickActions[id].label}
+     accessibilityState={{selected:id==='home'&&isHome}}
+     onPress={quickActions[id].run} style={styles.quick}>
+     <Text numberOfLines={1} adjustsFontSizeToFit
+      style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>
+      {quickActions[id].glyph} {quickActions[id].label}
+     </Text>
+    </Pressable>)}
+    {chosenQuickActions.length===0&&<Pressable accessibilityRole="button" accessibilityLabel="設定置頂快捷功能"
+      onPress={()=>setOpen(true)} style={styles.quick}>
+      <Text style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>＋ 設定快捷功能</Text>
+    </Pressable>}
    </View>
    {open&&<View style={[
       styles.menuPanel,
@@ -116,6 +137,34 @@ export function LegacyHeader(){
          <Text style={[styles.fontButtonText,{color:activeColor}]}>A＋</Text>
         </Pressable>
        </View>
+       <View style={[styles.quickEditor,{borderColor:colors.border,backgroundColor:colors.lightPill}]}>
+        <Text style={[styles.itemLabel,{color:colors.ink,fontSize:fontSize(14)}]}>置頂快捷功能（{chosenQuickActions.length}/{quickLimits[quickDevice]}）</Text>
+        <Text style={[styles.quickHint,{color:colors.muted}]}>點選釘選或取消；已釘選項目可用箭頭調整順序。本機保存，不需會員登入。</Text>
+        {quick.storageError&&<Text style={[styles.quickHint,{color:colors.muted}]}>本裝置快捷設定讀取或儲存失敗，變更可能不會保留。</Text>}
+        {quickNotice.length>0&&<Text accessibilityLiveRegion="polite" style={[styles.quickHint,{color:activeColor}]}>{quickNotice}</Text>}
+        {allowedQuickActions.map(id=><View key={id} style={styles.quickChoiceRow}>
+         <Pressable accessibilityRole="checkbox" accessibilityLabel={'置頂'+quickActions[id].label}
+          accessibilityState={{checked:chosenQuickActions.includes(id),disabled:!quick.ready}}
+          disabled={!quick.ready} onPress={()=>togglePin(id)}
+          style={styles.quickChoice}>
+          <Text style={[styles.itemLabel,{color:colors.ink,fontSize:fontSize(13)}]}>
+           {chosenQuickActions.includes(id)?'☑':'☐'}　{quickActions[id].label}
+          </Text>
+         </Pressable>
+         {chosenQuickActions.includes(id)&&<>
+          <Pressable accessibilityRole="button" accessibilityLabel={'上移'+quickActions[id].label}
+           accessibilityState={{disabled:!quick.ready||chosenQuickActions[0]===id}}
+           disabled={!quick.ready||chosenQuickActions[0]===id}
+           onPress={()=>{quick.movePinned(quickDevice,id,-1);setQuickNotice('已調整順序。');}}
+           style={styles.quickMove}><Text style={[styles.quickMoveText,{color:activeColor}]}>↑</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={'下移'+quickActions[id].label}
+           accessibilityState={{disabled:!quick.ready||chosenQuickActions.at(-1)===id}}
+           disabled={!quick.ready||chosenQuickActions.at(-1)===id}
+           onPress={()=>{quick.movePinned(quickDevice,id,1);setQuickNotice('已調整順序。');}}
+           style={styles.quickMove}><Text style={[styles.quickMoveText,{color:activeColor}]}>↓</Text></Pressable>
+         </>}
+        </View>)}
+       </View>
        {buttons.map(([label,fn])=><Pressable key={label} accessibilityRole="button" style={styles.menuItem} onPress={fn}>
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
@@ -145,7 +194,12 @@ const styles=StyleSheet.create({
  menuButton:{height:42,width:44,borderRadius:13,justifyContent:'center',alignItems:'center'},
  menuGlyph:{fontSize:23,fontWeight:'700'},
  quickRow:{height:visualMetrics.headerActionsHeight,width:'100%',maxWidth:832,alignSelf:'center',borderTopWidth:StyleSheet.hairlineWidth,flexDirection:'row',alignItems:'center',justifyContent:'space-around',paddingHorizontal:5},
- quick:{paddingHorizontal:7,paddingVertical:6},quickText:{fontSize:12,fontWeight:'800'},
+ quick:{flexShrink:1,minWidth:0,minHeight:44,justifyContent:'center',paddingHorizontal:6},quickText:{fontSize:12,fontWeight:'800',textAlign:'center'},
+ quickEditor:{borderWidth:1,borderRadius:12,padding:10,gap:5},
+ quickHint:{fontSize:11,lineHeight:17},quickChoiceRow:{flexDirection:'row',alignItems:'center',minHeight:44,gap:4},
+ quickChoice:{flex:1,minWidth:0,minHeight:44,justifyContent:'center'},
+ quickMove:{minWidth:43,minHeight:44,alignItems:'center',justifyContent:'center'},
+ quickMoveText:{fontSize:19,fontWeight:'900'},
  menuPanel:{position:'absolute',top:visualMetrics.headerHeight+visualMetrics.headerActionsHeight,right:10,width:310,borderWidth:1,borderRadius:16,overflow:'hidden',shadowColor:'#111827',shadowOpacity:.18,shadowRadius:25,elevation:15},
  menuContents:{padding:12,gap:7},
  identity:{flexDirection:'row',alignItems:'center',borderRadius:13,padding:12,gap:10},
