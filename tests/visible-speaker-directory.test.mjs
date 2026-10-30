@@ -42,7 +42,7 @@ test('home and speaker profile preserve preference gates; nonlegacy speaker dire
  assert.match(home,/currentCatalogDisplayState\(ready,query,debouncedQuery,catalogDisplay\)/);
  assert.match(home,/disabled=\{!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\}/);
  assert.match(home,/if\(!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\)return/);
- assert.match(list,/<Redirect href="\\/"\/>/);
+ assert.ok(list.includes('<Redirect href="/" />'));
  assert.doesNotMatch(list,/FlatList|visibleSpeakerDirectory|getPublicSpeakers/);
  assert.match(profile,/\(!ready\|\|display==='loading'\)/);
  assert.match(profile,/const photo=showBio\?p\.data\?\.find/);
