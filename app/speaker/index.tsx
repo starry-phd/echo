@@ -1,18 +1,16 @@
-import {useMemo,useState} from 'react';
+import {useMemo} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
-import {ActivityIndicator,FlatList,Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,FlatList,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {getApiBaseUrl,getPublicSpeakers,getGuestPreviewTracks} from '../../src/api/client';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
 import {visibleSpeakerDirectory} from '../../src/ui/echo/visibleSpeakerDirectory';
-import {filterApprovedSpeakerDirectory} from '../../src/ui/echo/approvedSpeakerSearch';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 
 export default function SpeakerDirectory(){
  const t=useLegacyTheme();
- const [search,setSearch]=useState('');
  const {hiddenSpeakers,dislikedIds,ready}=useDevicePreferences();
  const q=useQuery({queryKey:['echo','public-speakers'],queryFn:({signal})=>getPublicSpeakers(signal),retry:1});
  const previews=useQuery({queryKey:['echo','guest-previews'],
@@ -21,8 +19,6 @@ export default function SpeakerDirectory(){
  const speakers=useMemo(()=>visibleSpeakerDirectory(
   q.data??[],previews.data??[],dislikedIds,hiddenSpeakers
  ),[q.data,previews.data,dislikedIds,hiddenSpeakers]);
- // Search operates on already-authorized and device-visible data only.
- const visibleSpeakers=useMemo(()=>filterApprovedSpeakerDirectory(speakers,search),[speakers,search]);
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,speakers.length);
@@ -32,19 +28,6 @@ export default function SpeakerDirectory(){
   <View style={styles.heading}>
    <Text style={[styles.title,{color:t.ink}]}>講師作品</Text>
    <Text style={[styles.caption,{color:t.muted}]}>探索原版訪客可見的講者與作品資訊；播放仍依授權限制</Text>
-   <View style={[styles.searchBox,{backgroundColor:t.card,borderColor:t.border}]}>
-    <TextInput accessibilityLabel="搜尋已核准講師姓名" placeholder="搜尋講師姓名…"
-     placeholderTextColor={t.muted} value={search} onChangeText={setSearch}
-     autoCorrect={false} autoCapitalize="none" maxLength={80} returnKeyType="search"
-     style={[styles.searchInput,{color:t.ink}]}/>
-    {search.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="清除講師搜尋"
-     onPress={()=>setSearch('')} style={styles.clearSearch}>
-     <Text style={[styles.clearText,{color:t.palette.primary}]}>✕ 清除</Text>
-    </Pressable>}
-   </View>
-   {ready&&(display==='ready'||display==='empty')&&<Text style={[styles.searchCount,{color:t.muted}]}>
-    目前符合條件的講師 {visibleSpeakers.length} 位（僅搜尋已核准展示資料）
-   </Text>}
   </View>
   {partial&&display!=='failed'&&<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
     <Text style={[styles.notice,{color:t.ink}]}>部分講師資料暫時無法更新，以下僅顯示成功讀取的作品。</Text>
@@ -59,10 +42,10 @@ export default function SpeakerDirectory(){
      <Text style={[styles.retryText,{color:t.palette.primary}]}>重試載入</Text>
     </Pressable>
    </View>:
-   <FlatList data={visibleSpeakers} keyExtractor={s=>s.name} style={styles.list}
+   <FlatList data={speakers} keyExtractor={s=>s.name} style={styles.list}
     contentContainerStyle={styles.listContent}
     ListEmptyComponent={<View style={[styles.empty,{backgroundColor:t.card,borderColor:t.border}]}>
-     <Text style={[styles.emptyText,{color:t.muted}]}>{speakers.length>0&&search.trim()?'查無符合搜尋的已核准講師，請調整姓名或清除搜尋。':'目前沒有可瀏覽的講師作品資訊。'}</Text>
+     <Text style={[styles.emptyText,{color:t.muted}]}>目前沒有可瀏覽的講師作品資訊。</Text>
     </View>}
     renderItem={({item})=><Pressable accessibilityRole="button"
      onPress={()=>router.push({pathname:'/speaker/[name]',params:{name:item.name}})}
@@ -86,10 +69,6 @@ const styles=StyleSheet.create({
  heading:{maxWidth:visualMetrics.contentMaxWidth,alignSelf:'center',width:'100%',paddingHorizontal:15,paddingTop:19,paddingBottom:13},
  title:{fontSize:23,fontWeight:'900'},
  caption:{fontSize:12,marginTop:7,lineHeight:18},
- searchBox:{flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:14,minHeight:48,marginTop:12,paddingHorizontal:10},
- searchInput:{flex:1,minHeight:44,paddingVertical:8,fontSize:15},
- clearSearch:{minHeight:44,justifyContent:'center',paddingHorizontal:8},
- clearText:{fontSize:13,fontWeight:'800'},searchCount:{fontSize:12,marginTop:7},
  list:{flex:1,width:'100%'},
  listContent:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',alignSelf:'center',
   paddingHorizontal:12,paddingBottom:30},
