@@ -62,6 +62,11 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
   catch{onNotice('目前無法使用系統分享。');}
  };
  const noLike=()=>{setOpen(false);onDislike(track.id);};
+ const noSpeaker=()=>{
+  setOpen(false);
+  const added=preferences.hideSpeaker(track.speaker);
+  onNotice(added?'已在此裝置隱藏這位講師的核准作品；可在我的收藏中還原。':'此講師已在本裝置的隱藏清單。');
+ };
  return <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
   <View style={styles.body}>
    <View style={styles.mediaSide}>
@@ -154,7 +159,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡</Text>
+    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　我不喜歡這張卡片</Text>
+   </Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={'隱藏這位演講者：'+track.speaker}
+    style={styles.popupRow} onPress={noSpeaker}
+    disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
+    <Text style={[styles.popupText,{color:t.palette.primary}]}>⊘　不喜歡這位演講者（本裝置）</Text>
    </Pressable>
      </ScrollView>
     </View>

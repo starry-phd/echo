@@ -9,10 +9,11 @@ import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
+import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
- const {dislikedIds,dislike,restoreHidden}=useDevicePreferences();
+ const {dislikedIds,hiddenSpeakers,dislike,restoreHidden}=useDevicePreferences();
  const hide=(id:string)=>{
   dislike(id);
   setNotice('已在此裝置隱藏卡片。');
@@ -30,9 +31,10 @@ export default function PublicSpeakerTracks(){
   queryFn:({signal})=>getPublicTracks(signal,{speaker:speaker!}),enabled:Boolean(speaker),retry:1,
  });
  const tracks=[...(q.data??[]),...(p.data??[])];
- const photo=p.data?.find(x=>x.coverUrl)?.coverUrl;
+ const speakerHidden=Boolean(speaker&&isSpeakerHidden(speaker,hiddenSpeakers));
+ const photo=speakerHidden?null:p.data?.find(x=>x.coverUrl)?.coverUrl;
  const origin=getApiBaseUrl();
- const visibleTracks=tracks.filter(track=>!dislikedIds.includes(track.id));
+ const visibleTracks=tracks.filter(track=>!speakerHidden&&!dislikedIds.includes(track.id)&&!isSpeakerHidden(track.speaker,hiddenSpeakers));
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:p.isPending,failed:p.isError,count:p.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,visibleTracks.length);
@@ -55,6 +57,9 @@ export default function PublicSpeakerTracks(){
     </View>
    </View>
    <Text style={[styles.section,{color:t.ink}]}>演講音檔</Text>
+   {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
+    <Text style={[styles.backText,{color:t.palette.primary}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
+   </Pressable>}
    {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary}]}>{notice}</Text>}
    {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
     restoreHidden();setNotice('已還原此裝置隱藏的卡片。');

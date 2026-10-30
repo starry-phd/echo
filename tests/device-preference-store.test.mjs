@@ -3,18 +3,19 @@ import assert from 'node:assert/strict';
 import {createDevicePreferenceStore} from '../src/ui/echo/devicePreferenceStore.ts';
 import {DEVICE_FAVORITES_KEY} from '../src/ui/echo/deviceFavorites.ts';
 import {DISLIKED_STORAGE_KEY} from '../src/ui/echo/dislikedTracks.ts';
+import {HIDDEN_SPEAKERS_KEY} from '../src/ui/echo/hiddenSpeakers.ts';
 
 test('hydration preserves prior web keys and ignores actions until loading completes',async()=>{
  let release;
  const gate=new Promise(resolve=>{release=resolve;});
  const store=createDevicePreferenceStore({
-  async getItem(key){await gate;return key===DEVICE_FAVORITES_KEY?'["old","old",null]':'["hidden"]';},
+  async getItem(key){await gate;return key===DEVICE_FAVORITES_KEY?'["old","old",null]':key===DISLIKED_STORAGE_KEY?'["hidden"]':null;},
   async setItem(){throw Error('No writes expected');}
  });
  const loading=store.hydrate();
  store.toggleFavorite('too-early');store.dislike('too-early');
  release();await loading;
- assert.deepEqual(store.getSnapshot(),{favoriteIds:['old'],dislikedIds:['hidden'],ready:true,storageError:false});
+ assert.deepEqual(store.getSnapshot(),{favoriteIds:['old'],dislikedIds:['hidden'],hiddenSpeakers:[],ready:true,storageError:false});
 });
 test('rapid changes serialize storage and all subscribers see shared current preferences',async()=>{
  const saved=new Map();const observations=[];
@@ -62,4 +63,36 @@ test('restoreHiddenTrack removes only one stored local dislike and preserves fav
  store.restoreHiddenTrack('x');store.dislike('k');store.restoreHiddenTrack('z');
  await store.flush();
  assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),['k']);
+});
+
+test('local speaker hides preserve old keys and serialize rapid restores',async()=>{
+ const saved=new Map([[DEVICE_FAVORITES_KEY,'["fav"]'],[DISLIKED_STORAGE_KEY,'["card"]'],[HIDDEN_SPEAKERS_KEY,'["王小明"]']]);
+ const store=createDevicePreferenceStore({
+  async getItem(key){return saved.get(key)??null;},
+  async setItem(key,value){await new Promise(resolve=>setTimeout(resolve,2));saved.set(key,value);}
+ });
+ assert.equal(store.hideSpeaker('early'),false);
+ await store.hydrate();
+ assert.deepEqual(store.getSnapshot().hiddenSpeakers,['王小明']);
+ assert.equal(store.hideSpeaker('王小明'),false);
+ assert.equal(store.hideSpeaker('林美麗 & 李小華'),true);
+ assert.equal(store.restoreHiddenSpeaker('missing'),false);
+ assert.equal(store.restoreHiddenSpeaker('王小明'),true);
+ await store.flush();
+ assert.deepEqual(JSON.parse(saved.get(HIDDEN_SPEAKERS_KEY)),['林美麗 & 李小華']);
+ assert.deepEqual(JSON.parse(saved.get(DEVICE_FAVORITES_KEY)),['fav']);
+ assert.deepEqual(JSON.parse(saved.get(DISLIKED_STORAGE_KEY)),['card']);
+ store.restoreAllSpeakers();
+ await store.flush();
+ assert.deepEqual(JSON.parse(saved.get(HIDDEN_SPEAKERS_KEY)),[]);
+});
+test('speaker hiding still works in memory when storage cannot be read',async()=>{
+ let writes=0;
+ const store=createDevicePreferenceStore({async getItem(){throw Error('denied');},async setItem(){writes++;}});
+ await store.hydrate();
+ assert.equal(store.hideSpeaker('安全講師'),true);
+ await store.flush();
+ assert.deepEqual(store.getSnapshot().hiddenSpeakers,['安全講師']);
+ assert.equal(store.getSnapshot().storageError,true);
+ assert.equal(writes,0);
 });

@@ -7,9 +7,12 @@ import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
+import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
+import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 
 export default function SpeakerDirectory(){
  const t=useLegacyTheme();
+ const {hiddenSpeakers}=useDevicePreferences();
  const q=useQuery({queryKey:['echo','public-speakers'],queryFn:({signal})=>getPublicSpeakers(signal),retry:1});
  const previews=useQuery({queryKey:['echo','guest-previews'],
   queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
@@ -17,12 +20,14 @@ export default function SpeakerDirectory(){
  const speakers=useMemo(()=>{
   const found=new Map<string,{name:string;trackCount:number;coverUrl:string|null}>();
   for(const entry of q.data??[]){
+   if(isSpeakerHidden(entry.name,hiddenSpeakers))continue;
    for(const name of splitSpeakerNames(entry.name)){
     const prev=found.get(name);
     found.set(name,{name,trackCount:(prev?.trackCount||0)+entry.trackCount,coverUrl:prev?.coverUrl||null});
    }
   }
   for(const track of previews.data??[]){
+   if(isSpeakerHidden(track.speaker,hiddenSpeakers))continue;
    for(const name of splitSpeakerNames(track.speaker)){
     const prev=found.get(name);
     found.set(name,{name,trackCount:(prev?.trackCount||0)+1,
@@ -30,7 +35,7 @@ export default function SpeakerDirectory(){
    }
   }
   return [...found.values()].sort((a,b)=>b.trackCount-a.trackCount||a.name.localeCompare(b.name));
- },[q.data,previews.data]);
+ },[q.data,previews.data,hiddenSpeakers]);
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
  const guestSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,speakers.length);
