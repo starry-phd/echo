@@ -35,15 +35,15 @@ test('directory never invents new media and does not mutate authorized source ar
  assert.deepEqual(previews,[{id:'g',speaker:'訪客講師',coverUrl:null}]);
 });
 
-test('home, speaker list and speaker profile wait for device preferences before showing cards or portraits',()=>{
+test('home and speaker profile preserve preference gates; nonlegacy speaker directory route redirects',()=>{
  const home=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
  const list=readFileSync(new URL('../app/speaker/index.tsx',import.meta.url),'utf8');
  const profile=readFileSync(new URL('../app/speaker/[name].tsx',import.meta.url),'utf8');
  assert.match(home,/currentCatalogDisplayState\(ready,query,debouncedQuery,catalogDisplay\)/);
  assert.match(home,/disabled=\{!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\}/);
  assert.match(home,/if\(!canDrawFromCurrentCatalog\(currentDisplay,luckyPhase==='spin'\)\)return/);
- assert.match(list,/\(!ready\|\|display==='loading'\)/);
- assert.match(list,/visibleSpeakerDirectory\(/);
+ assert.match(list,/<Redirect href="\\/"\/>/);
+ assert.doesNotMatch(list,/FlatList|visibleSpeakerDirectory|getPublicSpeakers/);
  assert.match(profile,/\(!ready\|\|display==='loading'\)/);
  assert.match(profile,/const photo=showBio\?p\.data\?\.find/);
  assert.match(profile,/authorizedSpeakerProfileTracks\(speaker,/);
