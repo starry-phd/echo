@@ -13,6 +13,7 @@ import {cardMenuLayout} from './cardMenuLayout';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
 import {categoryFromRoute} from './publicCategoryNavigation';
+import {approvedGuestSpeakerRank} from './publicSpeakerRankNavigation';
 import {readHistoricalEngagement,historicalCountLabel} from './legacyEngagementSnapshot';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
@@ -46,6 +47,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  useEffect(()=>setCoverError(false),[coverUri,track.id]);
  const duration=Math.max(0,Math.floor(track.durationSeconds));
  const speakerRank=track.speakerRank?.trim()||'';
+ const approvedRankLink=approvedGuestSpeakerRank(track);
  const legacy=track.legacySnapshot===true;
  const historical=readHistoricalEngagement(track);
  const publicShareMessage=approvedPublicTrackShareMessage(track,track.id,apiOrigin);
@@ -113,7 +115,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
         <Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}>{name}</Text>
        </Pressable>
       </View>)}
-     {!!speakerRank&&<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> {speakerRank}</Text>}
+     {!!speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
+      accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
+      onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
+      style={styles.rankLink}>
+      <Text numberOfLines={1} style={[styles.speaker,{color:t.palette.primary,fontSize:fontSize(14)}]}> {speakerRank} ›</Text>
+     </Pressable>:<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> {speakerRank}</Text>)}
     </View>
     <View style={styles.tags}>
      {track.categories.slice(0,3).map((c,i)=>{
@@ -210,6 +217,7 @@ const styles=StyleSheet.create({
  title:{fontSize:20,fontWeight:'900',lineHeight:24},
  speakerLinks:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',marginTop:4},
  speakerPart:{flexDirection:'row',alignItems:'center'},
+ rankLink:{minHeight:44,justifyContent:'center'},
  speaker:{fontSize:14,fontWeight:'500',marginTop:2},
  tags:{flexDirection:'row',gap:4,marginTop:8,flexWrap:'wrap',alignItems:'center'},
  tag:{borderWidth:1,borderRadius:999,paddingHorizontal:7,paddingVertical:4},
