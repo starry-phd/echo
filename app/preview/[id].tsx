@@ -14,6 +14,7 @@ import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
 import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
+import {approvedGuestSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -25,6 +26,7 @@ export default function GuestPreviewDetails(){
  const q=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),enabled:valid,retry:1});
  const track=q.data?.find(item=>item.id===id);
  const origin=getApiBaseUrl();
+ const approvedRankLink=approvedGuestSpeakerRank(track);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
  return <ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell} onLayout={sections.onShellLayout}>
@@ -60,7 +62,12 @@ export default function GuestPreviewDetails(){
         <Text style={{color:t.palette.primary,fontWeight:'700'}}>{name} ›</Text>
        </Pressable>)}
       </View>
-      {!!track.speakerRank&&<Text style={[styles.line,{color:t.ink,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank}</Text>}
+      {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
+       accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
+       onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
+       style={styles.rankLink}>
+       <Text style={[styles.line,{color:t.palette.primary,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank} ›</Text>
+      </Pressable>:<Text style={[styles.line,{color:t.ink,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank}</Text>)}
       <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}</Text>
       <View style={styles.row}>{track.categories.map(category=><Pressable key={category}
        accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
@@ -91,7 +98,7 @@ const styles=StyleSheet.create({
  back:{minHeight:44,justifyContent:'center'},backText:{fontSize:14,fontWeight:'800'},
  card:{padding:16,borderWidth:1,borderRadius:21,gap:10},photo:{width:'100%',height:220,borderRadius:16},
  title:{fontSize:24,lineHeight:32,fontWeight:'900'},row:{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'center'},
- speaker:{minHeight:44,justifyContent:'center'},line:{fontSize:13,lineHeight:22},tag:{minHeight:44,padding:8,borderRadius:12,borderWidth:1,justifyContent:'center'},
+ speaker:{minHeight:44,justifyContent:'center'},rankLink:{minHeight:44,justifyContent:'center',alignSelf:'flex-start'},line:{fontSize:13,lineHeight:22},tag:{minHeight:44,padding:8,borderRadius:12,borderWidth:1,justifyContent:'center'},
  statistics:{borderTopWidth:1,paddingTop:12,gap:6},section:{fontSize:15,fontWeight:'800'},
  note:{fontSize:12,lineHeight:20},
  hiddenNotice:{gap:12,paddingVertical:14},hiddenAction:{minHeight:44,borderWidth:1,borderRadius:12,padding:10,justifyContent:'center',alignSelf:'flex-start'}
