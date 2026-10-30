@@ -10,6 +10,7 @@ import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
+import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -60,12 +61,8 @@ export default function GuestPreviewDetails(){
          ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
          :<Text style={{color:t.palette.primary,fontSize:fontSize(13)}}>{category} ›</Text>}
        </Pressable>)}</View>
-      {track.legacySnapshot&&<View style={[styles.statistics,{borderColor:t.border}]}>
-       <Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>舊版統計（唯讀）</Text>
-       <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>★ {(track.rating??0).toFixed(1)}（{track.ratingCount??0} 人評價）</Text>
-       <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>心得 {track.commentsCount??0}　♡ 按讚 {track.likes??0}</Text>
-      </View>}
       <LegacyLectureNotes track={track}/>
+      <LegacyEngagementDetail track={track}/>
       <Pressable accessibilityRole="button" disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready,selected:favorite}}
        onPress={()=>preferences.toggleFavorite(track.id)} style={[styles.favorite,{backgroundColor:t.palette.primary}]}>
        <Text style={styles.favoriteText}>{favorite?'取消本裝置收藏':'加入本裝置收藏'}</Text>
