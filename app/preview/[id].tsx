@@ -9,6 +9,7 @@ import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
+import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -51,15 +52,20 @@ export default function GuestPreviewDetails(){
       </View>
       {!!track.speakerRank&&<Text style={[styles.line,{color:t.ink,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank}</Text>}
       <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}</Text>
-      {!!track.uploadDate&&<Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>舊版上架日期：{track.uploadDate.slice(0,10)}</Text>}
-      <View style={styles.row}>{track.categories.map(category=>category==='新人'?
-       <AnimatedNewcomerTag key={category} fill={t.lightPill} textColor={t.palette.primary}/>:
-       <View key={category} style={[styles.tag,{backgroundColor:t.lightPill}]}><Text style={{color:t.palette.primary}}>{category}</Text></View>)}</View>
+      <View style={styles.row}>{track.categories.map(category=><Pressable key={category}
+       accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
+       onPress={()=>router.push({pathname:'/',params:{category}})}
+       style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+        {category==='新人'
+         ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
+         :<Text style={{color:t.palette.primary,fontSize:fontSize(13)}}>{category} ›</Text>}
+       </Pressable>)}</View>
       {track.legacySnapshot&&<View style={[styles.statistics,{borderColor:t.border}]}>
        <Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>舊版統計（唯讀）</Text>
        <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>★ {(track.rating??0).toFixed(1)}（{track.ratingCount??0} 人評價）</Text>
        <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>心得 {track.commentsCount??0}　♡ 按讚 {track.likes??0}</Text>
       </View>}
+      <LegacyLectureNotes track={track}/>
       <Pressable accessibilityRole="button" disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready,selected:favorite}}
        onPress={()=>preferences.toggleFavorite(track.id)} style={[styles.favorite,{backgroundColor:t.palette.primary}]}>
        <Text style={styles.favoriteText}>{favorite?'取消本裝置收藏':'加入本裝置收藏'}</Text>
@@ -75,7 +81,7 @@ const styles=StyleSheet.create({
  back:{minHeight:44,justifyContent:'center'},backText:{fontSize:14,fontWeight:'800'},
  card:{padding:16,borderWidth:1,borderRadius:21,gap:10},photo:{width:'100%',height:220,borderRadius:16},
  title:{fontSize:24,lineHeight:32,fontWeight:'900'},row:{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'center'},
- speaker:{minHeight:44,justifyContent:'center'},line:{fontSize:13,lineHeight:22},tag:{padding:8,borderRadius:12},
+ speaker:{minHeight:44,justifyContent:'center'},line:{fontSize:13,lineHeight:22},tag:{minHeight:44,padding:8,borderRadius:12,borderWidth:1,justifyContent:'center'},
  statistics:{borderTopWidth:1,paddingTop:12,gap:6},section:{fontSize:15,fontWeight:'800'},
  favorite:{minHeight:48,borderRadius:13,justifyContent:'center',alignItems:'center'},favoriteText:{fontSize:14,fontWeight:'800',color:'#fff'},
  note:{fontSize:12,lineHeight:20},
