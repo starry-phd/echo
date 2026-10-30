@@ -5,6 +5,8 @@ import {router,useLocalSearchParams} from 'expo-router';
 import {useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
 import {getPublicStreamUrl,getPublicTrack} from '../../src/api/client';
 import {clampSeekTime,formatAudioTime} from '../../src/media/playback';
+import {LEGACY_PLAYBACK_RATES,LEGACY_SKIP_SECONDS} from '../../src/media/legacyPlaybackControls';
+import {LegacyPlaybackTimeline} from '../../src/ui/echo/LegacyPlaybackTimeline';
 import type {EchoTrack} from '../../src/types';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
@@ -22,11 +24,13 @@ function AudioPlayback({track}:{track:EchoTrack}){
  const player=useAudioPlayer(null);
  const status=useAudioPlayerStatus(player);
  const initialized=useRef(false);
+ const [speed,setSpeed]=useState(1);
  const source=getPublicStreamUrl(track.id);
  const available=track.playable&&Boolean(source);
  useEffect(()=>{
   initialized.current=false;
   player.pause();
+  setSpeed(1);
   return()=>{player.pause();};
  },[player,track.id]);
  const toggle=()=>{
@@ -39,27 +43,52 @@ function AudioPlayback({track}:{track:EchoTrack}){
   if(!available||!status.isLoaded||status.duration<=0)return;
   void player.seekTo(clampSeekTime(status.currentTime+delta,status.duration));
  };
+ const changeSpeed=(rate:number)=>{
+  if(!available||!status.isLoaded||!LEGACY_PLAYBACK_RATES.some(value=>value===rate))return;
+  player.setPlaybackRate(rate);
+  setSpeed(rate);
+ };
  const duration=status.duration>0?status.duration:track.durationSeconds;
+ const skipButton=(delta:number)=><Pressable key={delta}
+   accessibilityRole="button"
+   accessibilityLabel={delta<0?'倒退'+Math.abs(delta)+'秒':'快進'+delta+'秒'}
+   accessibilityState={{disabled:!available||!status.isLoaded}}
+   disabled={!available||!status.isLoaded} onPress={()=>seek(delta)}
+   style={[styles.skip,{borderColor:t.border},(!available||!status.isLoaded)&&styles.disabled]}>
+   <Text style={[styles.skipText,{color:t.palette.primary}]}>{delta>0?'+':''}{delta}</Text>
+  </Pressable>;
  return <View style={[styles.player,{backgroundColor:t.card,borderColor:t.border}]}>
    <View style={[styles.playerPhoto,{backgroundColor:t.lightPill}]}>
     <Text style={styles.playerPhotoIcon}>🎙</Text>
    </View>
-   <Text style={[styles.time,{color:t.ink}]}>{formatAudioTime(status.currentTime)} ／ {formatAudioTime(duration)}</Text>
+   <LegacyPlaybackTimeline currentTime={status.currentTime} duration={duration}
+    enabled={available&&status.isLoaded&&status.duration>0}
+    color={t.palette.primary} trackColor={t.lightPill} onSeek={seconds=>{
+     if(available&&status.isLoaded&&status.duration>0)
+      void player.seekTo(clampSeekTime(seconds,status.duration));
+    }}/>
+   <Text style={[styles.time,{color:t.ink}]}>{formatAudioTime(status.currentTime)} ／ {formatAudioTime(duration)}
+    {status.duration>0?'（'+Math.round(clampSeekTime(status.currentTime,status.duration)/status.duration*100)+'%）':''}</Text>
    <View style={styles.controls}>
-    <Pressable accessibilityRole="button" accessibilityLabel="倒退15秒" accessibilityState={{disabled:!status.isLoaded}}
-      disabled={!status.isLoaded} onPress={()=>seek(-15)} style={[styles.skip,{borderColor:t.border}]}>
-     <Text style={[styles.skipText,{color:t.palette.primary}]}>−15 秒</Text>
-    </Pressable>
+    {LEGACY_SKIP_SECONDS.slice(0,2).map(skipButton)}
     <Pressable accessibilityRole="button" accessibilityLabel={status.playing?'暫停播放':'開始播放'}
       accessibilityState={{disabled:!available}} disabled={!available}
       onPress={toggle} style={[styles.play,{backgroundColor:t.palette.primary},!available&&styles.disabled]}>
-     <Text style={styles.playLabel}>{!available?'待驗證':status.playing?'Ⅱ 暫停':'▶ 播放'}</Text>
+     <Text style={styles.playLabel}>{!available?'待驗證':status.playing?'Ⅱ':'▶'}</Text>
     </Pressable>
-    <Pressable accessibilityRole="button" accessibilityLabel="快進30秒" accessibilityState={{disabled:!status.isLoaded}}
-      disabled={!status.isLoaded} onPress={()=>seek(30)} style={[styles.skip,{borderColor:t.border}]}>
-     <Text style={[styles.skipText,{color:t.palette.primary}]}>+30 秒</Text>
-    </Pressable>
+    {LEGACY_SKIP_SECONDS.slice(2).map(skipButton)}
    </View>
+   <View style={styles.speedRow}>
+    {LEGACY_PLAYBACK_RATES.map(rate=><Pressable key={rate}
+     accessibilityRole="button" accessibilityLabel={'播放速度'+rate+'倍'}
+     accessibilityState={{disabled:!available||!status.isLoaded,selected:speed===rate}}
+     disabled={!available||!status.isLoaded} onPress={()=>changeSpeed(rate)}
+     style={[styles.speedButton,{borderColor:speed===rate?t.palette.primary:t.border,
+      backgroundColor:speed===rate?t.lightPill:t.card},(!available||!status.isLoaded)&&styles.disabled]}>
+     <Text style={[styles.speedText,{color:speed===rate?t.palette.primary:t.muted}]}>{rate}×</Text>
+    </Pressable>)}
+   </View>
+   {!available&&<Text style={[styles.status,{color:t.muted}]}>此音檔尚無已驗證公開播放權；操作不可用。</Text>}
    {status.isBuffering&&<Text style={[styles.status,{color:t.muted}]}>音訊緩衝中…</Text>}
    {status.error&&<Text style={styles.error}>播放暫時無法進行，請稍後重試。</Text>}
  </View>;
@@ -164,11 +193,15 @@ const styles=StyleSheet.create({
  playerPhoto:{height:108,width:108,borderRadius:19,alignItems:'center',justifyContent:'center'},
  playerPhotoIcon:{fontSize:50},
  time:{fontWeight:'800',fontSize:13,marginVertical:12},
- controls:{flexDirection:'row',alignItems:'center',gap:9,width:'100%'},
+ controls:{flexDirection:'row',alignItems:'center',gap:5,width:'100%'},
  skip:{minHeight:48,flex:1,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:13},
  skipText:{fontSize:12,fontWeight:'800'},
- play:{minHeight:50,flex:1.7,justifyContent:'center',alignItems:'center',borderRadius:14},
- playLabel:{color:'#fff',fontSize:14,fontWeight:'900'},disabled:{opacity:.45},
+ play:{minHeight:50,flex:1.25,justifyContent:'center',alignItems:'center',borderRadius:14},
+ playLabel:{color:'#fff',fontSize:17,fontWeight:'900'},disabled:{opacity:.45},
+ speedRow:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:5,marginTop:12},
+ speedButton:{minHeight:44,minWidth:44,paddingHorizontal:7,alignItems:'center',
+  justifyContent:'center',borderWidth:1,borderRadius:9},
+ speedText:{fontSize:12,fontWeight:'800'},
  description:{borderTopWidth:1,marginTop:16,paddingTop:14},
  sectionTitle:{fontSize:16,fontWeight:'900',marginBottom:8},
  body:{fontSize:14,lineHeight:24},
