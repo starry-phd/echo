@@ -11,10 +11,13 @@ export function publicCategorySuggestions(
  const seen=new Set<string>();
  const out:string[]=[];
  const limit=Math.min(16,Math.max(0,Math.floor(Number.isFinite(max)?max:0)));
+ if(limit===0)return [];
  for(const raw of source){
   if(typeof raw!=='string')continue;
-  const value=raw.normalize('NFKC').trim();
-  if(!value||value.length>80||/[\x00-\x1f\x7f]/u.test(value))continue;
+  const normalized=raw.normalize('NFKC');
+  if(/[\x00-\x1f\x7f]/u.test(normalized))continue;
+  const value=normalized.trim();
+  if(!value||value.length>80)continue;
   const key=value.toLocaleLowerCase('zh-Hant');
   if(seen.has(key)||!terms.every(term=>key.includes(term)))continue;
   seen.add(key);out.push(value);
