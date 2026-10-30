@@ -64,7 +64,7 @@ export default function PublicSpeakerTracks(){
   <Pressable accessibilityRole="button" accessibilityLabel="關閉演講者資料視窗背景"
    onPress={close} style={StyleSheet.absoluteFill}/>
   <View style={[styles.modalPanel,{backgroundColor:t.bg,borderColor:t.border,
-   height:Math.max(260,Math.round(Math.max(320,height-80)*0.79))}]}>
+   height:Math.max(1,Math.floor(height*0.79))}]}>
    <View style={[styles.modalHeader,{borderBottomColor:t.border}]}>
     <Text style={[styles.modalTitle,{color:t.ink,fontSize:fontSize(14)}]}>演講者個人資訊</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="關閉演講者資料視窗"
@@ -74,9 +74,6 @@ export default function PublicSpeakerTracks(){
    </View>
    <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.content}>
   <View style={styles.shell}>
-   <Pressable accessibilityRole="button" onPress={close} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回上一頁</Text>
-   </Pressable>
    {showBio&&<View style={[styles.bio,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
      {photo&&origin?<Image source={{uri:origin+photo}} resizeMode="cover"
@@ -164,8 +161,8 @@ const styles=StyleSheet.create({
  tabHint:{fontSize:12,lineHeight:20,marginTop:10},
  qaEmpty:{borderWidth:1,borderRadius:17,padding:18,marginTop:14,marginBottom:12,gap:9,minHeight:145,justifyContent:'center'},
  qaTitle:{fontSize:16,fontWeight:'900'},qaDescription:{fontSize:12,lineHeight:21},
- avatar:{width:72,height:72,borderRadius:19,justifyContent:'center',alignItems:'center',overflow:'hidden'},
- photo:{width:72,height:72},
+ avatar:{width:80,height:80,borderRadius:40,justifyContent:'center',alignItems:'center',overflow:'hidden'},
+ photo:{width:80,height:80},
  initial:{fontSize:32,fontWeight:'900'},
  bioText:{flex:1},title:{fontSize:22,fontWeight:'900'},
  note:{fontSize:12,marginTop:8},section:{fontSize:18,fontWeight:'900',marginVertical:18},

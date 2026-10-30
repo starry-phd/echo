@@ -12,13 +12,18 @@ test('speaker name uses old overlay instead of replacing the underlying page',()
  assert.match(profile,/演講者個人資訊<\/Text>/);
  assert.match(profile,/styles\.modalPanel/);
  assert.match(profile,/maxWidth:570/);
- assert.match(profile,/Math\.round\(Math\.max\(320,height-80\)\*0\.79\)/);
+ assert.ok(profile.includes('height:Math.max(1,Math.floor(height*0.79))'));
  assert.match(profile,/StyleSheet\.absoluteFill/);
  assert.match(profile,/accessibilityLabel="關閉演講者資料視窗"/);
  assert.match(profile,/onPress=\{close\}/);
  assert.match(profile,/router\.canGoBack\(\)\?router\.back\(\):router\.replace\('\/'\)/);
  assert.match(profile,/event\.key==='Escape'/);
  assert.doesNotMatch(profile,/返回講師列表/);
+ // Legacy compact SpeakerProfilePage suppresses the in-content back button.
+ assert.doesNotMatch(profile,/‹ 返回上一頁/);
+ // The original speaker avatar uses an 80px circle, not a rounded rectangle.
+ assert.match(profile,/avatar:\{width:80,height:80,borderRadius:40/);
+ assert.match(profile,/photo:\{width:80,height:80\}/);
 });
 
 test('underlying approved profile permission gates and old tabs survive modal conversion',()=>{
