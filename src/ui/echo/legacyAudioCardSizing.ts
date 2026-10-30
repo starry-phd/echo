@@ -17,6 +17,8 @@ export function legacyAudioCardSizing(width:number){
   tagFont:desktop?10:9,
   bodyGap:desktop?16:12,
   bodyPadding:desktop?12:10,
-  detailsRightPadding:desktop?32:28
+  detailsRightPadding:desktop?32:28,
+  starFont:desktop?20:18,
+  engagementFont:14
  };
 }
