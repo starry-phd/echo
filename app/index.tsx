@@ -18,6 +18,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
+import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -41,7 +42,7 @@ export default function CatalogScreen(){
  const luckyTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const [advanced,setAdvanced]=useState(false);
  const [speakerRank,setSpeakerRank]=useState<string|null>(null);
- const {dislikedIds,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
+ const {dislikedIds,hiddenSpeakers,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
  const dislikeTrack=(id:string)=>{
   dislike(id);
   setNotice('已在此裝置隱藏這張音檔卡；可點「還原隱藏」恢復。');
@@ -76,9 +77,9 @@ export default function CatalogScreen(){
  const tracks=useMemo(()=>sortEchoCards([
    ...(tracksQuery.data??[]),...(previewsQuery.data??[])
  ],order),[tracksQuery.data,previewsQuery.data,order]);
- const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&matchesCardFilters(t,{
+ const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&!isSpeakerHidden(t.speaker,hiddenSpeakers)&&matchesCardFilters(t,{
   query:debouncedQuery,category,speakerRank
- })),[tracks,dislikedIds,debouncedQuery,category,speakerRank]);
+ })),[tracks,dislikedIds,hiddenSpeakers,debouncedQuery,category,speakerRank]);
  // A prior pick disappears immediately if hidden or excluded by new filters.
  const luckyPreview=useMemo(()=>
   visibleTracks.find(t=>t.id===luckyPreviewId&&isApprovedPreview(t)),
@@ -261,6 +262,11 @@ export default function CatalogScreen(){
      {dislikedIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="逐張管理本裝置隱藏的音檔卡"
       onPress={()=>router.push('/favorites')} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
       <Text style={[styles.restoreText,{color:theme.palette.primary}]}>管理不喜歡的音檔卡（可個別還原）</Text>
+     </Pressable>}
+     {hiddenSpeakers.length>0&&<Pressable accessibilityRole="button"
+      accessibilityLabel="管理本裝置不喜歡的演講者"
+      onPress={()=>router.push('/favorites')} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
+      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>管理隱藏的演講者（{hiddenSpeakers.length} 項）</Text>
      </Pressable>}
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
        backgroundColor:theme.card}]}>
