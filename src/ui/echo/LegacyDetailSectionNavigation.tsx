@@ -22,7 +22,7 @@ export function LegacyDetailSectionNavigation({showPlayback,onJump}:{
   <View style={styles.links}>
    {entries.filter(item=>showPlayback||item.id!=='playback').map(item=>
     <Pressable key={item.id} accessibilityRole="button"
-     accessibilityLabel={'跳至'+item.label.replace(/^[^\p{L}\p{N}]+/u,'')+'區塊'}
+     accessibilityLabel={'跳至'+item.label.slice(2)+'區塊'}
      onPress={()=>onJump(item.id)}
      style={[styles.button,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.label,{color:t.palette.primary,fontSize:fontSize(12)}]}>{item.label}</Text>
