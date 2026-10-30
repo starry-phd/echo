@@ -46,7 +46,8 @@ for(const marker of [
  'productionAuthorized!==true',
  'environment: production',
  'CLOUDFLARE_API_TOKEN',
- 'wrangler@4 deploy'
+ 'wrangler@4 deploy',
+ 'node scripts/check-production-guest.mjs'
 ])assert.ok(release.includes(marker),'Missing production guard: '+marker);
 assert.equal(manifest.brandId,'starry');
 assert.equal(manifest.appId,'echo-starry');
