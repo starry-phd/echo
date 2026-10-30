@@ -30,12 +30,20 @@ export function isSpeakerHidden(speaker:string,hidden:readonly string[]):boolean
  return hidden.some(entry=>splitSpeakerNames(entry).some(name=>names.has(key(name))));
 }
 
-/** Never redisplay a saved speaker name unless a current, authorized API card
- * has that exact speaker/group name. Stale/revoked names stay only as counts.
+/** Never redisplay a saved name unless it is present in currently
+ * authorized card metadata. A *single* hidden person may be recoverable when
+ * the only current approved card is a two-speaker work containing that person.
+ * A stored combined name still requires that *same whole group* to be approved,
+ * so an old private co-speaker cannot be exposed through a newly public partner.
  */
 export function restorableHiddenSpeakers<T extends {speaker:string}>(
  authorized:readonly T[],hidden:readonly string[]
 ):string[]{
- const approvedNames=new Set(authorized.map(t=>key(t.speaker)));
- return sanitizeHiddenSpeakers(hidden).filter(name=>approvedNames.has(key(name)));
+ const approvedGroups=new Set(authorized.map(t=>key(t.speaker)));
+ const approvedIndividuals=new Set(authorized.flatMap(t=>splitSpeakerNames(t.speaker)).map(key));
+ return sanitizeHiddenSpeakers(hidden).filter(name=>{
+  if(approvedGroups.has(key(name)))return true;
+  const members=splitSpeakerNames(name);
+  return members.length===1&&approvedIndividuals.has(key(members[0]));
+ });
 }

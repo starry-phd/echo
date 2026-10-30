@@ -21,3 +21,18 @@ test('stale speaker names never display without currently authorized exact speak
  assert.deepEqual(restorableHiddenSpeakers(allowed,names),['王小明','李小華 & 林美麗']);
  assert.deepEqual(names,['王小明','李小華 & 林美麗','私人講師','王小明＆私人講師']);
 });
+
+test('individually hidden duo speaker can be restored from currently approved duo metadata',()=>{
+ const authorized=[{speaker:'王小明 & 林美麗'}];
+ assert.deepEqual(restorableHiddenSpeakers(authorized,['王小明','林美麗']),
+  ['王小明','林美麗']);
+ assert.deepEqual(restorableHiddenSpeakers(authorized,['王小明老師']),[]);
+ assert.deepEqual(restorableHiddenSpeakers(authorized,['私人講師']),[]);
+});
+
+test('a previously saved private combined name remains secret unless its entire group is approved',()=>{
+ const authorized=[{speaker:'王小明 & 林美麗'}];
+ const hidden=['王小明 & 私人講師','王小明＆林美麗','林美麗 & 私人講師'];
+ assert.deepEqual(restorableHiddenSpeakers(authorized,hidden),['王小明&林美麗']);
+ assert.deepEqual(restorableHiddenSpeakers([{speaker:'王小明'}],['王小明 & 私人講師']),[]);
+});

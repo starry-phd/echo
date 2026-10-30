@@ -12,7 +12,7 @@ import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../packages/ui/src/tokens';
 import {viewportLayout} from '../src/ui/responsive';
 import {sortEchoCards} from '../src/ui/echo/cardSorting';
-import {baseSpeakerRank,matchesCardFilters} from '../src/ui/echo/cardFilters';
+import {matchesCardFilters} from '../src/ui/echo/cardFilters';
 import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
@@ -20,6 +20,7 @@ import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '.
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
+import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -102,11 +103,15 @@ export default function CatalogScreen(){
  const focusedId=luckyPhase==='spin'?luckySpinId:luckyPreview?.id??null;
  const displayedTracks=useMemo(()=>
   moveLuckyCardToSecondSlot(visibleTracks,focusedId),[visibleTracks,focusedId]);
- const ranks=useMemo(()=>[...new Set((previewsQuery.data??[]).map(t=>baseSpeakerRank(t.speakerRank??'')).filter(Boolean))].sort(),[previewsQuery.data]);
- const categories=useMemo(()=>[...new Set([
-   ...(categoriesQuery.data??[]),
-   ...(previewsQuery.data??[]).flatMap(t=>t.categories)
- ])],[categoriesQuery.data,previewsQuery.data]);
+ const guestFacets=useMemo(()=>visibleGuestFacets(
+  previewsQuery.data??[],dislikedIds,hiddenSpeakers
+ ),[previewsQuery.data,dislikedIds,hiddenSpeakers]);
+ // Source-wide public categories remain trusted API metadata, while guest-only
+ // hints are filtered by this device's preferences. Do not reveal hints before hydration.
+ const ranks=ready?guestFacets.ranks:[];
+ const categories=useMemo(()=>ready?[...new Set([
+  ...(categoriesQuery.data??[]),...guestFacets.categories
+ ])]:[],[ready,categoriesQuery.data,guestFacets]);
  const categorySuggestions=useMemo(()=>
    publicCategorySuggestions(categories,query),[categories,query]);
  const selectSuggestedCategory=(value:string)=>{
