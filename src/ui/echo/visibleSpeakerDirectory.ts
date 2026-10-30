@@ -8,7 +8,7 @@ import {splitSpeakerNames} from './speakerNames';
  */
 export function visibleSpeakerDirectory(
  publicSpeakers:readonly {name:string;trackCount:number}[],
- guestPreviews:readonly {id:string;speaker:string;coverUrl:string|null}[],
+ guestPreviews:readonly {id:string;speaker:string;coverUrl?:string|null}[],
  dislikedIds:readonly string[],
  hiddenSpeakers:readonly string[]
 ):{name:string;trackCount:number;coverUrl:string|null}[]{
