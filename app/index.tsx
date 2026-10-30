@@ -251,7 +251,7 @@ export default function CatalogScreen(){
       onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
       <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
      </Pressable>}
-     {storageError&&<Text style={[styles.teaserNote,{color:theme.muted}]}>裝置儲存暫時不可用，這次變更僅在目前使用期間保留。</Text>}
+     {storageError&&<Text style={[styles.teaserNote,{color:theme.muted}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
      {dislikedIds.length>0&&<Pressable
        accessibilityRole="button" accessibilityLabel="還原本裝置隱藏的音檔卡"
        disabled={!ready} onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
