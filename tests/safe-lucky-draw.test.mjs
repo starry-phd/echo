@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {chooseSafeLuckyCard} from '../src/ui/echo/safeLuckyDraw.ts';
+import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw.ts';
 
 const guest=(id)=>({id,playable:false,legacySnapshot:true,
  description:null,coverUrl:'/api/v1/previews/'+id+'/cover?policy=2'});
@@ -51,4 +51,26 @@ test('never widen the candidate pool beyond caller-applied filters and dislikes'
  const result=chooseSafeLuckyCard(onlyCurrentlyVisible);
  assert.equal(result.track.id,'visible');
  assert.equal(onlyCurrentlyVisible.some(x=>x.id==='disliked'),false);
+});
+
+test('original winner sits in the second visible slot without mutating or leaking items',()=>{
+ const cards=[guest('one'),guest('two'),guest('three'),guest('four')];
+ const original=cards.slice();
+ assert.deepEqual(moveLuckyCardToSecondSlot(cards,'four').map(c=>c.id),
+  ['one','four','two','three']);
+ assert.deepEqual(moveLuckyCardToSecondSlot(cards,'one').map(c=>c.id),
+  ['two','one','three','four']);
+ assert.deepEqual(moveLuckyCardToSecondSlot(cards,'unknown').map(c=>c.id),
+  original.map(c=>c.id));
+ assert.deepEqual(moveLuckyCardToSecondSlot(cards,null),original);
+ assert.deepEqual(moveLuckyCardToSecondSlot(cards.slice(0,1),'one'),cards.slice(0,1));
+ assert.deepEqual(cards,original);
+});
+
+test('reel candidate validation never admits private/sticker content',()=>{
+ assert.equal(isApprovedPreview(guest('valid')),true);
+ assert.equal(isApprovedPreview({...guest('invalid'),playable:true}),false);
+ assert.equal(isApprovedPreview({...guest('invalid'),legacySnapshot:false}),false);
+ assert.equal(isApprovedPreview({...guest('invalid'),description:'sensitive'}),false);
+ assert.equal(isApprovedPreview({...guest('invalid'),coverUrl:'/api/v1/tracks/invalid/stream'}),false);
 });

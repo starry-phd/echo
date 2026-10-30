@@ -1,7 +1,7 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {router} from 'expo-router';
-import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AccessibilityInfo,ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
 import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
@@ -16,7 +16,7 @@ import {baseSpeakerRank,matchesCardFilters} from '../src/ui/echo/cardFilters';
 import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
-import {chooseSafeLuckyCard} from '../src/ui/echo/safeLuckyDraw';
+import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -33,6 +33,10 @@ export default function CatalogScreen(){
  const [order,setOrder]=useState<SortOrder>('newest');
  const [notice,setNotice]=useState('');
  const [luckyPreviewId,setLuckyPreviewId]=useState<string|null>(null);
+ const [luckySpinId,setLuckySpinId]=useState<string|null>(null);
+ const [luckyPhase,setLuckyPhase]=useState<'idle'|'spin'|'win'>('idle');
+ const luckyGeneration=useRef(0);
+ const luckyTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
  const [advanced,setAdvanced]=useState(false);
  const [speakerRank,setSpeakerRank]=useState<string|null>(null);
  const {dislikedIds,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
@@ -75,8 +79,25 @@ export default function CatalogScreen(){
  })),[tracks,dislikedIds,debouncedQuery,category,speakerRank]);
  // A prior pick disappears immediately if hidden or excluded by new filters.
  const luckyPreview=useMemo(()=>
-  visibleTracks.find(t=>t.id===luckyPreviewId&&t.playable===false&&t.legacySnapshot===true),
+  visibleTracks.find(t=>t.id===luckyPreviewId&&isApprovedPreview(t)),
   [visibleTracks,luckyPreviewId]);
+ const approvedGuestCards=useMemo(()=>
+  visibleTracks.filter(isApprovedPreview),[visibleTracks]);
+ const visibleFingerprint=visibleTracks.map(t=>t.id+':'+(t.playable?'1':'0')).join('|');
+ // Changing the query, category, ranking or approved result set must cancel
+ // the reel; otherwise stale timers could resurface a hidden/private card.
+ useEffect(()=>{
+   luckyGeneration.current++;
+   if(luckyTimer.current){clearTimeout(luckyTimer.current);luckyTimer.current=null;}
+   setLuckySpinId(null);setLuckyPreviewId(null);setLuckyPhase('idle');
+   return ()=>{
+     luckyGeneration.current++;
+     if(luckyTimer.current){clearTimeout(luckyTimer.current);luckyTimer.current=null;}
+   };
+ },[query,category,speakerRank,order,visibleFingerprint]);
+ const focusedId=luckyPhase==='spin'?luckySpinId:luckyPreview?.id??null;
+ const displayedTracks=useMemo(()=>
+  moveLuckyCardToSecondSlot(visibleTracks,focusedId),[visibleTracks,focusedId]);
  const ranks=useMemo(()=>[...new Set((previewsQuery.data??[]).map(t=>baseSpeakerRank(t.speakerRank??'')).filter(Boolean))].sort(),[previewsQuery.data]);
  const categories=useMemo(()=>[...new Set([
    ...(categoriesQuery.data??[]),
@@ -90,31 +111,66 @@ export default function CatalogScreen(){
  const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank));
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
+ const resetLucky=()=>{
+   luckyGeneration.current++;
+   if(luckyTimer.current){clearTimeout(luckyTimer.current);luckyTimer.current=null;}
+   setLuckySpinId(null);
+   setLuckyPreviewId(null);
+   setLuckyPhase('idle');
+ };
  const draw=()=>{
+   if(luckyPhase==='spin')return;
    const outcome=chooseSafeLuckyCard(visibleTracks,luckyPreviewId);
+   resetLucky();
    if(outcome.kind==='empty'){
-     setLuckyPreviewId(null);
      setNotice('目前條件下沒有可抽選的已授權音檔或訪客資訊卡，請調整篩選。');
      return;
    }
    if(outcome.kind==='playable'){
-     setLuckyPreviewId(null);
      setNotice('');
      router.push({pathname:'/track/[id]',params:{id:outcome.track.id}});
      return;
    }
-   // Metadata-only visitor discovery is NOT an audio draw or playback grant.
+   // Metadata-only visitor discovery: visual shuffle, NOT audio playback.
+   const winner=outcome.track;
+   const pool=approvedGuestCards;
    setNotice('');
-   setLuckyPreviewId(outcome.track.id);
+   setLuckyPhase('spin');
+   const generation=luckyGeneration.current;
+   const complete=()=>{
+     if(generation!==luckyGeneration.current)return;
+     luckyTimer.current=null;
+     setLuckySpinId(null);
+     setLuckyPreviewId(winner.id);
+     setLuckyPhase('win');
+   };
+   const begin=(reducedMotion:boolean)=>{
+     if(generation!==luckyGeneration.current)return;
+     if(reducedMotion||pool.length<=1){complete();return;}
+     let step=0;
+     const steps=Math.max(10,Math.min(14,pool.length*2));
+     const tick=()=>{
+       if(generation!==luckyGeneration.current)return;
+       if(step>=steps){complete();return;}
+       const choice=pool[Math.floor(Math.random()*pool.length)];
+       setLuckySpinId(choice.id);
+       const progress=step/Math.max(1,steps-1);
+       step++;
+       luckyTimer.current=setTimeout(tick,Math.round(62+progress*progress*70));
+     };
+     tick();
+   };
+   void AccessibilityInfo.isReduceMotionEnabled().then(begin,()=>begin(true));
  };
  return <ScrollView style={[styles.page,{backgroundColor:theme.bg}]}
    contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
    <View style={styles.shell}>
      <View style={styles.searchRow}>
        <Pressable accessibilityRole="button" accessibilityLabel="召喚繁星解答"
-         onPress={draw}
+         accessibilityState={{disabled:luckyPhase==='spin'}}
+         disabled={luckyPhase==='spin'} onPress={draw}
          style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
-         <Text numberOfLines={2} style={styles.luckyText}>💫召喚繁星解答</Text>
+         <Text numberOfLines={2} style={styles.luckyText}>{luckyPhase==='spin'?'💫抽選中…':'💫召喚繁星解答'}</Text>
        </Pressable>
        <View style={[styles.search,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.searchIcon}>⌕</Text>
@@ -173,9 +229,23 @@ export default function CatalogScreen(){
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
          onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
-     {!!luckyPreview&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+     {luckyPhase==='spin'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
-       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 本次抽中訪客資訊卡</Text>
+       <ActivityIndicator color={theme.palette.primary}/>
+       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>
+         正在從符合條件的訪客資訊卡中抽選…
+       </Text>
+       <Text style={[styles.teaserNote,{color:theme.muted}]}>
+         這是僅供瀏覽的視覺抽選；不會讀取或播放私人音訊。
+       </Text>
+       <Pressable accessibilityRole="button" accessibilityLabel="取消抽選"
+         onPress={resetLucky} style={[styles.luckyCloseButton,{borderColor:theme.border}]}>
+         <Text style={[styles.restoreText,{color:theme.muted}]}>取消抽選</Text>
+       </Pressable>
+     </View>}
+     {!!luckyPreview&&luckyPhase==='win'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+       backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
+       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
        <Text style={[styles.luckyResultName,{color:theme.ink}]} numberOfLines={2}>{luckyPreview.title}</Text>
        <Text style={[styles.luckyResultSpeaker,{color:theme.muted}]} numberOfLines={1}>{luckyPreview.speaker}</Text>
        <Text style={[styles.teaserNote,{color:theme.muted}]}>
@@ -188,7 +258,7 @@ export default function CatalogScreen(){
           <Text style={styles.retryText}>查看資訊卡</Text>
          </Pressable>
          <Pressable accessibilityRole="button" accessibilityLabel="關閉抽選結果"
-          onPress={()=>setLuckyPreviewId(null)} style={[styles.luckyCloseButton,{borderColor:theme.border}]}>
+          onPress={resetLucky} style={[styles.luckyCloseButton,{borderColor:theme.border}]}>
           <Text style={[styles.restoreText,{color:theme.muted}]}>關閉</Text>
          </Pressable>
        </View>
@@ -220,8 +290,12 @@ export default function CatalogScreen(){
          {emptyCopy.detail}
        </Text>
      </View>:<View style={styles.cardGrid}>
-       {visibleTracks.map(track=><View key={track.id} style={[styles.cardCell,
-         {width:twoColumns?'49%':'100%'}]}>
+       {displayedTracks.map(track=><View key={track.id} style={[styles.cardCell,
+         {width:twoColumns?'49%':'100%'},
+         focusedId===track.id&&{borderWidth:2,borderColor:theme.palette.primary,
+           borderRadius:23,padding:2}]}>
+         {luckyPhase==='win'&&luckyPreview?.id===track.id&&
+          <Text style={[styles.luckyBadge,{color:theme.palette.primary}]}>✨ 好手氣！✨　僅資訊卡</Text>}
          <LegacyTrackCard track={track} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
@@ -266,6 +340,7 @@ const styles=StyleSheet.create({
    borderRadius:14,marginVertical:8,gap:10},noticeText:{fontSize:13,flex:1,lineHeight:20},
  cardGrid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',paddingTop:5},
  cardCell:{minWidth:0},
+ luckyBadge:{fontSize:13,fontWeight:'900',textAlign:'center',padding:5},
  empty:{marginTop:8,borderRadius:24,borderWidth:1,borderStyle:'dashed',
    minHeight:170,justifyContent:'center',alignItems:'center',padding:25},
  emptyText:{fontSize:14,fontWeight:'700',textAlign:'center'},

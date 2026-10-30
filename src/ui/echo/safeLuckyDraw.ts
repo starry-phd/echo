@@ -20,7 +20,7 @@ export type LuckySelection<T>=
  |{kind:'preview';track:T}
  |{kind:'empty';track:null};
 
-const isApprovedPreview=(item:LuckyCandidate)=>item.playable===false&&
+export const isApprovedPreview=(item:LuckyCandidate)=>item.playable===false&&
  item.legacySnapshot===true&&item.description===null&&
  typeof item.coverUrl==='string'&&
  /^\/api\/v1\/previews\/[^/?#]+\/cover\?policy=2$/.test(item.coverUrl);
@@ -41,4 +41,20 @@ export function chooseSafeLuckyCard<T extends LuckyCandidate>(
  const value=random();
  const index=Math.floor((Number.isFinite(value)?Math.max(0,Math.min(value,0.9999999999999999)):0)*safePool.length);
  return {kind,track:safePool[index]};
+}
+
+/** Re-order only cards already approved and present in the current visible pool.
+ * Keep the original v148 winner-in-second-slot behavior without leaking
+ * additional tracks or changing media/playback permissions.
+ */
+export function moveLuckyCardToSecondSlot<T extends {id:string}>(
+ visible:readonly T[],selectedId:string|null
+):T[]{
+ const ordered=[...visible];
+ if(!selectedId)return ordered;
+ const index=ordered.findIndex(item=>item.id===selectedId);
+ if(index<0||ordered.length<2)return ordered;
+ const [selected]=ordered.splice(index,1);
+ ordered.splice(1,0,selected);
+ return ordered;
 }
