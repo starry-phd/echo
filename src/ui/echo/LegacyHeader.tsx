@@ -28,16 +28,15 @@ export function LegacyHeader(){
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
   ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
- const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{setOpen(false);router.push(path);};
+ const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
-  ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['講師作品',()=>go('/speaker')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
+  ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
  const quickActions:Record<QuickActionId,{label:string;glyph:string;run:()=>void}>={
   home:{label:'首頁',glyph:'⌂',run:()=>go('/')},
   palette:{label:'好心情',glyph:'✦',run:colors.cyclePalette},
-  speakers:{label:'講師作品',glyph:'♫',run:()=>go('/speaker')},
   stats:{label:'排行榜',glyph:'▥',run:()=>go('/stats')},
   favorites:{label:'我的收藏',glyph:'♡',run:()=>go('/favorites')},
   profile:{label:'會員',glyph:'♙',run:()=>go('/profile')},
