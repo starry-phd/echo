@@ -82,7 +82,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    :'未新增隱藏「'+name+'」（可能已在清單或已達上限）。');
  };
  return <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
-  <View style={styles.body}>
+  <View style={[styles.body,{padding:cardSizing.bodyPadding,gap:cardSizing.bodyGap}]}>
    <View style={[styles.mediaSide,{width:cardSizing.cover}]}>
     <Pressable onPress={playFromPhoto}
      accessibilityRole="button"
@@ -100,11 +100,11 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
       <Text style={styles.permissionText}>{track.playable?'公開播放':'播放未開放'}</Text>
      </View>
     </Pressable>
-    <Text style={[styles.duration,{color:t.muted,fontSize:fontSize(11)}]}>
+    <Text style={[styles.duration,{color:t.muted,fontSize:fontSize(cardSizing.durationFont)}]}>
      ◷ {duration>0?'約 '+Math.max(1,Math.round(duration/60))+' 分鐘':'時間待確認'}
     </Text>
    </View>
-   <View style={styles.details}>
+   <View style={[styles.details,{paddingRight:cardSizing.detailsRightPadding}]}>
     <Pressable onPress={toggleDetails} accessibilityRole="button"
      accessibilityLabel={'查看音檔資訊：'+track.title}>
      <Text numberOfLines={1} style={[styles.title,{color:t.ink,fontSize:fontSize(cardSizing.titleFont),lineHeight:fontSize(cardSizing.titleLineHeight)}]}>{track.title}</Text>
@@ -112,18 +112,18 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     <View style={styles.speakerLinks}>
      {speakerNames.map((name,i)=>
       <View key={name+i} style={styles.speakerPart}>
-       {i>0&&<Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> & </Text>}
+       {i>0&&<Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(cardSizing.speakerFont)}]}> & </Text>}
        <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
         onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})}>
-        <Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}>{name}</Text>
+        <Text style={[styles.speaker,{color:t.ink,fontSize:fontSize(cardSizing.speakerFont)}]}>{name}</Text>
        </Pressable>
       </View>)}
      {!!speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
       accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
       onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
       style={styles.rankLink}>
-      <Text numberOfLines={1} style={[styles.speaker,{color:t.palette.primary,fontSize:fontSize(14)}]}> {speakerRank} ›</Text>
-     </Pressable>:<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(14)}]}> {speakerRank}</Text>)}
+      <Text numberOfLines={1} style={[styles.speaker,{color:t.palette.primary,fontSize:fontSize(cardSizing.speakerFont)}]}> {speakerRank} ›</Text>
+     </Pressable>:<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(cardSizing.speakerFont)}]}> {speakerRank}</Text>)}
     </View>
     <View style={styles.tags}>
      {track.categories.slice(0,3).map((c,i)=>{
@@ -134,19 +134,23 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
        style={[styles.tag,styles.clickableTag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
        {selected==='新人'
         ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
-        :<Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(10)}]}>{selected} ›</Text>}
+        :<Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(cardSizing.tagFont)}]}>{selected} ›</Text>}
       </Pressable>:<View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-       <Text numberOfLines={1} style={[styles.tagText,{color:t.muted,fontSize:fontSize(10)}]}>{c}</Text>
+       <Text numberOfLines={1} style={[styles.tagText,{color:t.muted,fontSize:fontSize(cardSizing.tagFont)}]}>{c}</Text>
       </View>;
      })}
     </View>
     <View style={[styles.stats,{borderTopColor:t.border}]}>
+     <View style={styles.statRow}>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>▤ 心得 {historical?historicalCountLabel(historical.commentsCount):'—'}</Text>
+      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>♡ 按讚 {historical?historicalCountLabel(historical.likes):'—'}</Text>
+     </View>
      <View style={styles.ratingRow}>
-      <Text style={styles.stars}>{historical?.rating!==null&&historical?.rating!==undefined
+      <Text style={[styles.stars,{fontSize:fontSize(cardSizing.starFont)}]}>{historical?.rating!==null&&historical?.rating!==undefined
        ?'★'.repeat(Math.max(0,Math.min(5,Math.round(historical.rating))))+
         '☆'.repeat(5-Math.max(0,Math.min(5,Math.round(historical.rating))))
        :'—'}</Text>
-      <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(11)}]}>
+      <Text style={[styles.ratingValue,{color:t.muted,fontSize:fontSize(cardSizing.engagementFont)}]}>
        {historical?.rating!==null&&historical?.rating!==undefined
         ?historical.rating.toFixed(1)+' ('+historicalCountLabel(historical.ratingCount)+')'
         :historical?'未提供':'—'}
@@ -155,10 +159,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
      <Text style={[styles.snapshot,{color:t.muted,fontSize:fontSize(9)}]}>
       {legacy?'舊版統計（唯讀）':'評價待同步'}
      </Text>
-     <View style={styles.statRow}>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>▤ 心得 {historical?historicalCountLabel(historical.commentsCount):'—'}</Text>
-      <Text style={[styles.stat,{color:t.muted,fontSize:fontSize(11)}]}>♡ 按讚 {historical?historicalCountLabel(historical.likes):'—'}</Text>
-     </View>
+
     </View>
    </View>
   </View>
