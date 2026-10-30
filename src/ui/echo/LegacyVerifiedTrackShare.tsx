@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Platform,Pressable,Share,StyleSheet,Text,View} from 'react-native';
 import type {EchoTrack} from '../../types';
-import {getApiBaseUrl} from '../../api/client';
+import {getApiBaseUrl,getPublicTrack} from '../../api/client';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
@@ -28,11 +28,20 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
   catch{setError('此裝置目前無法開啟系統分享，請稍後再試。');}
   finally{setBusy(false);}
  };
- const doExport=()=>{
-  if(!infoCard||exportBusy)return;
+ const doExport=async()=>{
+  if(!infoCard||!routeId||exportBusy)return;
   setExportBusy(true);setError('');
-  try{downloadPublicInfoCardPng(infoCard);}
-  catch{setError('此瀏覽器目前無法下載公開資訊圖卡，請改用支援 PNG 下載的 Web 瀏覽器。');}
+  try{
+   // Permission can change after a catalog/detail page was loaded.
+   // Recheck public-by-ID immediately before creating any downloadable copy.
+   const latest=await getPublicTrack(routeId);
+   const currentCard=buildApprovedPublicInfoCard(latest,routeId,getApiBaseUrl());
+   if(!currentCard){
+    setError('音檔公開授權已變更，無法匯出；請重新載入資料。');
+    return;
+   }
+   downloadPublicInfoCardPng(currentCard);
+  }catch{setError('目前無法確認最新公開權限或下載 PNG，請稍後再試。');}
   finally{setExportBusy(false);}
  };
  return <View style={styles.section}>
@@ -47,7 +56,7 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
   </Pressable>
   <Pressable accessibilityRole="button" accessibilityLabel="下載已核准公開的演講資訊 PNG 圖卡"
    accessibilityState={{disabled:!infoCard||exportBusy}} disabled={!infoCard||exportBusy}
-   onPress={doExport}
+   onPress={()=>{void doExport();}}
    style={[styles.action,{borderColor:t.palette.primary,backgroundColor:t.lightPill},(!infoCard||exportBusy)&&styles.disabled]}>
    <Text style={[styles.label,{color:t.palette.primary,fontSize:fontSize(14)}]}>
     {exportBusy?'產生圖卡中…':'▤ 匯出公開資訊圖卡 PNG'}
