@@ -13,7 +13,7 @@ import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const [notice,setNotice]=useState('');
- const {dislikedIds,hiddenSpeakers,dislike,restoreHidden}=useDevicePreferences();
+ const {dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
  const hide=(id:string)=>{
   dislike(id);
   setNotice('已在此裝置隱藏卡片。');
@@ -32,7 +32,8 @@ export default function PublicSpeakerTracks(){
  });
  const tracks=[...(q.data??[]),...(p.data??[])];
  const speakerHidden=Boolean(speaker&&isSpeakerHidden(speaker,hiddenSpeakers));
- const photo=speakerHidden?null:p.data?.find(x=>x.coverUrl)?.coverUrl;
+ const photo=ready&&!speakerHidden?p.data?.find(x=>
+  !dislikedIds.includes(x.id)&&!isSpeakerHidden(x.speaker,hiddenSpeakers)&&x.coverUrl)?.coverUrl:null;
  const origin=getApiBaseUrl();
  const visibleTracks=tracks.filter(track=>!speakerHidden&&!dislikedIds.includes(track.id)&&!isSpeakerHidden(track.speaker,hiddenSpeakers));
  const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
@@ -71,7 +72,7 @@ export default function PublicSpeakerTracks(){
      </Pressable>
     </View>}
    {!speaker?<Text style={[styles.message,{color:t.muted}]}>講師連結不正確。</Text>:
-    display==='loading'?<ActivityIndicator color={t.palette.primary}/>:
+    (!ready||display==='loading')?<ActivityIndicator color={t.palette.primary}/>:
     display==='failed'?<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>

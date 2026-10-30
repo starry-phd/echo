@@ -132,7 +132,7 @@ export default function CatalogScreen(){
    setLuckyPhase('idle');
  };
  const draw=()=>{
-   if(luckyPhase==='spin')return;
+   if(!ready||luckyPhase==='spin')return;
    const outcome=chooseSafeLuckyCard(visibleTracks,luckyPreviewId);
    resetLucky();
    if(outcome.kind==='empty'){
@@ -180,8 +180,8 @@ export default function CatalogScreen(){
    <View style={styles.shell}>
      <View style={styles.searchRow}>
        <Pressable accessibilityRole="button" accessibilityLabel="召喚繁星解答"
-         accessibilityState={{disabled:luckyPhase==='spin'}}
-         disabled={luckyPhase==='spin'} onPress={draw}
+         accessibilityState={{disabled:!ready||luckyPhase==='spin'}}
+         disabled={!ready||luckyPhase==='spin'} onPress={draw}
          style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
          <Text numberOfLines={2} style={styles.luckyText}>{luckyPhase==='spin'?'💫抽選中…':'💫召喚繁星解答'}</Text>
        </Pressable>
@@ -237,7 +237,7 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{visibleTracks.length}</Text> 張音檔資訊卡；目前條件可播放 {visibleTracks.filter(t=>t.playable).length} 部
+         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary}]}>{ready?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {ready?visibleTracks.filter(t=>t.playable).length:'—'} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
@@ -317,7 +317,7 @@ export default function CatalogScreen(){
          <Text style={{color:theme.palette.primary,fontWeight:'900'}}>重試</Text>
        </Pressable>
      </View>}
-     {catalogDisplay==='loading'?<View style={styles.loading}>
+     {(!ready||catalogDisplay==='loading')?<View style={styles.loading}>
        <ActivityIndicator color={theme.palette.primary} size="large"/>
        <Text style={[styles.loadingText,{color:theme.muted}]}>讀取音檔清單中…</Text>
      </View>:catalogDisplay==='failed'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
