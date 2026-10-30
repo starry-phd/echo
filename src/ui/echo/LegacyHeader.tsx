@@ -24,11 +24,11 @@ export function LegacyHeader(){
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
  const [quickNotice,setQuickNotice]=useState('');
- const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats')=>{setOpen(false);router.push(path);};
+ const go=(path:'/'|'/speaker'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{setOpen(false);router.push(path);};
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
-  ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['講師作品',()=>go('/speaker')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
+  ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['講師作品',()=>go('/speaker')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
  const quickActions:Record<QuickActionId,{label:string;glyph:string;run:()=>void}>={
   home:{label:'首頁',glyph:'⌂',run:()=>go('/')},
@@ -171,7 +171,7 @@ export function LegacyHeader(){
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
        <InstallAppButton/>
-       {['通知','我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
+       {['我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>
        </View>)}
