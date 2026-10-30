@@ -7,6 +7,7 @@ import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {AnimatedNewcomerTag} from '../../src/ui/echo/AnimatedNewcomerTag';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
+import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -16,7 +17,8 @@ export default function GuestPreviewDetails(){
  const q=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),enabled:valid,retry:1});
  const track=q.data?.find(item=>item.id===id);
  const origin=getApiBaseUrl();
- const favorite=Boolean(track&&preferences.favoriteIds.includes(track.id));
+ const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
+ const favorite=Boolean(track&&!hidden&&preferences.favoriteIds.includes(track.id));
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
@@ -27,7 +29,15 @@ export default function GuestPreviewDetails(){
      q.isPending?<ActivityIndicator color={t.palette.primary}/>:
      q.isError?<Pressable accessibilityRole="button" onPress={()=>void q.refetch()} style={styles.back}>
       <Text style={{color:t.palette.primary}}>音檔資訊暫時無法載入，點此重試</Text>
-     </Pressable>:!track?<Text style={{color:t.muted}}>這張資訊卡目前未開放展示。</Text>:<>
+     </Pressable>:!track?<Text style={{color:t.muted}}>這張資訊卡目前未開放展示。</Text>:
+     !preferences.ready?<ActivityIndicator color={t.palette.primary}/>:
+     hidden?<View style={styles.hiddenNotice}>
+      <Text style={[styles.note,{color:t.muted}]}>這張資訊卡已依本裝置的「我不喜歡」設定隱藏；這不會變更公開權限。</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
+       onPress={()=>router.push('/favorites')} style={[styles.hiddenAction,{borderColor:t.border}]}>
+       <Text style={[styles.backText,{color:t.palette.primary}]}>前往我的收藏管理隱藏設定</Text>
+      </Pressable>
+     </View>:<>
       {track.coverUrl&&origin&&<Image source={{uri:origin+track.coverUrl}} resizeMode="contain"
        accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>}
       <Text style={[styles.title,{color:t.palette.primary}]}>{track.title}</Text>
@@ -66,5 +76,6 @@ const styles=StyleSheet.create({
  speaker:{minHeight:44,justifyContent:'center'},line:{fontSize:13,lineHeight:22},tag:{padding:8,borderRadius:12},
  statistics:{borderTopWidth:1,paddingTop:12,gap:6},section:{fontSize:15,fontWeight:'800'},
  favorite:{minHeight:48,borderRadius:13,justifyContent:'center',alignItems:'center'},favoriteText:{fontSize:14,fontWeight:'800',color:'#fff'},
- note:{fontSize:12,lineHeight:20}
+ note:{fontSize:12,lineHeight:20},
+ hiddenNotice:{gap:12,paddingVertical:14},hiddenAction:{minHeight:44,borderWidth:1,borderRadius:12,padding:10,justifyContent:'center',alignSelf:'flex-start'}
 });
