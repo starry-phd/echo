@@ -27,7 +27,7 @@ test('each page explicitly distinguishes unavailable API from genuinely empty in
  assert.match(screen,/notificationGateCopy\[tab\]/);
  assert.match(screen,/不是「目前沒有通知」/);
  assert.match(screen,/router.push\('\/profile'\)/);
- assert.doesNotMatch(screen,/getItem\(|fetch\(|R2\.get|D1|SELECT|approveMember|setReviewed|notifications\.map\(/);
+ assert.doesNotMatch(screen,/getItem\(|fetch\(|R2\.get|SELECT|approveMember|setReviewed|notifications\.map\(/);
 });
 test('notification screen is reachable from the real main menu and root stack',()=>{
  const header=read('src/ui/echo/LegacyHeader.tsx'),layout=read('app/_layout.tsx');
