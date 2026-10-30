@@ -18,6 +18,7 @@ import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackShare';
 import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
 import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
+import {LegacyDetailSpeakerPortrait} from '../../src/ui/echo/LegacyDetailSpeakerPortrait';
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 
 /**
@@ -64,9 +65,7 @@ function AudioPlayback({track}:{track:EchoTrack}){
    <Text style={[styles.skipText,{color:t.palette.primary}]}>{delta>0?'+':''}{delta}</Text>
   </Pressable>;
  return <View style={[styles.player,{backgroundColor:t.card,borderColor:t.border}]}>
-   <View style={[styles.playerPhoto,{backgroundColor:t.lightPill}]}>
-    <Text style={styles.playerPhotoIcon}>🎙</Text>
-   </View>
+   <LegacyDetailSpeakerPortrait track={track} onPress={toggle}/>
    <LegacyPlaybackTimeline currentTime={status.currentTime} duration={duration}
     enabled={available&&status.isLoaded&&status.duration>0}
     color={t.palette.primary} trackColor={t.lightPill} onSeek={seconds=>{
@@ -209,8 +208,6 @@ const styles=StyleSheet.create({
  tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  tagText:{fontSize:11,fontWeight:'700'},
  player:{borderWidth:1,borderRadius:21,padding:15,alignItems:'center',marginVertical:12},
- playerPhoto:{height:108,width:108,borderRadius:19,alignItems:'center',justifyContent:'center'},
- playerPhotoIcon:{fontSize:50},
  time:{fontWeight:'800',fontSize:13,marginVertical:12},
  controls:{flexDirection:'row',alignItems:'center',gap:5,width:'100%'},
  skip:{minHeight:48,flex:1,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:13},
