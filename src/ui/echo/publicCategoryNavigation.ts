@@ -3,7 +3,7 @@
  * determine everything the visitor can see. */
 export function categoryFromRoute(value:unknown):string|null{
  if(typeof value!=='string')return null;
- const clean=value.trim().normalize('NFKC');
+ const clean=value.trim();
  if(!clean||clean.length>80||/[\x00-\x1f\x7f<>]/u.test(clean))return null;
  return clean;
 }
