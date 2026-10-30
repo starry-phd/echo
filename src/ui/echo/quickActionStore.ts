@@ -35,6 +35,12 @@ export function normalizeQuickChoices(raw:unknown):QuickActionChoices{
   desktop:normalizeQuickIds(source.desktop,'desktop')
  };
 }
+/** Map long-press movement to a valid pinned shortcut slot. */
+export function quickDragTargetIndex(startIndex:number,dy:number,count:number,rowStep=48):number{
+ if(!Number.isInteger(startIndex)||!Number.isInteger(count)||count<1||startIndex<0||startIndex>=count||
+  !Number.isFinite(dy)||!Number.isFinite(rowStep)||rowStep<=0)return startIndex;
+ return Math.max(0,Math.min(count-1,startIndex+Math.round(dy/rowStep)));
+}
 type QuickState={choices:QuickActionChoices;ready:boolean;storageError:boolean};
 const initial:QuickState={choices:normalizeQuickChoices(null),ready:false,storageError:false};
 /** Local UI shortcut order only: never changes access to restricted features. */
@@ -67,6 +73,14 @@ export function createQuickActionStore(storage:Storage){
    if(current.includes(id))return update(device,current.filter(x=>x!==id));
    if(current.length>=quickLimits[device])return false;
    return update(device,[...current,id]);
+  },
+  reorderPinned:(device:QuickDeviceKind,id:QuickActionId,targetIndex:number)=>{
+   if(!state.ready||!Number.isInteger(targetIndex))return false;
+   const current=state.choices[device];
+   const index=current.indexOf(id);
+   if(index<0||targetIndex<0||targetIndex>=current.length||index===targetIndex)return false;
+   const ids=[...current];ids.splice(index,1);ids.splice(targetIndex,0,id);
+   return update(device,ids);
   },
   movePinned:(device:QuickDeviceKind,id:QuickActionId,direction:-1|1)=>{
    if(!state.ready)return false;
