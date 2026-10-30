@@ -10,26 +10,47 @@ export function createDevicePreferenceStore(storage:Storage){
  let state=initial;
  let hydration:Promise<void>|undefined;
  let writes=Promise.resolve();
- let writable=false;
+ const writableKeys=new Set<string>();
  const listeners=new Set<()=>void>();
  const publish=(next:DevicePreferences)=>{state=next;listeners.forEach(fn=>fn());};
  const persist=(key:string,ids:string[])=>{
-  if(!writable)return;
+  if(!writableKeys.has(key))return;
   // Serialize rapid taps so an earlier asynchronous save cannot win last.
   writes=writes.then(async()=>{try{await storage.setItem(key,JSON.stringify(ids));}
    catch{publish({...state,storageError:true});}});
  };
- const parse=(value:string|null):unknown=>{try{return JSON.parse(value??'[]');}catch{return [];}};
+ /**
+  * A new preference key must not erase older favorites when its read fails.
+  * Never write back a key whose stored value couldn't be read and parsed.
+  */
+ const readKey=(result:PromiseSettledResult<string|null>,key:string,markError:()=>void):unknown=>{
+  if(result.status==='rejected'){markError();return [];}
+  if(result.value===null){writableKeys.add(key);return [];}
+  try{
+   const parsed:unknown=JSON.parse(result.value);
+   if(!Array.isArray(parsed)){markError();return [];}
+   writableKeys.add(key);
+   return parsed;
+  }catch{markError();return [];}
+ };
  return {
   getSnapshot:()=>state,
   getServerSnapshot:()=>initial,
   subscribe:(listener:()=>void)=>{listeners.add(listener);return()=>{listeners.delete(listener);};},
-  hydrate:()=>hydration??=Promise.all([storage.getItem(DEVICE_FAVORITES_KEY),storage.getItem(DISLIKED_STORAGE_KEY),storage.getItem(HIDDEN_SPEAKERS_KEY)])
-   .then(([favorites,disliked,speakers])=>{
-    writable=true;
-    publish({favoriteIds:cleanFavoriteIds(parse(favorites)),dislikedIds:sanitizeDislikedTrackIds(parse(disliked)),hiddenSpeakers:sanitizeHiddenSpeakers(parse(speakers)),ready:true,storageError:false});
+  hydrate:()=>hydration??=Promise.allSettled([
+    storage.getItem(DEVICE_FAVORITES_KEY),
+    storage.getItem(DISLIKED_STORAGE_KEY),
+    storage.getItem(HIDDEN_SPEAKERS_KEY)
+   ]).then(([favoriteResult,dislikeResult,speakerResult])=>{
+    let hadReadError=false;
+    const markError=()=>{hadReadError=true;};
+    const favoriteIds=cleanFavoriteIds(readKey(favoriteResult,DEVICE_FAVORITES_KEY,markError));
+    const dislikedIds=sanitizeDislikedTrackIds(readKey(dislikeResult,DISLIKED_STORAGE_KEY,markError));
+    const hiddenSpeakers=sanitizeHiddenSpeakers(readKey(speakerResult,HIDDEN_SPEAKERS_KEY,markError));
+    publish({favoriteIds,dislikedIds,hiddenSpeakers,ready:true,storageError:hadReadError});
    }).catch(()=>{
-    // If reads fail, do not overwrite unknown existing preferences in storage.
+    // Unexpected failure also stays fail-closed for all preference writes.
+    writableKeys.clear();
     publish({...initial,ready:true,storageError:true});
    }),
   toggleFavorite:(id:string)=>{
