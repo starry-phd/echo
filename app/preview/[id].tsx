@@ -11,6 +11,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
+import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -22,7 +23,6 @@ export default function GuestPreviewDetails(){
  const track=q.data?.find(item=>item.id===id);
  const origin=getApiBaseUrl();
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
- const favorite=Boolean(track&&!hidden&&preferences.favoriteIds.includes(track.id));
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
@@ -37,6 +37,12 @@ export default function GuestPreviewDetails(){
      !preferences.ready?<ActivityIndicator color={t.palette.primary}/>:
      hidden?<View style={styles.hiddenNotice}>
       <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>這張資訊卡已依本裝置的「我不喜歡」設定隱藏；這不會變更公開權限。</Text>
+      {preferences.dislikedIds.includes(track.id)&&<Pressable accessibilityRole="button"
+       accessibilityLabel="還原此張音檔卡的本裝置隱藏"
+       onPress={()=>preferences.restoreHiddenTrack(track.id)}
+       style={[styles.hiddenAction,{borderColor:t.border}]}>
+       <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>還原此張卡片</Text>
+      </Pressable>}
       <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
        onPress={()=>router.push('/favorites')} style={[styles.hiddenAction,{borderColor:t.border}]}>
        <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>前往我的收藏管理隱藏設定</Text>
@@ -63,10 +69,7 @@ export default function GuestPreviewDetails(){
        </Pressable>)}</View>
       <LegacyLectureNotes track={track}/>
       <LegacyEngagementDetail track={track}/>
-      <Pressable accessibilityRole="button" disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready,selected:favorite}}
-       onPress={()=>preferences.toggleFavorite(track.id)} style={[styles.favorite,{backgroundColor:t.palette.primary}]}>
-       <Text style={styles.favoriteText}>{favorite?'取消本裝置收藏':'加入本裝置收藏'}</Text>
-      </Pressable>
+      <LegacyDetailDeviceActions track={track} routeId={id} source="preview"/>
       <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>這張卡片僅展示演講資訊；錄音播放、分享、心得與評價尚未開放。</Text>
      </>}
    </View>
@@ -80,7 +83,6 @@ const styles=StyleSheet.create({
  title:{fontSize:24,lineHeight:32,fontWeight:'900'},row:{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'center'},
  speaker:{minHeight:44,justifyContent:'center'},line:{fontSize:13,lineHeight:22},tag:{minHeight:44,padding:8,borderRadius:12,borderWidth:1,justifyContent:'center'},
  statistics:{borderTopWidth:1,paddingTop:12,gap:6},section:{fontSize:15,fontWeight:'800'},
- favorite:{minHeight:48,borderRadius:13,justifyContent:'center',alignItems:'center'},favoriteText:{fontSize:14,fontWeight:'800',color:'#fff'},
  note:{fontSize:12,lineHeight:20},
  hiddenNotice:{gap:12,paddingVertical:14},hiddenAction:{minHeight:44,borderWidth:1,borderRadius:12,padding:10,justifyContent:'center',alignSelf:'flex-start'}
 });
