@@ -15,6 +15,7 @@ import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
+import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackShare';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -160,6 +161,7 @@ export default function TrackDetails(){
        </Pressable>)}</View>
        {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
        <LegacyLectureNotes track={track}/>
+       <LegacyVerifiedTrackShare track={track} routeId={trackId}/>
        <LegacyEngagementDetail track={track}/>
       </>}
     </View>
