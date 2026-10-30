@@ -1,7 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {router,useLocalSearchParams} from 'expo-router';
-import {ActivityIndicator,Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {getApiBaseUrl,getGuestPreviewTracks} from '../../src/api/client';
+import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {getGuestPreviewTracks} from '../../src/api/client';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
 import {AnimatedNewcomerTag} from '../../src/ui/echo/AnimatedNewcomerTag';
@@ -15,17 +15,21 @@ import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceAct
 import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 import {approvedGuestSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
+import {LegacyDetailSpeakerPortrait} from '../../src/ui/echo/LegacyDetailSpeakerPortrait';
+import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
+import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
  const t=useLegacyTheme(),preferences=useDevicePreferences();
  const {fontSize}=useFontZoom();
  const sections=useDetailSectionJump();
+ const viewport=useViewportDimensions();
+ const hero=legacyDetailHeroSizing(viewport.width);
  const {id}=useLocalSearchParams<{id:string}>();
  const valid=typeof id==='string'&&id.length>0&&id.length<=200;
  const q=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),enabled:valid,retry:1});
  const track=q.data?.find(item=>item.id===id);
- const origin=getApiBaseUrl();
  const approvedRankLink=approvedGuestSpeakerRank(track);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
  return <ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
@@ -53,30 +57,33 @@ export default function GuestPreviewDetails(){
        <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>前往我的收藏管理隱藏設定</Text>
       </Pressable>
      </View>:<>
-      {track.coverUrl&&origin&&<Image source={{uri:origin+track.coverUrl}} resizeMode="contain"
-       accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>}
-      <Text style={[styles.title,{color:t.palette.primary,fontSize:fontSize(23)}]}>{track.title}</Text>
-      <View style={styles.row}>
-       {splitSpeakerNames(track.speaker).map(name=><Pressable key={name} accessibilityRole="link"
-        accessibilityLabel={'查看'+name+'的演講者資料'} onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})} style={styles.speaker}>
-        <Text style={{color:t.palette.primary,fontWeight:'700'}}>{name} ›</Text>
-       </Pressable>)}
+      <View style={styles.hero}>
+       <LegacyDetailSpeakerPortrait track={track}/>
+       <View style={styles.heroTags}>{track.categories.map(category=><Pressable key={category}
+        accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
+        onPress={()=>router.push({pathname:'/',params:{category}})}
+        style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+         {category==='新人'
+          ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
+          :<Text style={{color:t.palette.primary,fontSize:fontSize(11)}}>{category} ›</Text>}
+        </Pressable>)}</View>
+       <Text style={[styles.title,{color:t.ink,fontSize:fontSize(hero.titleFont)}]}>{track.title}</Text>
+       <View style={styles.heroSpeakers}>
+        {splitSpeakerNames(track.speaker).map(name=><Pressable key={name} accessibilityRole="link"
+         accessibilityLabel={'查看'+name+'的演講者資料'}
+         onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})} style={styles.speaker}>
+         <Text style={{color:t.palette.primary,fontSize:fontSize(14),fontWeight:'700'}}>{name} ›</Text>
+        </Pressable>)}
+        {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
+         accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
+         onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
+         style={styles.rankLink}>
+         <Text style={[styles.line,{color:t.palette.primary,fontSize:fontSize(14)}]}>· {track.speakerRank} ›</Text>
+        </Pressable>:<Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>· {track.speakerRank}</Text>)}
+       </View>
+       <Text style={[styles.line,{color:t.muted,fontSize:fontSize(12)}]}>錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}</Text>
+       <Text style={[styles.note,{color:t.muted,fontSize:fontSize(11)}]}>錄音播放未開放；照片僅供瀏覽</Text>
       </View>
-      {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
-       accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
-       onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
-       style={styles.rankLink}>
-       <Text style={[styles.line,{color:t.palette.primary,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank} ›</Text>
-      </Pressable>:<Text style={[styles.line,{color:t.ink,fontSize:fontSize(14)}]}>講師獎銜：{track.speakerRank}</Text>)}
-      <Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}</Text>
-      <View style={styles.row}>{track.categories.map(category=><Pressable key={category}
-       accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
-       onPress={()=>router.push({pathname:'/',params:{category}})}
-       style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-        {category==='新人'
-         ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
-         :<Text style={{color:t.palette.primary,fontSize:fontSize(13)}}>{category} ›</Text>}
-       </Pressable>)}</View>
       <LegacyDetailSectionNavigation showPlayback={false} onJump={sections.jumpTo}/>
       <View onLayout={sections.onSectionLayout('notes')}>
        <LegacyLectureNotes track={track}/>
@@ -96,8 +103,11 @@ export default function GuestPreviewDetails(){
 const styles=StyleSheet.create({
  page:{alignItems:'center',padding:12,paddingBottom:32},shell:{width:'100%',maxWidth:visualMetrics.contentMaxWidth},
  back:{minHeight:44,justifyContent:'center'},backText:{fontSize:14,fontWeight:'800'},
- card:{padding:16,borderWidth:1,borderRadius:21,gap:10},photo:{width:'100%',height:220,borderRadius:16},
- title:{fontSize:24,lineHeight:32,fontWeight:'900'},row:{flexDirection:'row',flexWrap:'wrap',gap:7,alignItems:'center'},
+ card:{padding:16,borderWidth:1,borderRadius:21,gap:10},
+ hero:{alignItems:'center',paddingTop:5,paddingBottom:10,gap:6},
+ heroTags:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:6,marginBottom:3},
+ heroSpeakers:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',alignItems:'center',gap:7},
+ title:{fontSize:20,lineHeight:26,fontWeight:'900',textAlign:'center'},
  speaker:{minHeight:44,justifyContent:'center'},rankLink:{minHeight:44,justifyContent:'center',alignSelf:'flex-start'},line:{fontSize:13,lineHeight:22},tag:{minHeight:44,padding:8,borderRadius:12,borderWidth:1,justifyContent:'center'},
  statistics:{borderTopWidth:1,paddingTop:12,gap:6},section:{fontSize:15,fontWeight:'800'},
  note:{fontSize:12,lineHeight:20},
