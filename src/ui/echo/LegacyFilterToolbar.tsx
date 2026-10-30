@@ -44,7 +44,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
       accessibilityState={{selected,expanded:field==='category'?categoryOpen:undefined}}
       onPress={()=>onField(field)}
       style={[styles.button,{backgroundColor:t.palette.primary,borderColor:selected?'#fff':t.palette.primaryHover,
-       opacity:unavailable?.72:1,paddingHorizontal:layout.phone?0:4}]}>
+       opacity:unavailable ? 0.72 : 1,paddingHorizontal:layout.phone?0:4}]}>
        <Text numberOfLines={1} adjustsFontSizeToFit
          style={[styles.buttonText,{fontSize:layout.phone?10:12}]}>{label}</Text>
        {selected&&field!=='category'&&
