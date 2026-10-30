@@ -19,6 +19,7 @@ import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/ca
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
+import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 
 /**
  * Home layout follows yukidu/Echo-Starry v141/v145:
@@ -74,9 +75,9 @@ export default function CatalogScreen(){
    queryKey:['echo','categories'],
    queryFn:({signal})=>getCategories(signal),retry:1,
  });
- const tracks=useMemo(()=>sortEchoCards([
-   ...(tracksQuery.data??[]),...(previewsQuery.data??[])
- ],order),[tracksQuery.data,previewsQuery.data,order]);
+ const tracks=useMemo(()=>sortEchoCards(mergeAuthorizedCards(
+  tracksQuery.data??[],previewsQuery.data??[]
+ ),order),[tracksQuery.data,previewsQuery.data,order]);
  const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&!isSpeakerHidden(t.speaker,hiddenSpeakers)&&matchesCardFilters(t,{
   query:debouncedQuery,category,speakerRank
  })),[tracks,dislikedIds,hiddenSpeakers,debouncedQuery,category,speakerRank]);
