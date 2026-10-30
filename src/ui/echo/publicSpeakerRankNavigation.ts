@@ -6,7 +6,7 @@ import {baseSpeakerRank} from './cardFilters';
 export function speakerRankFromRoute(value:unknown):string|null{
  if(typeof value!=='string')return null;
  const clean=value.trim();
- if(!clean||clean.length>80||/[\x00-\x1f\x7f<>/?#&%\\]/u.test(clean))return null;
+ if(!clean||clean.length>80||/[\x00-\x1f\x7f<>\/?#&%\\]/u.test(clean))return null;
  const normalized=baseSpeakerRank(clean);
  return normalized&&normalized.length<=80?normalized:null;
 }
