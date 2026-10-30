@@ -34,7 +34,7 @@ export default function DeviceFavorites(){
   <View style={styles.shell}>
    <Text style={[styles.title,{color:t.ink}]}>我的收藏</Text>
    <Text style={[styles.note,{color:t.muted}]}>僅保留在此裝置，尚未與會員同步。收藏不會開放錄音播放或分享。</Text>
-   {preferences.storageError&&<Text style={[styles.note,{color:t.muted}]}>裝置儲存暫時不可用，變更僅在目前使用期間保留。</Text>}
+   {preferences.storageError&&<Text style={[styles.note,{color:t.muted}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
    {!!notice&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
    {preferences.dislikedIds.length>0&&<View style={[styles.hiddenSection,{backgroundColor:t.card,borderColor:t.border}]}>
     <Text style={[styles.hiddenTitle,{color:t.ink}]}>不喜歡的音檔卡（本裝置）</Text>
