@@ -48,7 +48,11 @@ function publicTrack(row:TrackRow){
 }
 const filterSchema=z.object({q:z.string().max(100).optional(),category:z.string().max(80).optional(),speaker:z.string().max(80).optional()});
 // Pagination is PUBLIC VERIFIED catalog only: never extend the curated guest API.
-const publicCatalogFilterSchema=filterSchema.extend({offset:z.string().regex(/^(0|[1-9][0-9]{0,5})$/).optional()});
+const publicCatalogFilterSchema=filterSchema.extend({
+ offset:z.string().regex(/^(0|[1-9][0-9]{0,5})$/).optional(),
+ // Bounded JSON ID batch only on public+verified records. No guest/private lookup.
+ ids:z.string().max(4096).optional()
+});
 app.options('*',c=>{
  const origin=c.req.header('Origin')||'';
  if(!allowed(origin))return new Response(null,{status:403});
@@ -92,8 +96,18 @@ app.get('/api/v1/speakers',speakers);
 
 
 const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env:Env})=>{
- const checked=publicCatalogFilterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker'),offset:c.req.query('offset')});
+ const checked=publicCatalogFilterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker'),offset:c.req.query('offset'),ids:c.req.query('ids')});
  if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
+ let requestedIds:string[]|undefined;
+ if(checked.data.ids!==undefined){
+  try{
+   const parsed:unknown=JSON.parse(checked.data.ids);
+   if(!Array.isArray(parsed)||parsed.length<1||parsed.length>16||
+    !parsed.every(id=>typeof id==='string'&&id.length>0&&id.length<=200))
+    return json({code:'INVALID_QUERY'},400,c.req.raw);
+   requestedIds=[...new Set(parsed as string[])];
+  }catch{return json({code:'INVALID_QUERY'},400,c.req.raw);}
+ }
  const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
  let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
  const args:(string|number)[]=[];
@@ -112,6 +126,11 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
   // must still enforce exact NFKC presenter identity before rendering.
   sql+=" AND instr('&' || replace(replace(COALESCE(speaker,''),'＆','&'),' ','') || '&', '&' || replace(replace(?,'＆','&'),' ','') || '&') > 0";
   args.push(speaker);
+ }
+ if(requestedIds){
+  // A saved ID is NOT permission: retain the verified-public WHERE gate.
+  sql+=" AND id IN (SELECT value FROM json_each(?) WHERE type = 'text')";
+  args.push(JSON.stringify(requestedIds));
  }
  // Deterministic tie-breaking ensures adjacent pages do not reorder tracks.
  sql+=' ORDER BY updated_at DESC, id ASC LIMIT 100';
