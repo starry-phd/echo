@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {formatSpeakerRecordingDate} from '../src/ui/echo/speakerRecordingDate.ts';
 
 const profile=readFileSync(new URL('../app/speaker/[name].tsx',import.meta.url),'utf8');
+const row=readFileSync(new URL('../src/ui/echo/LegacySpeakerRecordingRow.tsx',import.meta.url),'utf8');
 
 test('speaker recording date follows the original legacy Taiwan display rules',()=>{
  assert.equal(formatSpeakerRecordingDate('2026-10-31'),'2026/10/31');
@@ -17,9 +18,10 @@ test('speaker recording date follows the original legacy Taiwan display rules',(
 test('speaker profile dates appear only on current authorized recording cards, never by old private endpoint',()=>{
  assert.match(profile,/authorizedSpeakerProfileTracks\(speaker,/);
  assert.match(profile,/display==='ready'\? visibleTracks\.map\(track=><View key=\{track\.id\}/);
- assert.match(profile,/formatSpeakerRecordingDate\(track\.uploadDate\)/);
- assert.match(profile,/\{track\.speakerRank\|\|'公開'\}\s*·\s*\{formatSpeakerRecordingDate\(track\.uploadDate\)\}/);
- assert.match(profile,/LegacyTrackCard track=\{track\} onNotice=\{setNotice\} onDislike=\{hide\}/);
+ assert.match(row,/formatSpeakerRecordingDate\(track\.uploadDate\)/);
+ assert.match(row,/\{track\.speakerRank\|\|'公開'\}\s*·\s*\{formatSpeakerRecordingDate\(track\.uploadDate\)\}/);
+ assert.match(profile,/LegacySpeakerRecordingRow key=\{track\.id\}/);
+ assert.doesNotMatch(profile,/LegacyTrackCard track=\{track\}/);
  assert.match(profile,/section==='audio'/);
  assert.doesNotMatch(profile,/\/api\/speaker-profiles\/view/);
  assert.doesNotMatch(profile,/getPublicStreamUrl|R2\.get|privateAudio/);
