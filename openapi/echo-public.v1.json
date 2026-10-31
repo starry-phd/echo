@@ -90,6 +90,16 @@
               "type": "string",
               "maxLength": 80
             }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Public-and-verified catalog page offset; default 0. Curated guest previews are not paginated by this parameter.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999
+            }
           }
         ],
         "responses": {
