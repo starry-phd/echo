@@ -16,6 +16,7 @@ import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSecti
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 import {approvedGuestSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
 import {LegacyDetailSpeakerPortrait} from '../../src/ui/echo/LegacyDetailSpeakerPortrait';
+import {LegacyDetailEngagementSummary} from '../../src/ui/echo/LegacyDetailEngagementSummary';
 import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
 
@@ -81,6 +82,7 @@ export default function GuestPreviewDetails(){
          <Text style={[styles.line,{color:t.palette.primary,fontSize:fontSize(14)}]}>· {track.speakerRank} ›</Text>
         </Pressable>:<Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>· {track.speakerRank}</Text>)}
        </View>
+       <LegacyDetailEngagementSummary track={track} onViewEngagement={()=>sections.jumpTo('engagement')}/>
        <Text style={[styles.line,{color:t.muted,fontSize:fontSize(12)}]}>錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}</Text>
        <Text style={[styles.note,{color:t.muted,fontSize:fontSize(11)}]}>錄音播放未開放；照片僅供瀏覽</Text>
       </View>
