@@ -11,6 +11,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../../src/ui/echo/catalogDisplayState';
+import {canLoadMoreAuthorizedPublic} from '../../src/ui/echo/publicLoadMoreEligibility';
 import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
 import {mergeAuthorizedCards} from '../../src/ui/echo/mergeAuthorizedCards';
@@ -150,7 +151,7 @@ export default function PublicSpeakerTracks(){
      onSelect={()=>setConfirmTrack(track)}
      onFavorite={()=>toggleLocalFavorite(track.id)} onHide={()=>hide(track.id)}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
-     <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有可瀏覽的講者作品資訊。</Text>
+     <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>{q.hasNextPage?'目前已載入的作品皆被本裝置篩選或隱藏，可以繼續載入後續核准公開錄音。':'目前沒有可瀏覽的講者作品資訊。'}</Text>
     </View>}
    {confirmTrack&&<Modal visible transparent animationType="fade"
     onRequestClose={()=>setConfirmTrack(null)}>
@@ -184,7 +185,7 @@ export default function PublicSpeakerTracks(){
      </View>
     </View>
    </Modal>}
-   {showBio&&section==='audio'&&q.hasNextPage&&<Pressable
+   {!speakerHidden&&section==='audio'&&canLoadMoreAuthorizedPublic(display,q.hasNextPage,ready)&&<Pressable
     accessibilityRole="button" accessibilityLabel="載入更多公開講者錄音"
     disabled={q.isFetchingNextPage} onPress={()=>void q.fetchNextPage()}
     style={[styles.moreButton,{borderColor:t.border,backgroundColor:t.card}]}>
