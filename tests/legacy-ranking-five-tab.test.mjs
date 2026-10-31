@@ -31,7 +31,7 @@ test('popular ranking only touches current approved guest/public catalog with lo
  assert.match(page,/mergeAuthorizedCards\(verifiedPublicTracks,previews\.data\?\?\[\]\)/);
  assert.match(page,/!preferences\.dislikedIds\.includes\(track\.id\)/);
  assert.match(page,/!isSpeakerHidden\(track\.speaker,preferences\.hiddenSpeakers\)/);
- assert.match(page,/sortEchoCards\(visible,metric\)\.slice\(0,10\)/);
+ assert.match(page,/sortEchoCards\(historicallyRankableTracks\(visible,metric\),metric\)\.slice\(0,10\)/);
  assert.match(page,/getCatalogDisplayState\(publicSource,previewSource,visible\.length\)/);
  assert.match(page,/LegacyTrackCard track=\{track\}/);
  assert.doesNotMatch(page,/private\/copied|R2\.get|SELECT \* FROM|fetch\('https:\/\/.*\/members/);
