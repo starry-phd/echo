@@ -4,6 +4,7 @@ import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react
 import {getGuestPreviewTracks} from '../../src/api/client';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
+import {categoryFromRoute} from '../../src/ui/echo/publicCategoryNavigation';
 import {AnimatedNewcomerTag} from '../../src/ui/echo/AnimatedNewcomerTag';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
@@ -60,14 +61,19 @@ export default function GuestPreviewDetails(){
      </View>:<>
       <View style={styles.hero}>
        <LegacyDetailSpeakerPortrait track={track}/>
-       <View style={styles.heroTags}>{track.categories.map(category=><Pressable key={category}
-        accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
-        onPress={()=>router.push({pathname:'/',params:{category}})}
-        style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-         {category==='新人'
+       <View style={styles.heroTags}>{track.categories.map(category=>{
+        const selected=categoryFromRoute(category);
+        return selected?<Pressable key={category}
+         accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
+         onPress={()=>router.push({pathname:'/',params:{category:selected}})}
+         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+         {selected==='新人'
           ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
-          :<Text style={{color:t.palette.primary,fontSize:fontSize(11)}}>{category} ›</Text>}
-        </Pressable>)}</View>
+          :<Text style={{color:t.palette.primary,fontSize:fontSize(11)}}>{selected} ›</Text>}
+        </Pressable>:<View key={category} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+         <Text style={{color:t.muted,fontSize:fontSize(11)}}>{category}</Text>
+        </View>;
+       })}</View>
        <Text style={[styles.title,{color:t.ink,fontSize:fontSize(hero.titleFont)}]}>{track.title}</Text>
        <View style={styles.heroSpeakers}>
         {splitSpeakerNames(track.speaker).map(name=><Pressable key={name} accessibilityRole="link"
