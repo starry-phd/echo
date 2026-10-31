@@ -76,7 +76,6 @@ function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(tog
    <Text style={[styles.skipText,{color:t.palette.primary}]}>{delta>0?'+':''}{delta}</Text>
   </Pressable>;
  return <View style={[styles.player,{backgroundColor:t.card,borderColor:t.border}]}>
-   <LegacyDetailSpeakerPortrait track={track} onPress={toggle}/>
    <LegacyPlaybackTimeline currentTime={status.currentTime} duration={duration}
     enabled={available&&status.isLoaded&&status.duration>0}
     color={t.palette.primary} trackColor={t.lightPill} onSeek={seconds=>{
