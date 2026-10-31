@@ -365,3 +365,24 @@ test('speaker filter always uses bound SQL parameters alongside public access ch
  assert.equal(sqlSeen[0].includes(value),false);
  assert.deepEqual(bindings[0],[value]);
 });
+
+test('all 28 synthetic guest stream HEAD probes fail closed without reading any R2 media',async()=>{
+ let mediaReads=0;
+ const {env,sqlSeen,bindings}=envWithDb({
+  firstRow:null,
+  MEDIA:{async get(){mediaReads++;throw new Error('MUST_NOT_READ_PRIVATE_MEDIA');}}
+ });
+ const ids=Array.from({length:28},(_,i)=>'guest-'+(i+1));
+ for(const id of ids){
+  const r=await worker.fetch(new Request(origin+'/api/v1/tracks/'+id+'/stream',{method:'HEAD'}),env);
+  assert.equal(r.status,404,id);
+  assert.equal(r.headers.get('cache-control'),'no-store',id);
+ }
+ assert.equal(mediaReads,0);
+ assert.equal(sqlSeen.length,28);
+ assert.deepEqual(bindings.map(values=>values[0]),ids);
+ for(const sql of sqlSeen){
+  assert.match(sql,/visibility\\s*=\\s*'public'/);
+  assert.match(sql,/migration_status\\s*=\\s*'verified'/);
+ }
+});
