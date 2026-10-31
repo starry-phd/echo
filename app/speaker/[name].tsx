@@ -15,6 +15,7 @@ import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
 import {mergeAuthorizedCards} from '../../src/ui/echo/mergeAuthorizedCards';
 import {speakerProfileSections,speakerBioUnavailableText,speakerQaUnavailableText} from '../../src/ui/echo/speakerProfileSections';
+import {formatSpeakerRecordingDate} from '../../src/ui/echo/speakerRecordingDate';
 import type {SpeakerProfileSection} from '../../src/ui/echo/speakerProfileSections';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
@@ -129,8 +130,12 @@ export default function PublicSpeakerTracks(){
       <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重試載入</Text>
      </Pressable>
     </View>:
-    display==='ready'? visibleTracks.map(track=><LegacyTrackCard key={track.id} track={track}
-      onNotice={setNotice} onDislike={hide}/>):
+    display==='ready'? visibleTracks.map(track=><View key={track.id} style={styles.recordingItem}>
+     <LegacyTrackCard track={track} onNotice={setNotice} onDislike={hide}/>
+     <Text style={[styles.recordingDate,{color:t.muted,fontSize:fontSize(12)}]}>
+      上架日期：{formatSpeakerRecordingDate(track.uploadDate)}
+     </Text>
+    </View>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有可瀏覽的講者作品資訊。</Text>
     </View>}
@@ -170,5 +175,7 @@ const styles=StyleSheet.create({
  retry:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:10},
  empty:{borderWidth:1,borderStyle:'dashed',borderRadius:19,minHeight:130,alignItems:'center',justifyContent:'center'},
  message:{fontSize:13,textAlign:'center',lineHeight:22,padding:10},
+ recordingItem:{width:'100%'},
+ recordingDate:{lineHeight:20,marginTop:-8,marginBottom:12,marginLeft:12},
  disclaimer:{fontSize:11,lineHeight:18,marginTop:12,textAlign:'center'}
 });
