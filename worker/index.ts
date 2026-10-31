@@ -142,6 +142,20 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
 app.get('/api/catalog',catalog);
 app.get('/api/v1/catalog',catalog);
 
+/** Historical guest metadata is optional. A missing or malformed database
+ * aggregate is NOT a published zero. OpenAPI Track counters are optional
+ * numbers, so JSON.stringify omits undefined properties without changing
+ * the response schema or any audio permission checks.
+ */
+function approvedHistoricalRating(value:unknown):number|undefined{
+ return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=5
+  ?value:undefined;
+}
+function approvedHistoricalCount(value:unknown):number|undefined{
+ return typeof value==='number'&&Number.isSafeInteger(value)&&value>=0
+  ?value:undefined;
+}
+
 /**
  * Metadata-only guest preview catalog. The whitelist is a separate, scoped
  * owner-reviewed table, populated ONLY from old guestVisible=1 records with
@@ -172,10 +186,10 @@ const previewCatalog=async(c:{req:{raw:Request;query(name:string):string|undefin
   ...publicTrack(row),description:null,playable:false,
   coverUrl:row.cover_key?'/api/v1/previews/'+encodeURIComponent(row.id)+'/cover?policy=2':null,
   speakerRank:row.speaker_rank||null,
-  rating:Math.max(0,Math.min(5,Number(row.rating)||0)),
-  ratingCount:Math.max(0,Number(row.rating_count)||0),
-  commentsCount:Math.max(0,Number(row.comments_count)||0),
-  likes:Math.max(0,Number(row.likes)||0),
+  rating:approvedHistoricalRating(row.rating),
+  ratingCount:approvedHistoricalCount(row.rating_count),
+  commentsCount:approvedHistoricalCount(row.comments_count),
+  likes:approvedHistoricalCount(row.likes),
   uploadDate:row.upload_date||null,
   legacySnapshot:true
  }))},200,c.req.raw);
