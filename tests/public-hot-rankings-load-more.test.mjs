@@ -22,7 +22,7 @@ test('ranking never claims global completeness if more verified-public pages rem
  const page=read('app/stats.tsx');
  assert.match(page,/目前已載入的 \{visible\.length\} 張核准作品/);
  assert.match(page,/catalog\.hasNextPage\?'（尚有公開作品未載入，名次非全量）':''/);
- assert.match(page,/display==='ready'&&catalog\.hasNextPage&&<Pressable/);
+ assert.match(page,/canLoadMoreAuthorizedPublic\(display,catalog\.hasNextPage,preferences\.ready\)&&<Pressable/);
  assert.match(page,/accessibilityLabel="載入更多已驗證公開作品供排行榜排序"/);
  assert.match(page,/catalog\.isFetchingNextPage/);
  assert.match(page,/catalog\.fetchNextPage\(\)/);
