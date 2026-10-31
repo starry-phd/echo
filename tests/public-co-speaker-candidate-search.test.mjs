@@ -9,10 +9,10 @@ const origin='https://echo-starry.starry-phd.workers.dev';
 
 test('public speaker page searches only verified public candidates and exact normalized co-speaker names',()=>{
  const page=readFileSync(new URL('../app/speaker/[name].tsx',import.meta.url),'utf8');
- assert.match(page,/getPublicTracks\(signal,\{speaker:speaker!\}\)/);
+ assert.match(page,/getPublicTracks\(signal,\{speaker:speaker!,offset:pageParam\}\)/);
  assert.doesNotMatch(page,/getPublicTracks\(signal,\{query:speaker!\}\)/);
  assert.match(page,/authorizedSpeakerProfileTracks\(speaker,/);
- assert.match(page,/mergeAuthorizedCards\(q\.data\?\?\[\],p\.data\?\?\[\]\)/);
+ assert.match(page,/mergeAuthorizedCards\(publicTracks,p\.data\?\?\[\]\)/);
  assert.doesNotMatch(page,/\/api\/speaker-profiles\/view|getPublicStreamUrl|R2\.get/);
 });
 
