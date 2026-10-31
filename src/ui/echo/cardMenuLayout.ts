@@ -10,3 +10,27 @@ export function cardMenuLayout(anchor:{x:number;y:number;width:number;height:num
  const top=Math.max(padding,Math.min(screenHeight-padding-maxHeight,preferred));
  return {left,top,width,maxHeight};
 }
+
+/** The native measureInWindow callback is asynchronous and can arrive after
+ * a card is replaced, hidden, viewport resized, menu dismissed, or unmounted.
+ * Checking only geometry is not enough; match the original request context. */
+export type CardMenuMeasureSnapshot={
+ sequence:number;trackId:string;viewport:{width:number;height:number};
+};
+export function isCardMenuAnchorValid(anchor:{x:number;y:number;width:number;height:number}):boolean{
+ return [anchor.x,anchor.y,anchor.width,anchor.height].every(Number.isFinite)
+  &&anchor.width>0&&anchor.height>0;
+}
+export function canApplyCardMenuMeasurement(
+ requested:CardMenuMeasureSnapshot,
+ current:CardMenuMeasureSnapshot,
+ anchor:{x:number;y:number;width:number;height:number}
+):boolean{
+ return requested.sequence===current.sequence
+  &&requested.trackId===current.trackId
+  &&requested.viewport.width===current.viewport.width
+  &&requested.viewport.height===current.viewport.height
+  &&Number.isFinite(current.viewport.width)&&current.viewport.width>0
+  &&Number.isFinite(current.viewport.height)&&current.viewport.height>0
+  &&isCardMenuAnchorValid(anchor);
+}
