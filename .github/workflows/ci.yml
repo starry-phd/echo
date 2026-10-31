@@ -30,6 +30,21 @@ jobs:
         run: npm run staging:check
       - run: npm run ui:check
       - run: npm test
+      # Static Expo/Hermes JS bundle checks only. Never run EAS signing,
+      # Apple/Google submission or private audio audits in this CI.
+      # Each native bundle embeds the approved public workers.dev URL; Web keeps its own origin.
+      - name: Verify iOS Hermes bundle export (no signing)
+        env:
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
+        run: |
+          npx expo export --platform ios --output-dir /tmp/echo-native-ios
+          test -n "$(find /tmp/echo-native-ios -type f -print -quit)"
+      - name: Verify Android Hermes bundle export (no signing)
+        env:
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
+        run: |
+          npx expo export --platform android --output-dir /tmp/echo-native-android
+          test -n "$(find /tmp/echo-native-android -type f -print -quit)"
       - run: npm run build:web
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
