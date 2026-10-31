@@ -33,10 +33,14 @@ jobs:
       # Static Expo/Hermes JS bundle checks only. Never run EAS signing,
       # Apple/Google submission or private audio audits in this CI.
       - name: Verify iOS Hermes bundle export (no signing)
+        env:
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
         run: |
           npx expo export --platform ios --output-dir /tmp/echo-native-ios
           test -n "$(find /tmp/echo-native-ios -type f -print -quit)"
       - name: Verify Android Hermes bundle export (no signing)
+        env:
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
         run: |
           npx expo export --platform android --output-dir /tmp/echo-native-android
           test -n "$(find /tmp/echo-native-android -type f -print -quit)"
