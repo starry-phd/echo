@@ -17,7 +17,9 @@ test('empty currently visible items cannot strand remaining verified-public page
 test('home search/rank/hidden filters may hide first page but still offer next approved page',()=>{
  const home=read('app/index.tsx');
  assert.match(home,/canLoadMoreAuthorizedPublic\(currentDisplay,tracksQuery\.hasNextPage,ready\)&&<Pressable/);
- assert.match(home,/tracksQuery\.hasNextPage\?'目前已載入的作品沒有符合條件的資料，仍可繼續載入其他已核准公開作品。'/);
+ assert.match(home,/describeEmptyPublicCatalog\([\s\S]*?Boolean\(tracksQuery\.hasNextPage\)/);
+ assert.match(home,/\{emptyCopy\.title\}/);
+ assert.match(home,/\{emptyCopy\.detail\}/);
  assert.match(home,/currentCatalogDisplayState\(ready,query,debouncedQuery,catalogDisplay\)/);
  assert.match(home,/getPublicTracks\(signal,\{\s*query:debouncedQuery,category:category\?\?undefined,offset:pageParam/);
  assert.match(home,/!dislikedIds\.includes\(t\.id\)&&!isSpeakerHidden\(t\.speaker,hiddenSpeakers\)/);
