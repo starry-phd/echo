@@ -288,6 +288,11 @@ export default function CatalogScreen(){
         <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          部分核准公開作品尚無可排序的公開日期；這些作品排在有日期的作品後方，保留原清單順序，不代表實際上傳先後。
         </Text>}
+       {ready&&currentDisplay==='ready'&&
+        (order.startsWith('rating')||order.startsWith('likes')||order.startsWith('comments'))&&
+        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
+         評價、按讚與心得只依已公開的歷史數字排序；沒有提供所選指標的作品會排在有數值的作品後面，不視為 0。
+        </Text>}
      </View>
      {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
       onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
