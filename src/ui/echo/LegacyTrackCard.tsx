@@ -9,7 +9,7 @@ import {AnimatedNewcomerTag} from './AnimatedNewcomerTag';
 import {splitSpeakerNames} from './speakerNames';
 import {useDevicePreferences} from './DevicePreferences';
 import {useViewportDimensions} from '../useViewportDimensions';
-import {cardMenuLayout} from './cardMenuLayout';
+import {cardMenuLayout,canApplyCardMenuMeasurement} from './cardMenuLayout';
 import {legacyAudioCardSizing} from './legacyAudioCardSizing';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
@@ -26,19 +26,32 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const viewport=useViewportDimensions();
  const cardSizing=legacyAudioCardSizing(viewport.width);
  const moreAnchor=useRef<ViewInstance>(null);
+ const menuSequence=useRef(0);
+ const latestMenuContext=useRef({trackId:track.id,viewport:{width:viewport.width,height:viewport.height}});
+ // Update during render as well: stale callbacks can run before effects flush.
+ latestMenuContext.current={trackId:track.id,viewport:{width:viewport.width,height:viewport.height}};
  const [open,setOpen]=useState(false);
  const [menuPosition,setMenuPosition]=useState(()=>cardMenuLayout({x:0,y:0,width:32,height:32},{width:390,height:844}));
  const [coverError,setCoverError]=useState(false);
  const favorite=preferences.favoriteIds.includes(track.id);
  const speakerNames=splitSpeakerNames(track.speaker);
- useEffect(()=>setOpen(false),[track.id,viewport.width,viewport.height]);
+ const dismissMenu=()=>{menuSequence.current++;setOpen(false);};
+ useEffect(()=>{menuSequence.current++;setOpen(false);},[track.id,viewport.width,viewport.height]);
+ useEffect(()=>()=>{menuSequence.current++;},[]);
  const openMenu=()=>{
+  if(open){dismissMenu();return;}
+  const requested={sequence:++menuSequence.current,trackId:track.id,
+   viewport:{width:viewport.width,height:viewport.height}};
   moreAnchor.current?.measureInWindow((x,y,width,height)=>{
-   setMenuPosition(cardMenuLayout({x,y,width,height},viewport));setOpen(true);
+   const current={sequence:menuSequence.current,...latestMenuContext.current};
+   const anchor={x,y,width,height};
+   if(!canApplyCardMenuMeasurement(requested,current,anchor))return;
+   setMenuPosition(cardMenuLayout(anchor,requested.viewport));
+   setOpen(true);
   });
  };
  const toggleFavorite=()=>{
-  setOpen(false);
+  dismissMenu();
   const added=preferences.toggleFavorite(track.id);
   onNotice(added?'已加入此裝置收藏（尚未與中央會員同步）。':'已取消此裝置的收藏。');
  };
@@ -54,12 +67,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  const historical=readHistoricalEngagement(track);
  const publicShareMessage=approvedPublicTrackShareMessage(track,track.id,apiOrigin);
  const toggleDetails=()=>{
-  setOpen(false);
+  dismissMenu();
   if(track.playable){router.push({pathname:'/track/[id]',params:{id:track.id}});return;}
   router.push({pathname:'/preview/[id]',params:{id:track.id}});
  };
  const playFromPhoto=()=>{
-  setOpen(false);
+  dismissMenu();
   if(!track.playable){
    onNotice('這張是原版音檔資訊卡；錄音仍屬私人遷移資料，尚未完成公開播放授權。');
    return;
@@ -67,14 +80,14 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
   router.push({pathname:'/track/[id]',params:{id:track.id}});
  };
  const share=async()=>{
-  setOpen(false);
+  dismissMenu();
   if(!publicShareMessage){onNotice('此音檔尚未取得有效的已核准公開分享網址。');return;}
   try{await Share.share({message:publicShareMessage,title:track.title});}
   catch{onNotice('目前無法使用系統分享。');}
  };
- const noLike=()=>{setOpen(false);onDislike(track.id);};
+ const noLike=()=>{dismissMenu();onDislike(track.id);};
  const hideOneSpeaker=(name:string)=>{
-  setOpen(false);
+  dismissMenu();
   // Multi-speaker cards must not silently blacklist every co-presenter.
   const added=preferences.hideSpeaker(name);
   onNotice(added
@@ -168,13 +181,13 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    style={[styles.more,{backgroundColor:t.card,borderColor:t.border}]}>
    <Text style={[styles.moreText,{color:t.muted}]}>⋮</Text>
   </Pressable>
-  <Modal visible={open} transparent animationType="fade" onRequestClose={()=>setOpen(false)}>
-   <View style={StyleSheet.absoluteFill}>
+  <Modal visible={open} transparent animationType="fade" onRequestClose={dismissMenu}>
+   <View style={StyleSheet.absoluteFill} accessibilityViewIsModal onAccessibilityEscape={dismissMenu}>
     <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單背景"
-     onPress={()=>setOpen(false)} style={[StyleSheet.absoluteFill,styles.menuBackdrop]}/>
+     onPress={dismissMenu} style={[StyleSheet.absoluteFill,styles.menuBackdrop]}/>
     <View accessibilityViewIsModal style={[styles.popup,menuPosition,{backgroundColor:t.card,borderColor:t.border}]}>
      <ScrollView contentContainerStyle={styles.popupContent}>
-   <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
+   <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={dismissMenu}>
     <Text style={[styles.popupText,{color:t.muted,fontSize:fontSize(13)}]}>✕　關閉選單</Text>
    </Pressable>
    <Pressable accessibilityRole="button"
