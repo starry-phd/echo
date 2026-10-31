@@ -1,6 +1,6 @@
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {useMemo,useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery,useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getGuestPreviewTracks,getPublicTracks} from '../src/api/client';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
@@ -29,15 +29,19 @@ export default function LegacyRankings(){
  const [tab,setTab]=useState<RankingTab>('model');
  const [metric,setMetric]=useState<Extract<SortOrder,'rating'|'likes'|'comments'>>('rating');
  const [notice,setNotice]=useState('');
- const catalog=useQuery({queryKey:['echo','ranking-public-catalog'],
-  queryFn:({signal})=>getPublicTracks(signal),retry:1});
+ const catalog=useInfiniteQuery({queryKey:['echo','ranking-public-catalog'],
+  queryFn:({signal,pageParam})=>getPublicTracks(signal,{offset:pageParam}),
+  initialPageParam:0,
+  getNextPageParam:(lastPage,allPages)=>lastPage.length===100?allPages.length*100:undefined,
+  retry:1});
  const previews=useQuery({queryKey:['echo','guest-previews'],
   queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
- const visible=useMemo(()=>mergeAuthorizedCards(catalog.data??[],previews.data??[]).filter(track=>
+ const verifiedPublicTracks=useMemo(()=>catalog.data?.pages.flat()??[],[catalog.data]);
+ const visible=useMemo(()=>mergeAuthorizedCards(verifiedPublicTracks,previews.data??[]).filter(track=>
   !preferences.dislikedIds.includes(track.id)&&!isSpeakerHidden(track.speaker,preferences.hiddenSpeakers)
- ),[catalog.data,previews.data,preferences.dislikedIds,preferences.hiddenSpeakers]);
+ ),[verifiedPublicTracks,previews.data,preferences.dislikedIds,preferences.hiddenSpeakers]);
  const ranked=useMemo(()=>sortEchoCards(visible,metric).slice(0,10),[visible,metric]);
- const publicSource={pending:catalog.isPending,failed:catalog.isError,count:catalog.data?.length??0};
+ const publicSource={pending:catalog.isPending,failed:catalog.isError||catalog.isFetchNextPageError,count:verifiedPublicTracks.length};
  const previewSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,previewSource,visible.length);
  const partial=hasPartialCatalogFailure(publicSource,previewSource);
@@ -70,7 +74,7 @@ export default function LegacyRankings(){
       <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink,fontSize:fontSize(12)}]}>{x.label}</Text>
      </Pressable>)}
     </View>
-    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下僅排序目前獲准公開的作品或訪客資訊卡，其評價／按讚／心得數字是舊版歷史唯讀紀錄，並非即時會員排行或播放授權。</Text>
+    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。評價／按讚／心得數字是舊版歷史唯讀紀錄，並非即時會員排行或播放授權。</Text>
     {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
     {partial&&<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
@@ -91,6 +95,16 @@ export default function LegacyRankings(){
         onDislike={id=>{preferences.dislike(id);setNotice('已在本裝置隱藏這張卡，可到我的收藏還原。');}}/>
       </View>
      </View>)}
+    {display==='ready'&&catalog.hasNextPage&&<Pressable
+     accessibilityRole="button" accessibilityLabel="載入更多已驗證公開作品供排行榜排序"
+     accessibilityState={{disabled:catalog.isFetchingNextPage}}
+     disabled={catalog.isFetchingNextPage}
+     onPress={()=>void catalog.fetchNextPage()}
+     style={[styles.more,{backgroundColor:t.card,borderColor:t.border}]}>
+      <Text style={[styles.moreText,{color:t.palette.primary,fontSize:fontSize(13)}]}>
+       {catalog.isFetchingNextPage?'載入中…':'載入更多公開作品以更新排名'}
+      </Text>
+    </Pressable>}
    </>}
   </View>
  </ScrollView>;
@@ -111,6 +125,8 @@ const styles=StyleSheet.create({
  metricText:{fontSize:12,fontWeight:'800'},
  notice:{fontWeight:'700',fontSize:12,marginBottom:6},
  loading:{marginTop:40},retry:{minHeight:44,alignSelf:'flex-start',justifyContent:'center',paddingHorizontal:9},
+ more:{minHeight:48,borderWidth:1,borderRadius:12,marginTop:12,alignItems:'center',justifyContent:'center'},
+ moreText:{fontWeight:'800'},
  trackRow:{flexDirection:'row',gap:6,alignItems:'flex-start',marginBottom:8},
  rank:{width:36,fontWeight:'900',fontSize:14,paddingTop:22,textAlign:'center'},
  cardWrap:{flex:1,minWidth:0}
