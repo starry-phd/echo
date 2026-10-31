@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {speakerRankFromRoute,approvedGuestSpeakerRank} from '../src/ui/echo/publicSpeakerRankNavigation.ts';
+import {speakerRankFromRoute,approvedGuestSpeakerRank,approvedVerifiedSpeakerRank} from '../src/ui/echo/publicSpeakerRankNavigation.ts';
 import {matchesCardFilters} from '../src/ui/echo/cardFilters.ts';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
@@ -50,4 +50,25 @@ test('shared cards and preview details have real accessible speaker rank links',
  const preview=read('app/preview/[id].tsx');
  assert.match(preview,/approvedRankLink\?<Pressable/);
  assert.doesNotMatch(preview,/getPublicStreamUrl|AudioPlayback|useAudioPlayer|Share\.share|downloadPublicInfoCardPng/);
+});
+
+test('verified public detail rank links require an actual playable verified-public response',()=>{
+ assert.equal(approvedVerifiedSpeakerRank({playable:true,speakerRank:' GAR 創辦人雙鑽石 '}),'雙鑽石');
+ assert.equal(approvedVerifiedSpeakerRank({playable:true,speakerRank:'白金'}),'白金');
+ assert.equal(approvedVerifiedSpeakerRank({playable:false,speakerRank:'白金'}),null);
+ assert.equal(approvedVerifiedSpeakerRank({playable:true,speakerRank:'a/b'}),null);
+ assert.equal(approvedVerifiedSpeakerRank({playable:true,speakerRank:null}),null);
+ assert.equal(approvedVerifiedSpeakerRank(null),null);
+});
+
+test('verified public detail shows accessible rank filter without changing current audio/public gates',()=>{
+ const detail=read('app/track/[id].tsx');
+ assert.match(detail,/getPublicTrack\(trackId!,signal\)/);
+ assert.match(detail,/const approvedRankLink=approvedVerifiedSpeakerRank\(track\)/);
+ assert.match(detail,/!!track\.speakerRank&&\(approvedRankLink\?<Pressable accessibilityRole="link"/);
+ assert.match(detail,/accessibilityLabel=\{'篩選所有'\+approvedRankLink\+'講師已核准作品'\}/);
+ assert.match(detail,/onPress=\{\(\)=>router\.push\(\{pathname:'\/',params:\{rank:approvedRankLink\}\}\)\}/);
+ assert.match(detail,/rankLink:\{minHeight:44/);
+ assert.match(detail,/const available=track\.playable&&Boolean\(source\)/);
+ assert.doesNotMatch(detail,/getGuestPreviewTracks|R2\.get|privateAudio/);
 });
