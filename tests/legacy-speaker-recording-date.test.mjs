@@ -17,7 +17,7 @@ test('speaker recording date follows the original legacy Taiwan display rules',(
 
 test('speaker profile dates appear only on current authorized recording cards, never by old private endpoint',()=>{
  assert.match(profile,/authorizedSpeakerProfileTracks\(speaker,/);
- assert.match(profile,/display==='ready'\? visibleTracks\.map\(track=><View key=\{track\.id\}/);
+ assert.match(profile,/display==='ready'\? visibleTracks\.map\(track=><LegacySpeakerRecordingRow key=\{track\.id\}/);
  assert.match(row,/formatSpeakerRecordingDate\(track\.uploadDate\)/);
  assert.match(row,/\{track\.speakerRank\|\|'公開'\}\s*·\s*\{formatSpeakerRecordingDate\(track\.uploadDate\)\}/);
  assert.match(profile,/LegacySpeakerRecordingRow key=\{track\.id\}/);
