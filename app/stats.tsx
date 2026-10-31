@@ -13,7 +13,7 @@ import {sortEchoCards} from '../src/ui/echo/cardSorting';
 import {historicallyRankableTracks} from '../src/ui/echo/historicallyRankableTracks';
 import type {SortOrder} from '../src/ui/echo/cardSorting';
 import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
-import {gatedRankingCopy,legacyRankingTabs} from '../src/ui/echo/legacyRankingTabs';
+import {gatedRankingCopy,legacyRankingTabs,missingHistoricalMetricCopy} from '../src/ui/echo/legacyRankingTabs';
 import type {RankingTab} from '../src/ui/echo/legacyRankingTabs';
 import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {visualMetrics} from '../packages/ui/src/tokens';
@@ -100,7 +100,7 @@ export default function LegacyRankings(){
     {preferences.ready&&display==='ready'&&ranked.length===0&&<View
      style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>
-      目前已載入的核准作品尚無這項已公開的歷史統計，因此不顯示推測名次；可嘗試其他指標或繼續載入公開作品。
+      {missingHistoricalMetricCopy(Boolean(catalog.hasNextPage))}
      </Text>
     </View>}
     {canLoadMoreAuthorizedPublic(display,catalog.hasNextPage,preferences.ready)&&<Pressable
