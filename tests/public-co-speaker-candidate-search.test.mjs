@@ -47,5 +47,11 @@ test('actual SQLite public catalog finds & and ＆ co-presenters without showing
   assert.equal(allSql[0].includes('王小明'),false);
   assert.deepEqual(allBinds[0],['王小明']);
   assert.deepEqual(authorizedSpeakerProfileTracks('林美麗',tracks,[],[]).map(x=>x.id),['duo']);
+  const attacker=new URL(origin+'/api/v1/catalog');
+  attacker.searchParams.set('speaker',"王小明' OR 1=1 --");
+  const denied=await worker.fetch(new Request(attacker),env);
+  assert.equal(denied.status,200);
+  assert.deepEqual((await denied.json()).tracks,[]);
+  assert.deepEqual(allBinds[1],["王小明' OR 1=1 --"]);
  }finally{db.close();}
 });
