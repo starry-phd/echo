@@ -10,6 +10,7 @@ import {canLoadMoreAuthorizedPublic} from '../src/ui/echo/publicLoadMoreEligibil
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {sortEchoCards} from '../src/ui/echo/cardSorting';
+import {historicallyRankableTracks} from '../src/ui/echo/historicallyRankableTracks';
 import type {SortOrder} from '../src/ui/echo/cardSorting';
 import {LegacyTrackCard} from '../src/ui/echo/LegacyTrackCard';
 import {gatedRankingCopy,legacyRankingTabs} from '../src/ui/echo/legacyRankingTabs';
@@ -41,7 +42,7 @@ export default function LegacyRankings(){
  const visible=useMemo(()=>mergeAuthorizedCards(verifiedPublicTracks,previews.data??[]).filter(track=>
   !preferences.dislikedIds.includes(track.id)&&!isSpeakerHidden(track.speaker,preferences.hiddenSpeakers)
  ),[verifiedPublicTracks,previews.data,preferences.dislikedIds,preferences.hiddenSpeakers]);
- const ranked=useMemo(()=>sortEchoCards(visible,metric).slice(0,10),[visible,metric]);
+ const ranked=useMemo(()=>sortEchoCards(historicallyRankableTracks(visible,metric),metric).slice(0,10),[visible,metric]);
  const publicSource={pending:catalog.isPending,failed:catalog.isError||catalog.isFetchNextPageError,count:verifiedPublicTracks.length};
  const previewSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,previewSource,visible.length);
@@ -75,7 +76,7 @@ export default function LegacyRankings(){
       <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink,fontSize:fontSize(12)}]}>{x.label}</Text>
      </Pressable>)}
     </View>
-    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。評價／按讚／心得數字是舊版歷史唯讀紀錄，並非即時會員排行或播放授權。</Text>
+    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。僅具有該項已公開歷史統計的作品會列入名次；沒有數字的作品不視為 0 分。評價／按讚／心得數字是舊版歷史唯讀紀錄，非即時會員排行或播放授權。</Text>
     {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
     {partial&&<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
@@ -96,6 +97,12 @@ export default function LegacyRankings(){
         onDislike={id=>{preferences.dislike(id);setNotice('已在本裝置隱藏這張卡，可到我的收藏還原。');}}/>
       </View>
      </View>)}
+    {preferences.ready&&display==='ready'&&ranked.length===0&&<View
+     style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
+     <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>
+      目前已載入的核准作品尚無這項已公開的歷史統計，因此不顯示推測名次；可嘗試其他指標或繼續載入公開作品。
+     </Text>
+    </View>}
     {canLoadMoreAuthorizedPublic(display,catalog.hasNextPage,preferences.ready)&&<Pressable
      accessibilityRole="button" accessibilityLabel="載入更多已驗證公開作品供排行榜排序"
      accessibilityState={{disabled:catalog.isFetchingNextPage}}

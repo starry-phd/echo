@@ -14,7 +14,7 @@ test('approved hot recordings ranking pages the verified public API only, preser
  assert.match(page,/getGuestPreviewTracks\(signal\)/);
  assert.match(page,/!preferences\.dislikedIds\.includes\(track\.id\)/);
  assert.match(page,/!isSpeakerHidden\(track\.speaker,preferences\.hiddenSpeakers\)/);
- assert.match(page,/sortEchoCards\(visible,metric\)\.slice\(0,10\)/);
+ assert.match(page,/sortEchoCards\(historicallyRankableTracks\(visible,metric\),metric\)\.slice\(0,10\)/);
  assert.doesNotMatch(page,/getGuestPreviewTracks\(signal,\{offset|R2\.get|privateAudio/);
 });
 
