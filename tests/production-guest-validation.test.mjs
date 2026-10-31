@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {expectedGuestCount,isNoStore,validateGuestList,validateCover,validateRefusal} from '../scripts/production-guest-validation.mjs';
 const headers=(cache='no-store',type='image/jpeg')=>new Headers({'cache-control':cache,'content-type':type});
 const list=()=>Array.from({length:expectedGuestCount},(_,i)=>({
@@ -35,4 +36,13 @@ test('private stream and unlisted cover refuse access',()=>{
  assert.doesNotThrow(()=>validateRefusal(404,headers(),'private stream'));
  assert.throws(()=>validateRefusal(200,headers(),'private stream'),/allowed unexpectedly/);
  assert.throws(()=>validateRefusal(404,headers('public,max-age=60'),'unlisted cover'),/no-store/);
+});
+
+test('live smoke probes all 28 guest stream HEAD statuses without reading any audio body',()=>{
+ const script=readFileSync(new URL('../scripts/check-production-guest.mjs',import.meta.url),'utf8');
+ assert.equal((script.match(/for\\(let index=0;index<tracks\\.length;index\\+\\+\\)/g)||[]).length,2);
+ assert.match(script,/fetchPublic\\(path,'HEAD'\\)/);
+ assert.match(script,/validateRefusal\\(r\\.status,r\\.headers,'guest stream HEAD '/);
+ assert.match(script,/Validated 28\\/28 curated guest stream HEAD requests/);
+ assert.doesNotMatch(script,/r\\.arrayBuffer\\(\\).*stream|r\\.text\\(\\).*stream/);
 });
