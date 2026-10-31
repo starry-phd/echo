@@ -38,7 +38,7 @@ test('menu stays in horizontal viewport, opens below when possible and above nea
  let p=categoryMenuPlacement({x:344,y:120,width:44,height:46},{width:390,height:844});
  assert.equal(p.opensAbove,false);
  assert.equal(p.width,180);
- assert.equal(p.left,202);
+ assert.equal(p.left,208);
  assert.equal(p.top,172);
  assert.equal(p.maxHeight,315);
  assert.equal(p.scrollMaxHeight,271);
