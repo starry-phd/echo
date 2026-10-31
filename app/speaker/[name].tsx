@@ -133,7 +133,7 @@ export default function PublicSpeakerTracks(){
     display==='ready'? visibleTracks.map(track=><View key={track.id} style={styles.recordingItem}>
      <LegacyTrackCard track={track} onNotice={setNotice} onDislike={hide}/>
      <Text style={[styles.recordingDate,{color:t.muted,fontSize:fontSize(12)}]}>
-      上架日期：{formatSpeakerRecordingDate(track.uploadDate)}
+      {track.speakerRank||'公開'} · {formatSpeakerRecordingDate(track.uploadDate)}
      </Text>
     </View>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
