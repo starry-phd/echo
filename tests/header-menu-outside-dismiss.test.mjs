@@ -24,7 +24,7 @@ test('backdrop occurs before the actual panel to preserve inner menu actions and
  assert.match(header,/quick\.reorderPinned\(quickDevice,dragId,target\)/);
  assert.match(header,/onPress=\{colors\.cyclePalette\}/);
  assert.match(header,/onPress=\{\(\)=>colors\.setPalette\(p\.id\)\}/);
- assert.match(header,/onPress=\{colors\.toggleDark\}/);
+ assert.match(header,/onPress=\{\(\)=>\{colors\.toggleDark\(\);closeMenu\(\);\}\}/);
  assert.match(header,/scrollEnabled=\{draggingQuickId===null\}/);
 });
 
