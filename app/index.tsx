@@ -25,6 +25,7 @@ import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
 import {canLoadMoreAuthorizedPublic} from '../src/ui/echo/publicLoadMoreEligibility';
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
+import {visibleAuthorizedRankFacets} from '../src/ui/echo/visibleAuthorizedRankFacets';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 
 /**
@@ -128,9 +129,16 @@ export default function CatalogScreen(){
  const guestFacets=useMemo(()=>visibleGuestFacets(
   previewsQuery.data??[],dislikedIds,hiddenSpeakers
  ),[previewsQuery.data,dislikedIds,hiddenSpeakers]);
+ // Rank choices represent ONLY ranks present in the current approved guest
+ // previews or verified-public catalog (not private/saved IDs). The sources
+ // have separate authorization gates; device-hidden cards never add hints.
+ // Do not reveal any facet before preferences have hydrated.
+ const approvedRanks=useMemo(()=>visibleAuthorizedRankFacets(
+  verifiedPublicTracks,previewsQuery.data??[],dislikedIds,hiddenSpeakers
+ ),[verifiedPublicTracks,previewsQuery.data,dislikedIds,hiddenSpeakers]);
+ const ranks=ready?approvedRanks:[];
  // Source-wide public categories remain trusted API metadata, while guest-only
- // hints are filtered by this device's preferences. Do not reveal hints before hydration.
- const ranks=ready?guestFacets.ranks:[];
+ // category hints respect this device's visibility preferences.
  const categories=useMemo(()=>ready?[...new Set([
   ...(categoriesQuery.data??[]),...guestFacets.categories
  ])]:[],[ready,categoriesQuery.data,guestFacets]);

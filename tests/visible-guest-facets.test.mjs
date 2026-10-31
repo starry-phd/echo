@@ -40,7 +40,7 @@ test('hidden-only guest metadata has no facet suggestions',()=>{
 test('home filters use approved preview helper and wait for device preference hydration',()=>{
  const src=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
  assert.match(src,/visibleGuestFacets\(/);
- assert.match(src,/const ranks=ready\?guestFacets\.ranks:\[\]/);
+ assert.match(src,/const ranks=ready\?approvedRanks:\[\]/);
  assert.match(src,/const categories=useMemo\(\(\)=>ready\?/);
  assert.match(src,/categoriesQuery\.data\?\?\[\]/);
  assert.match(src,/\.\.\.guestFacets\.categories/);
