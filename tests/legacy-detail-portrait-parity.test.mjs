@@ -38,22 +38,24 @@ test('guest metadata preview restores original centered second-level photo, cate
 
 test('verified-public detail restores the original photo-first hero while preserving the public playback gate',()=>{
  const source=read('app/track/[id].tsx');
- assert.match(source,/getPublicTrack\\(trackId!,signal\\)/);
- assert.match(source,/const available=track\\.playable&&Boolean\\(source\\)/);
- assert.match(source,/if\\(!available\\|\\|!source\\)return;/);
- assert.match(source,/toggleRef\\.current=toggle/);
- assert.match(source,/onToggleReady\\(invokeToggle\\)/);
- assert.match(source,/<LegacyDetailSpeakerPortrait track=\\{track\\} onPress=\\{portraitToggle\\?\\?undefined\\}\\/>/);
- assert.match(source,/<AudioPlayback track=\\{track\\} onToggleReady=\\{onToggleReady\\}\\/>/);
+ assert.ok(source.includes('getPublicTrack(trackId!,signal)'));
+ assert.ok(source.includes('const available=track.playable&&Boolean(source)'));
+ assert.ok(source.includes('if(!available||!source)return;'));
+ assert.ok(source.includes('toggleRef.current=toggle'));
+ assert.ok(source.includes('onToggleReady(invokeToggle)'));
+ assert.ok(source.includes('<LegacyDetailSpeakerPortrait track={track} onPress={portraitToggle??undefined}/>'));
+ assert.ok(source.includes('<AudioPlayback track={track} onToggleReady={onToggleReady}/>'));
  const hero=source.indexOf('<View style={styles.hero}>');
- const portrait=source.indexOf('<LegacyDetailSpeakerPortrait track={track}');
- const tags=source.indexOf('styles.tags',hero);
- const title=source.indexOf('styles.title',hero);
- const speakers=source.indexOf('styles.heroSpeakers',hero);
+ const portrait=source.indexOf('<LegacyDetailSpeakerPortrait track={track}',hero);
+ const tags=source.indexOf('<View style={styles.tags}>',hero);
+ const title=source.indexOf('<Text style={[styles.title',hero);
+ const speakers=source.indexOf('<View style={styles.heroSpeakers}>',hero);
  const nav=source.indexOf('<LegacyDetailSectionNavigation',hero);
  const player=source.indexOf('<AudioPlayback track={track}',hero);
  assert.ok(portrait>hero&&portrait<tags&&tags<title&&title<speakers&&speakers<nav&&nav<player);
- assert.doesNotMatch(source,/speakerAvatar|speakerInitial|LegacyDetailSpeakerPortrait track=\\{track\\} onPress=\\{toggle\\}/);
- assert.match(source,/LegacyDetailSectionNavigation showPlayback=\\{track\\.playable\\}/);
- assert.doesNotMatch(read('app/preview/[id].tsx'),/onPress=\\{toggle\\}/);
+ assert.equal(source.includes('speakerAvatar'),false);
+ assert.equal(source.includes('speakerInitial'),false);
+ assert.equal(source.includes('LegacyDetailSpeakerPortrait track={track} onPress={toggle}'),false);
+ assert.ok(source.includes('LegacyDetailSectionNavigation showPlayback={track.playable}'));
+ assert.equal(read('app/preview/[id].tsx').includes('onPress={toggle}'),false);
 });
