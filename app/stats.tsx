@@ -6,6 +6,7 @@ import {getGuestPreviewTracks,getPublicTracks} from '../src/api/client';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
+import {canLoadMoreAuthorizedPublic} from '../src/ui/echo/publicLoadMoreEligibility';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {sortEchoCards} from '../src/ui/echo/cardSorting';
@@ -86,7 +87,7 @@ export default function LegacyRankings(){
       <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.palette.primary}}>重試載入</Text></Pressable>
      </View>:
      display==='empty'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-       <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有符合公開條件的作品資料。</Text>
+       <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>{catalog.hasNextPage?'目前載入的作品沒有符合條件的結果，仍可載入更多核准公開作品。':'目前沒有符合公開條件的作品資料。'}</Text>
      </View>:
      ranked.map((track,index)=><View key={track.id} style={styles.trackRow}>
       <Text style={[styles.rank,{color:t.palette.primary,fontSize:fontSize(14)}]} accessibilityLabel={'名次 '+(index+1)}>#{index+1}</Text>
@@ -95,7 +96,7 @@ export default function LegacyRankings(){
         onDislike={id=>{preferences.dislike(id);setNotice('已在本裝置隱藏這張卡，可到我的收藏還原。');}}/>
       </View>
      </View>)}
-    {display==='ready'&&catalog.hasNextPage&&<Pressable
+    {canLoadMoreAuthorizedPublic(display,catalog.hasNextPage,preferences.ready)&&<Pressable
      accessibilityRole="button" accessibilityLabel="載入更多已驗證公開作品供排行榜排序"
      accessibilityState={{disabled:catalog.isFetchingNextPage}}
      disabled={catalog.isFetchingNextPage}
