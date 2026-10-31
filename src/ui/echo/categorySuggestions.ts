@@ -1,3 +1,5 @@
+import {categoryFromRoute} from './publicCategoryNavigation';
+
 /** Original Echo search suggests *only* category tags and approved community
  * keywords, not track titles. Until a moderated public-keyword API exists,
  * expose only categories supplied by the verified-public API or the 28
@@ -14,11 +16,13 @@ export function publicCategorySuggestions(
  if(limit===0)return [];
  for(const raw of source){
   if(typeof raw!=='string')continue;
-  const normalized=raw.normalize('NFKC');
-  if(/[\x00-\x1f\x7f]/u.test(normalized))continue;
-  const value=normalized.trim();
-  if(!value||value.length>80)continue;
-  const key=value.toLocaleLowerCase('zh-Hant');
+  // Normalize only for matching/deduplication; the selected filter must
+  // retain the exact category published in the approved API metadata.
+  const value=categoryFromRoute(raw);
+  if(!value)continue;
+  const normalized=value.normalize('NFKC');
+  if(!categoryFromRoute(normalized))continue;
+  const key=normalized.toLocaleLowerCase('zh-Hant');
   if(seen.has(key)||!terms.every(term=>key.includes(term)))continue;
   seen.add(key);out.push(value);
   if(out.length>=limit)break;
