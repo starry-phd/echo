@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions.ts';
+import {readFileSync} from 'node:fs';
+import {publicCategorySuggestions,shouldShowCategorySuggestions} from '../src/ui/echo/categorySuggestions.ts';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation.ts';
 import {approvedExactCategoryLink} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
 import {matchesCardFilters} from '../src/ui/echo/cardFilters.ts';
@@ -68,4 +69,21 @@ test('raw unvetted suggestions never silently trim or normalize selected filter 
  assert.deepEqual(publicCategorySuggestions(source,'AI'),['ＡＩ','AI']);
  assert.deepEqual(publicCategorySuggestions(source,'新人'),['新人']);
  assert.deepEqual(publicCategorySuggestions(source,''),['ＡＩ','AI','新人']);
+});
+
+test('legacy search panel stays closed on focus without meaningful typed keywords',()=>{
+ const source=['新人','ＡＩ'];
+ // The suggestion helper can list approved labels for other consumers, but
+ // this original Echo panel only opens after the user enters a search term.
+ const suggestions=publicCategorySuggestions(source,'');
+ assert.deepEqual(suggestions,source);
+ assert.equal(shouldShowCategorySuggestions(true,'',suggestions),false);
+ assert.equal(shouldShowCategorySuggestions(true,' \t  ',suggestions),false);
+ assert.equal(shouldShowCategorySuggestions(false,'AI',['ＡＩ']),false);
+ assert.equal(shouldShowCategorySuggestions(true,'AI',[]),false);
+ assert.equal(shouldShowCategorySuggestions(true,' AI ',['ＡＩ']),true);
+ assert.equal(shouldShowCategorySuggestions(true,'營養',['健康營養']),true);
+ const home=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
+ assert.match(home,/shouldShowCategorySuggestions\(searchSuggestionsOpen,query,categorySuggestions\)/);
+ assert.doesNotMatch(home,/\{searchSuggestionsOpen&&categorySuggestions\.length>0&&/);
 });

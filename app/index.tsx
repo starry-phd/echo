@@ -17,7 +17,7 @@ import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
-import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
+import {publicCategorySuggestions,shouldShowCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {safeApprovedCategoryOptions} from '../src/ui/echo/safeApprovedCategoryOptions';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
 import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
@@ -242,7 +242,7 @@ export default function CatalogScreen(){
          </Pressable>}
        </View>
      </View>
-     {searchSuggestionsOpen&&categorySuggestions.length>0&&
+     {shouldShowCategorySuggestions(searchSuggestionsOpen,query,categorySuggestions)&&
       <View style={[styles.suggestions,{backgroundColor:theme.card,borderColor:theme.border}]}>
        <View style={styles.suggestionHeading}>
         <Text style={[styles.suggestionTitle,{color:theme.muted,fontSize:fontSize(11)}]}>🏷️ 分類標籤（已核准）</Text>

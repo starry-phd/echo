@@ -29,3 +29,13 @@ export function publicCategorySuggestions(
  }
  return out;
 }
+
+/** Match the original Echo search panel: focusing an empty input should not
+ * open a full category menu. Categories remain available in the dedicated
+ * filter toolbar, and only current authorized labels can enter suggestions.
+ */
+export function shouldShowCategorySuggestions(
+ focused:boolean,typedQuery:string,suggestions:readonly string[]
+):boolean{
+ return focused&&typedQuery.trim().length>0&&suggestions.length>0;
+}
