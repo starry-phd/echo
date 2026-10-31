@@ -28,7 +28,10 @@ export function LegacyDetailSpeakerPortrait({track,onPress}:{track:EchoTrack;onP
  if(track.playable&&onPress)return <Pressable accessibilityRole="button"
   accessibilityLabel="點擊講者照片切換播放" onPress={onPress}
   style={styles.wrapper}>{portrait}</Pressable>;
- return <View accessibilityLabel={'講者照片：'+track.speaker+'；音檔尚未開放播放'}
+ const fallbackLabel=track.playable
+  ?'講者照片：'+track.speaker+'；播放器準備中'
+  :'講者照片：'+track.speaker+'；音檔尚未開放播放';
+ return <View accessibilityLabel={fallbackLabel}
   style={styles.wrapper}>{portrait}</View>;
 }
 const styles=StyleSheet.create({
