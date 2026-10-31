@@ -76,7 +76,7 @@ export default function LegacyRankings(){
       <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink,fontSize:fontSize(12)}]}>{x.label}</Text>
      </Pressable>)}
     </View>
-    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。僅具有該項已公開歷史統計的作品會列入名次；沒有數字的作品不視為 0 分。評價／按讚／心得均為舊版唯讀紀錄，非即時會員排行或播放授權。</Text>
+    <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。僅具有該項已公開歷史統計的作品會列入名次；沒有數字的作品不視為 0 分。評價／按讚／心得數字是舊版歷史唯讀紀錄，非即時會員排行或播放授權。</Text>
     {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
     {partial&&<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
