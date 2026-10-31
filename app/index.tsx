@@ -143,8 +143,10 @@ export default function CatalogScreen(){
  const categories=useMemo(()=>ready?safeApprovedCategoryOptions([
   ...(categoriesQuery.data??[]),...guestFacets.categories
  ]):[],[ready,categoriesQuery.data,guestFacets]);
+ // The original Echo search suggestion panel shows at most FOUR categories.
+ // The separate dropdown retains the full authorized category list.
  const categorySuggestions=useMemo(()=>
-   publicCategorySuggestions(categories,query),[categories,query]);
+   publicCategorySuggestions(categories,query,4),[categories,query]);
  const selectSuggestedCategory=(value:string)=>{
    // Same path as the legacy category chip, without pretending user keywords
    // or private speaker data are available.
