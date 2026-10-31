@@ -26,9 +26,9 @@ test('ranking route is reachable from menu and Expo Router stack',()=>{
 
 test('popular ranking only touches current approved guest/public catalog with local exclusions',()=>{
  const page=read('app/stats.tsx');
- assert.match(page,/getPublicTracks\(signal\)/);
+ assert.match(page,/getPublicTracks\(signal,\{offset:pageParam\}\)/);
  assert.match(page,/getGuestPreviewTracks\(signal\)/);
- assert.match(page,/mergeAuthorizedCards\(catalog\.data\?\?\[\],previews\.data\?\?\[\]\)/);
+ assert.match(page,/mergeAuthorizedCards\(verifiedPublicTracks,previews\.data\?\?\[\]\)/);
  assert.match(page,/!preferences\.dislikedIds\.includes\(track\.id\)/);
  assert.match(page,/!isSpeakerHidden\(track\.speaker,preferences\.hiddenSpeakers\)/);
  assert.match(page,/sortEchoCards\(visible,metric\)\.slice\(0,10\)/);
