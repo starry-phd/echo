@@ -161,7 +161,10 @@ export default function CatalogScreen(){
  const currentDisplay=currentCatalogDisplayState(ready,query,debouncedQuery,catalogDisplay);
  const catalogPartialFailure=hasPartialCatalogFailure(publicSource,previewSource);
  const retryCatalog=()=>{void tracksQuery.refetch();void previewsQuery.refetch();};
- const emptyCopy=describeEmptyPublicCatalog(healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank));
+ const emptyCopy=describeEmptyPublicCatalog(
+  healthQuery.data?.legacyMediaMigration,Boolean(query.trim()||category||speakerRank),
+  Boolean(tracksQuery.hasNextPage)
+ );
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
  const resetLucky=()=>{
@@ -378,7 +381,7 @@ export default function CatalogScreen(){
        </Pressable>
      </View>:currentDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted,fontSize:fontSize(15)}]}>
-         {tracksQuery.hasNextPage?'目前已載入的作品沒有符合條件的資料，仍可繼續載入其他已核准公開作品。':emptyCopy.title}
+         {emptyCopy.title}
        </Text>
        <Text style={[styles.emptyExplanation,{color:theme.muted,fontSize:fontSize(12)}]}>
          {emptyCopy.detail}
