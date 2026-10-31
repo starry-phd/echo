@@ -47,7 +47,7 @@ jobs:
       RELEASE_CI_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: 9ff1b4c261141730ac2fe0683f730062
-      ECHO_URL: https://echo.starry.phd
+      ECHO_URL: https://echo-starry.starry-phd.workers.dev
     steps:
       # workflow_run's GITHUB_SHA may be the default-branch tip, not the tested
       # commit. Always pin checkout to the successful CI run's exact head SHA.

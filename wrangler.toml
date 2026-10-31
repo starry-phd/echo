@@ -2,13 +2,7 @@ name = "echo-starry"
 main = "worker/index.ts"
 account_id = "9ff1b4c261141730ac2fe0683f730062"
 compatibility_date = "2026-10-27"
-# User-approved canonical production domain; workers.dev is technical/fallback only.
-# Cloudflare custom domain is already bound to this exact Worker (not temp bridge).
 workers_dev = true
-
-[[routes]]
-pattern = "echo.starry.phd"
-custom_domain = true
 
 [[d1_databases]]
 binding = "DB"

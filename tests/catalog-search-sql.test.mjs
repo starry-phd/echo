@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import workerModule from '../worker/index.ts';
 const worker=typeof workerModule.fetch==='function'?workerModule:workerModule.default;
-const origin='https://echo.starry.phd';
+const origin='https://echo-starry.starry-phd.workers.dev';
 
 test('actual SQLite search intersects terms, searches safe metadata and never expands the whitelist',async()=>{
  const db=new DatabaseSync(':memory:');

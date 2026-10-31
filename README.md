@@ -10,8 +10,6 @@
 
 ## 正式資源
 
-- 正式唯一主網址：https://echo.starry.phd（Cloudflare Worker 自訂網域）
-- Worker 技術備用網址：https://echo-starry.starry-phd.workers.dev（非對外分享之正式主網址）
 - GitHub: https://github.com/starry-phd/echo
 - Cloudflare Account: `9ff1b4c261141730ac2fe0683f730062`（Starry 專用）
 - Cloudflare D1: `echo-starry`

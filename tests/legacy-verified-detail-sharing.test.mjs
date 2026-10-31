@@ -6,8 +6,8 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const track={id:'public-uuid_123',title:'健康學習',speaker:'甲 & 乙',playable:true};
 
 test('approved verified public detail generates a stable HTTPS PAGE link, not stream or token',()=>{
- assert.equal(approvedPublicTrackShareMessage(track,track.id,'https://echo.starry.phd'),
-  '健康學習 · 甲 & 乙\nhttps://echo.starry.phd/track/public-uuid_123');
+ assert.equal(approvedPublicTrackShareMessage(track,track.id,'https://echo-starry.starry-phd.workers.dev'),
+  '健康學習 · 甲 & 乙\nhttps://echo-starry.starry-phd.workers.dev/track/public-uuid_123');
  assert.equal(approvedPublicTrackShareMessage(track,track.id,'http://localhost:8787'),
   '健康學習 · 甲 & 乙\nhttp://localhost:8787/track/public-uuid_123');
 });

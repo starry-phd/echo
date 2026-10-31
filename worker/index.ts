@@ -30,7 +30,7 @@ interface AudioObject{
 interface Media{get(key:string,opts?:{range:Headers}):Promise<AudioObject|null>}
 export interface Env{DB:Database;MEDIA:Media;ASSETS?:{fetch(req:Request):Promise<Response>}}
 const app=new Hono<{Bindings:Env}>();
-const origins=new Set(['https://echo.starry.phd','https://echo-starry.starry-phd.workers.dev']);
+const origins=new Set(['https://echo-starry.starry-phd.workers.dev','https://echo.starry.phd']);
 const allowed=(origin:string)=>origins.has(origin)||/^http:\/\/localhost:\d+$/.test(origin);
 function json(data:unknown,status:number,req:Request){
  const origin=req.headers.get('Origin')||'';

@@ -2,8 +2,8 @@ import {validateGuestList,validateCover,validateRefusal} from './production-gues
 
 // After Wrangler publish, global Cloudflare edge propagation is not instantaneous.
 // Re-read the live public endpoints with bounded retries; never loosen security checks.
-const base=(process.env.ECHO_URL||'https://echo.starry.phd').replace(/\/$/,'');
-const allowed='https://echo.starry.phd';
+const base=(process.env.ECHO_URL||'https://echo-starry.starry-phd.workers.dev').replace(/\/$/,'');
+const allowed='https://echo-starry.starry-phd.workers.dev';
 if(base!==allowed)throw Error('Unexpected Production origin');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const fetchPublic=async(path)=>{

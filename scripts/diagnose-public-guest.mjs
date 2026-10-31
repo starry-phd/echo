@@ -1,6 +1,6 @@
 // Public-only, no credentials and no audio bytes.
 // Emits aggregated statuses and headers, not guest titles, IDs or cover URLs.
-const base='https://echo.starry.phd';
+const base='https://echo-starry.starry-phd.workers.dev';
 const log=(label,x)=>console.log(label,JSON.stringify(x));
 const info=r=>({status:r.status,cache:r.headers.get('cache-control'),type:r.headers.get('content-type')});
 try{

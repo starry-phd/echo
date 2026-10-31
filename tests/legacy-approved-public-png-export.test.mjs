@@ -9,11 +9,11 @@ const approved={id:'verified-123',title:'公開講座',speaker:'公開講師',
  playable:true,description:'學習營養實例',categories:['新人','健康飲水'],durationSeconds:361,uploadDate:'2026-10-01T12:34:56Z'};
 
 test('real PNG card builder uses only verified-public fields, no private members',()=>{
- const card=buildApprovedPublicInfoCard(approved,approved.id,'https://echo.starry.phd');
+ const card=buildApprovedPublicInfoCard(approved,approved.id,'https://echo-starry.starry-phd.workers.dev');
  assert.deepEqual(card,{
   title:'公開講座',speaker:'公開講師',description:'學習營養實例',
   categories:['新人','健康飲水'],duration:'7 分鐘',uploadDate:'2026-10-01',
-  publicPageUrl:'https://echo.starry.phd/track/verified-123'
+  publicPageUrl:'https://echo-starry.starry-phd.workers.dev/track/verified-123'
  });
  assert.equal(JSON.stringify(card).includes('private'),false);
 });
