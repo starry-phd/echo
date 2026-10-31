@@ -19,7 +19,9 @@ test('shared round portrait uses approved API cover only and cannot play metadat
  assert.match(source,/resizeMode="cover"/);
  assert.match(source,/path\.startsWith\('\/'\)&&!path\.startsWith\('\/\/'\)/);
  assert.match(source,/if\(track\.playable&&onPress\)return <Pressable/);
- assert.match(source,/accessibilityLabel=\{'講者照片：'\+track\.speaker\+'；音檔尚未開放播放'\}/);
+ assert.match(source,/const fallbackLabel=track\.playable/);
+ assert.match(source,/播放器準備中/);
+ assert.match(source,/音檔尚未開放播放/);
  assert.doesNotMatch(source,/useAudioPlayer|fetch\(|\/api\/members|R2|D1|AsyncStorage/);
 });
 
