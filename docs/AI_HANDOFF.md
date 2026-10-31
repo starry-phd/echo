@@ -1,5 +1,7 @@
 # 繁星回聲｜AI 接手入口
 
+> **2026-10-31 09:39+08:00 正式網址更正：** 使用者指定正式唯一主網址為 **https://echo.starry.phd**。Cloudflare `starry.phd` zone 已核實，`echo.starry.phd` Custom Domain 已從 `temp-starry-echo-bridge` 原子式改綁至新版 `echo-starry` Worker，證書/DNS保留。舊 `https://echo-starry.starry-phd.workers.dev` 只是 Worker 技術網址，任何舊文字提到「正式網站」以本節及 Issue #3 頂端為準。GitHub `.github/workflows/deploy-worker.yml` 與 `scripts/check-production-guest.mjs` 應對正式主網址驗收；私人錄音保持封閉。最新 live/CI/驗收請重新查 [Issue #3](https://github.com/starry-phd/echo/issues/3)。
+
 更新：2026-10-29（台灣）。**先讀 [Issue #3 頂端](https://github.com/starry-phd/echo/issues/3)，再查 main、PR、CI、Production run 和 Cloudflare。** 本檔是版本快照；Issue #3 持續記錄即時證據，不依聊天推定線上狀態。
 
 ## 已驗證里程碑

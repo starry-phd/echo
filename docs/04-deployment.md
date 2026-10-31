@@ -1,5 +1,7 @@
 # Cloudflare Workers Static Assets 發布說明
 
+> **2026-10-31 正式主網址：https://echo.starry.phd。** 舊 `https://echo-starry.starry-phd.workers.dev` 為技術網址，**不得再當正式主網址**。Cloudflare Custom Domain 已由原暫時 `temp-starry-echo-bridge` 改綁 `echo-starry` Worker，未重建DNS/憑證。最新保護流程是 PR exact HEAD CI success → protected merge → main CI success → **唯一自動** `workflow_run` Production（無須手動重啟）→ 正式主網址的 HTTP / private-media 拒絕 / 28核准封面不可播 smoke → Cloudflare 100% 官方查驗。本文下方包含舊歷史快照，如有衝突以本段及 Issue #3 頂端優先。未核准私人媒體、Starry ID、商店上架不可藉主網址變更解鎖。
+
 ## 目標
 
 唯一應用程式：`echo-starry` Worker；Cloudflare Account ID：`9ff1b4c261141730ac2fe0683f730062`。
