@@ -18,6 +18,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions';
+import {safeApprovedCategoryOptions} from '../src/ui/echo/safeApprovedCategoryOptions';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
 import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
@@ -139,9 +140,9 @@ export default function CatalogScreen(){
  const ranks=ready?approvedRanks:[];
  // Source-wide public categories remain trusted API metadata, while guest-only
  // category hints respect this device's visibility preferences.
- const categories=useMemo(()=>ready?[...new Set([
+ const categories=useMemo(()=>ready?safeApprovedCategoryOptions([
   ...(categoriesQuery.data??[]),...guestFacets.categories
- ])]:[],[ready,categoriesQuery.data,guestFacets]);
+ ]):[],[ready,categoriesQuery.data,guestFacets]);
  const categorySuggestions=useMemo(()=>
    publicCategorySuggestions(categories,query),[categories,query]);
  const selectSuggestedCategory=(value:string)=>{
