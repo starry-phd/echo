@@ -64,7 +64,7 @@ test('empty quick-bar remains recoverable through main menu, without privileged 
 });
 test('quick toolbar and editor are actual accessible navigation wired to root state',()=>{
  const layout=read('app/_layout.tsx'),header=read('src/ui/echo/LegacyHeader.tsx');
- assert.match(layout,/<QuickActionProvider><DevicePreferencesProvider><AppShell/);
+ assert.match(layout,/<QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/);
  assert.match(header,/chosenQuickActions\.map\(id=><Pressable/);
  assert.match(header,/onPress=\{quickActions\[id\]\.run\}/);
  assert.match(header,/quickEditorOrder\.map\(id=><View/);

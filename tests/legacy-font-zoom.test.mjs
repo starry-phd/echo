@@ -72,7 +72,7 @@ test('bad/oversized storage is clamped, malformed input does not create NaN size
 test('old font controls are accessible, saved once and applied across home and deep pages',()=>{
  const layout=read('app/_layout.tsx'),header=read('src/ui/echo/LegacyHeader.tsx');
  const card=read('src/ui/echo/LegacyTrackCard.tsx');
- assert.match(layout,/<FontZoomProvider><QuickActionProvider><DevicePreferencesProvider><AppShell/);
+ assert.match(layout,/<FontZoomProvider><QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/);
  assert.match(header,/accessibilityLabel="縮小字體"/);
  assert.match(header,/accessibilityLabel="放大字體"/);
  assert.match(header,/onPress=\{increase\}/);
