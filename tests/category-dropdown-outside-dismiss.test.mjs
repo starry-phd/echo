@@ -9,7 +9,7 @@ test('original outside click closes category dropdown; cross-platform modal pres
  assert.match(toolbar,/onRequestClose=\{dismissCategory\}/);
  assert.match(toolbar,/onAccessibilityEscape=\{dismissCategory\}/);
  assert.match(toolbar,/onPress=\{dismissCategory\} style=\{styles\.backdrop\}/);
- assert.match(toolbar,/backdrop:\{\.\.\.StyleSheet\.absoluteFillObject\}/);
+ assert.match(toolbar,/backdrop:\{position:'absolute',top:0,bottom:0,left:0,right:0\}/);
  assert.doesNotMatch(toolbar,/document\.addEventListener|window\.addEventListener|pointerEvents="none"/);
 });
 

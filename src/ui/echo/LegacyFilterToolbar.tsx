@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import type {ComponentRef} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {useLegacyTheme} from './legacyTheme';
@@ -25,7 +26,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
  const {width,height}=useViewportDimensions(),t=useLegacyTheme();
  const [categoryOpen,setCategoryOpen]=useState(false);
  const [categoryAnchor,setCategoryAnchor]=useState<CategoryMenuAnchor|null>(null);
- const categoryButtonRef=useRef<View>(null);
+ const categoryButtonRef=useRef<ComponentRef<typeof Pressable>>(null);
  const measureGeneration=useRef(0);
  // Measured window coordinates become stale on rotation/resizing.
  useEffect(()=>{measureGeneration.current++;setCategoryOpen(false);},[width,height]);
@@ -112,7 +113,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
 const styles=StyleSheet.create({
  root:{zIndex:20,marginTop:8,marginBottom:5},
  modalRoot:{flex:1},
- backdrop:{...StyleSheet.absoluteFillObject},
+ backdrop:{position:'absolute',top:0,bottom:0,left:0,right:0},
  row:{flexDirection:'row',gap:3,padding:2,borderRadius:14,borderWidth:1},
  button:{flex:1,minWidth:0,minHeight:46,borderRadius:11,borderWidth:1,
   flexDirection:'row',justifyContent:'center',alignItems:'center',gap:1,
