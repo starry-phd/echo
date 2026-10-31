@@ -129,7 +129,7 @@ export default function TrackDetails(){
  return <ScrollView ref={sections.scrollRef} style={[styles.root,{backgroundColor:t.bg}]}
    contentContainerStyle={styles.screen}>
    <View style={styles.shell} onLayout={sections.onShellLayout}>
-    <Pressable accessibilityRole="button" onPress={()=>router.push('/')} style={styles.back}>
+    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
      <Text style={[styles.backText,{color:t.palette.primary}]}>‹ 返回音檔列表</Text>
     </Pressable>
     <View onLayout={sections.onCardLayout} style={[styles.mainCard,{backgroundColor:t.card,borderColor:t.border}]}>
