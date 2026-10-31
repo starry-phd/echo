@@ -13,6 +13,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
+import {categoryFromRoute} from '../../src/ui/echo/publicCategoryNavigation';
 import {approvedVerifiedSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
@@ -162,12 +163,17 @@ export default function TrackDetails(){
       <>
        <View style={styles.hero}>
         <LegacyDetailSpeakerPortrait track={track} onPress={portraitToggle??undefined}/>
-        <View style={styles.tags}>{track.categories.map((category,i)=><Pressable key={category+i}
-         accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
-         onPress={()=>router.push({pathname:'/',params:{category}})}
-         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-         <Text style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(11)}]}>{category} ›</Text>
-        </Pressable>)}</View>
+        <View style={styles.tags}>{track.categories.map((category,i)=>{
+         const selected=categoryFromRoute(category);
+         return selected?<Pressable key={category+i}
+          accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
+          onPress={()=>router.push({pathname:'/',params:{category:selected}})}
+          style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+          <Text style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(11)}]}>{selected} ›</Text>
+         </Pressable>:<View key={category+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+          <Text style={[styles.tagText,{color:t.muted,fontSize:fontSize(11)}]}>{category}</Text>
+         </View>;
+        })}</View>
         <Text style={[styles.title,{color:t.ink,fontSize:fontSize(hero.titleFont)}]}>{track.title}</Text>
         <View style={styles.heroSpeakers}>
          {speakerNames.length? speakerNames.map((name,i)=><View key={name+i} style={styles.speakerLinkItem}>
