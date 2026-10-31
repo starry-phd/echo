@@ -357,7 +357,9 @@ test('speaker filter always uses bound SQL parameters alongside public access ch
  const url=new URL(origin+'/api/v1/catalog');url.searchParams.set('speaker',value);
  const r=await worker.fetch(new Request(url),env);
  assert.equal(r.status,200);
- assert.match(sqlSeen[0],/speaker\s*=\s*\?/);
+ assert.match(sqlSeen[0],/instr\(/);
+ assert.match(sqlSeen[0],/replace\(/);
+ assert.match(sqlSeen[0],/\?/);
  assert.match(sqlSeen[0],/visibility\s*=\s*'public'/);
  assert.match(sqlSeen[0],/migration_status\s*=\s*'verified'/);
  assert.equal(sqlSeen[0].includes(value),false);

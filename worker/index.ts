@@ -105,7 +105,10 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
  }
  const speaker=(checked.data.speaker||'').trim();
  if(speaker){
-  sql+=" AND speaker = ?";
+  // Match one & / ＆-separated presenter within the verified-public catalog,
+  // using a bound name. SQL narrows candidates before LIMIT 100; the client
+  // must still enforce exact NFKC presenter identity before rendering.
+  sql+=" AND instr('&' || replace(replace(COALESCE(speaker,''),'＆','&'),' ','') || '&', '&' || replace(replace(?,'＆','&'),' ','') || '&') > 0";
   args.push(speaker);
  }
  sql+=' ORDER BY updated_at DESC LIMIT 100';
