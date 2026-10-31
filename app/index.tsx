@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import type {ComponentRef} from 'react';
 import {useInfiniteQuery,useQuery} from '@tanstack/react-query';
 import {router,useLocalSearchParams} from 'expo-router';
-import {AccessibilityInfo,ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {AccessibilityInfo,ActivityIndicator,Keyboard,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useViewportDimensions} from '../src/ui/useViewportDimensions';
 import {getCategories,getEchoHealth,getPublicTracks,getGuestPreviewTracks} from '../src/api/client';
 import {describeEmptyPublicCatalog} from '../src/ui/echo/migrationPresentation';
@@ -40,7 +40,8 @@ import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
- const {revision:homeResetRevision}=useHomeResetSignal();
+ const {revision:homeResetRevision,dismissSearchRevision}=useHomeResetSignal();
+ const seenDismissSearchRevision=useRef(dismissSearchRevision);
  const seenHomeResetRevision=useRef(homeResetRevision);
  const homeScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  const {fontSize}=useFontZoom();
@@ -54,6 +55,15 @@ export default function CatalogScreen(){
  }
  const searchSuggestionBlurGuard=searchSuggestionBlurGuardRef.current;
  useEffect(()=>()=>searchSuggestionBlurGuard.dispose(),[searchSuggestionBlurGuard]);
+ // Original src/App.tsx closes the suggestion drawer on document mousedown
+ // outside the search container. Header actions are outside that container
+ // but do not guarantee TextInput onBlur with native handled taps.
+ useEffect(()=>{
+  if(seenDismissSearchRevision.current===dismissSearchRevision)return;
+  seenDismissSearchRevision.current=dismissSearchRevision;
+  searchSuggestionBlurGuard.dismiss();
+  Keyboard.dismiss();
+ },[dismissSearchRevision,searchSuggestionBlurGuard]);
  const [debouncedQuery,setDebouncedQuery]=useState('');
  const [category,setCategory]=useState<string|null>(()=>speakerRankFromRoute(linkedSpeakerRank)?null:categoryFromRoute(linkedCategory));
  const [order,setOrder]=useState<SortOrder>('newest');
