@@ -12,6 +12,8 @@ test('PR/main CI validates both native platform bundles before web production ch
  assert.match(ci,/Verify Android Hermes bundle export \(no signing\)/);
  assert.match(ci,/find \/tmp\/echo-native-ios -type f -print -quit/);
  assert.match(ci,/find \/tmp\/echo-native-android -type f -print -quit/);
+ const nativeApiBase=(ci.match(/EXPO_PUBLIC_ECHO_API_BASE_URL: https:\/\/echo-starry\.starry-phd\.workers\.dev/g)||[]).length;
+ assert.equal(nativeApiBase,2,'Both native exports embed only the approved new public Worker API');
  assert.match(ci,/name: echo-starry-web-dist/);
  assert.match(ci,/path: dist\//);
  assert.doesNotMatch(ci,/eas (?:build|submit|update)|fastlane|xcodebuild|gradlew.*assembleRelease/);
