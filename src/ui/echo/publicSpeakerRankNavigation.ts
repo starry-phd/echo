@@ -19,3 +19,13 @@ export function approvedGuestSpeakerRank(track:{
  return track?.legacySnapshot===true&&track.playable===false
   ?speakerRankFromRoute(track.speakerRank):null;
 }
+
+/** This helper is ONLY called with the current verified-public detail response
+ * from getPublicTrack(). A route/name or saved ID does not authorize a track.
+ * Keep guest-only and public-verified cases separate to fail closed.
+ */
+export function approvedVerifiedSpeakerRank(track:{
+ playable:boolean;speakerRank?:string|null;
+}|null|undefined):string|null{
+ return track?.playable===true?speakerRankFromRoute(track.speakerRank):null;
+}
