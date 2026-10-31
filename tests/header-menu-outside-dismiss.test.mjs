@@ -31,7 +31,7 @@ test('backdrop occurs before the actual panel to preserve inner menu actions and
 test('screen orientation invalidates current menu and releases drag state',()=>{
  assert.match(header,/const closeMenu=\(\)=>\{setOpen\(false\);setDraggingQuickId\(null\);\}/);
  assert.match(header,/useEffect\(\(\)=>\{setOpen\(false\);setDraggingQuickId\(null\);\},\[width,height\]\)/);
- assert.match(header,/const go=\(path:.*?\)=>\{\s*closeMenu\(\)/s);
+ assert.match(header,/const go=\(path:.*?\)=>\{\s*requestDismissSearch\(\);\s*closeMenu\(\)/s);
  assert.match(header,/const menuTop=visualMetrics\.headerHeight\+visualMetrics\.headerActionsHeight/);
  assert.match(header,/maxHeight:headerMenuMaxHeight\(height,menuTop\)/);
 });

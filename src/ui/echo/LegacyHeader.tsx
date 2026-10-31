@@ -19,7 +19,7 @@ export function LegacyHeader(){
  const colors=useLegacyTheme();
  const {zoom,ready:fontReady,increase,decrease,fontSize}=useFontZoom();
  const quick=useQuickActions();
- const {requestReset}=useHomeResetSignal();
+ const {requestReset,requestDismissSearch}=useHomeResetSignal();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
  const menuTop=visualMetrics.headerHeight+visualMetrics.headerActionsHeight;
@@ -36,6 +36,7 @@ export function LegacyHeader(){
  // Window coordinates and the menu's scroll bounds change on resize/rotation.
  useEffect(()=>{setOpen(false);setDraggingQuickId(null);},[width,height]);
  const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{
+  requestDismissSearch();
   closeMenu();
   if(path==='/'){
    requestReset();
@@ -77,17 +78,17 @@ export function LegacyHeader(){
      <View style={styles.fontActions} accessibilityLabel="調整字體大小">
        <Pressable accessibilityRole="button" accessibilityLabel="縮小字體" accessibilityHint="最低100%，每次調整10%"
         accessibilityState={{disabled:!fontReady||zoom<=1}} disabled={!fontReady||zoom<=1}
-        onPress={decrease} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
+        onPress={()=>{requestDismissSearch();decrease();}} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
         <Text style={[styles.fontButtonText,{color:activeColor}]}>A−</Text>
        </Pressable>
        <Pressable accessibilityRole="button" accessibilityLabel="放大字體" accessibilityHint="最高140%，每次調整10%"
         accessibilityState={{disabled:!fontReady||zoom>=1.4}} disabled={!fontReady||zoom>=1.4}
-        onPress={increase} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
+        onPress={()=>{requestDismissSearch();increase();}} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
         <Text style={[styles.fontButtonText,{color:activeColor}]}>A＋</Text>
        </Pressable>
      </View>
      <Pressable accessibilityRole="button" accessibilityLabel="開啟主選單"
-       accessibilityState={{expanded:open}} onPress={()=>setOpen(x=>!x)}
+       accessibilityState={{expanded:open}} onPress={()=>{requestDismissSearch();setOpen(x=>!x);}}
        style={[styles.menuButton,{backgroundColor:colors.dark?'#253145':'#f1f5f9'}]}>
        <Text style={[styles.menuGlyph,{color:colors.ink}]}>{open?'✕':'☰'}</Text>
      </Pressable>
@@ -96,14 +97,14 @@ export function LegacyHeader(){
     {chosenQuickActions.map(id=><Pressable key={id} accessibilityRole="button"
      accessibilityLabel={'快捷功能：'+quickActions[id].label}
      accessibilityState={{selected:id==='home'&&isHome}}
-     onPress={quickActions[id].run} style={styles.quick}>
+     onPress={()=>{requestDismissSearch();quickActions[id].run();}} style={styles.quick}>
      <Text numberOfLines={1} adjustsFontSizeToFit
       style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>
       {quickActions[id].glyph} {quickActions[id].label}
      </Text>
     </Pressable>)}
     {chosenQuickActions.length===0&&<Pressable accessibilityRole="button" accessibilityLabel="設定置頂快捷功能"
-      onPress={()=>setOpen(true)} style={styles.quick}>
+      onPress={()=>{requestDismissSearch();setOpen(true);}} style={styles.quick}>
       <Text style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>＋ 設定快捷功能</Text>
     </Pressable>}
    </View>
