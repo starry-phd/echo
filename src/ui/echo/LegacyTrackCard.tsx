@@ -177,8 +177,12 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
    <Pressable accessibilityRole="button" accessibilityLabel="關閉音檔選單" style={styles.popupRow} onPress={()=>setOpen(false)}>
     <Text style={[styles.popupText,{color:t.muted,fontSize:fontSize(13)}]}>✕　關閉選單</Text>
    </Pressable>
-   <Pressable accessibilityRole="button" style={styles.popupRow} onPress={()=>void share()}
-    accessibilityState={{disabled:!publicShareMessage}}>
+   <Pressable accessibilityRole="button"
+    accessibilityLabel={publicShareMessage?'分享已核准公開音檔頁面':'分享尚未開放'}
+    accessibilityHint={publicShareMessage?'只分享公開資訊頁面，不提供音檔網址':'僅取得公開分享授權的作品可分享'}
+    accessibilityState={{disabled:!publicShareMessage}}
+    disabled={!publicShareMessage} onPress={()=>void share()}
+    style={[styles.popupRow,{opacity:publicShareMessage?1:0.55}]}>
     <Text style={[styles.popupText,{color:t.ink,fontSize:fontSize(13)}]}>⇧　{publicShareMessage?'分享公開音檔頁面':'分享尚未開放'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={toggleDetails}>
