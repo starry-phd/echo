@@ -5,11 +5,17 @@
   "build": {
     "development": {
       "distribution": "internal",
-      "channel": "development"
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_ECHO_API_BASE_URL": "https://echo-starry.starry-phd.workers.dev"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_ECHO_API_BASE_URL": "https://echo-starry.starry-phd.workers.dev"
+      }
     },
     "production": {
       "channel": "production",
