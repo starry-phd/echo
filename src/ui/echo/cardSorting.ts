@@ -18,7 +18,20 @@ export function sortEchoCards<T extends HistoricalCounts>(items:readonly T[],ord
   return (first&&second?-byDate(a,b):byDate(a,b))||datedTie(a,b);
  });
  const metric=order.replace('-asc','');
- const value=(t:T)=>metric==='rating'?(t.rating??0):metric==='likes'?(t.likes??0):(t.commentsCount??0);
+ // An absent historical aggregate is NOT a recorded zero. In particular,
+ // "rating-asc" and "likes-asc" must not place verified-public cards with no
+ // published historic metrics ahead of approved guest cards with actual 0.
+ const value=(t:T):number|null=>{
+  const candidate=metric==='rating'?t.rating:metric==='likes'?t.likes:t.commentsCount;
+  if(typeof candidate!=='number'||!Number.isFinite(candidate)||candidate<0)return null;
+  if(metric==='rating')return candidate<=5?candidate:null;
+  return Number.isSafeInteger(candidate)?candidate:null;
+ };
  const direction=order.endsWith('-asc')?1:-1;
- return [...items].sort((a,b)=>direction*(value(a)-value(b))||byDate(a,b)||a.id.localeCompare(b.id));
+ return [...items].sort((a,b)=>{
+  const left=value(a),right=value(b);
+  if(left===null)return right===null?0:1; // Unknown always last.
+  if(right===null)return -1;
+  return direction*(left-right)||byDate(a,b)||a.id.localeCompare(b.id);
+ });
 }
