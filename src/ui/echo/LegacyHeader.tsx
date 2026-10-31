@@ -164,7 +164,8 @@ export function LegacyHeader(){
           <Text numberOfLines={1} style={[styles.swatchLabel,{color:colors.muted}]}>{p.name}</Text>
         </Pressable>)}
        </View>}
-       <Pressable accessibilityRole="button" style={styles.menuItem} onPress={colors.toggleDark}>
+       <Pressable accessibilityRole="button" style={styles.menuItem}
+         onPress={()=>{colors.toggleDark();closeMenu();}}>
          <Text style={[styles.itemLabel,{color:colors.ink}]}>☾　{colors.dark?'切換淺色模式':'切換深色模式'}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>
