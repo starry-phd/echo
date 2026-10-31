@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useViewportDimensions} from '../useViewportDimensions';
@@ -19,6 +20,7 @@ export function LegacyHeader(){
  const colors=useLegacyTheme();
  const {zoom,ready:fontReady,increase,decrease,fontSize}=useFontZoom();
  const quick=useQuickActions();
+ const queryClient=useQueryClient();
  const {requestReset,requestDismissSearch}=useHomeResetSignal();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
@@ -44,6 +46,15 @@ export function LegacyHeader(){
    return;
   }
   router.push(path);
+ };
+ // The original Navbar has a distinct "回首頁" shortcut that reloads the
+ // catalog, unlike the logo's local filter reset. Revalidate ONLY approved
+ // guest/public queries; do not reload the WebView or touch member/private data.
+ const refreshApprovedHome=()=>{
+  go('/');
+  for(const name of ['public-tracks','guest-previews','categories','public-health'] as const){
+   void queryClient.invalidateQueries({queryKey:['echo',name],refetchType:'active'});
+  }
  };
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
@@ -135,7 +146,8 @@ export function LegacyHeader(){
          <Pressable accessibilityRole="button" style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={colors.cyclePalette}>
            <Text style={[styles.menuMiniText,{color:activeColor}]}>✦ 好心情</Text>
          </Pressable>
-         <Pressable accessibilityRole="button" style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={()=>go('/')}>
+         <Pressable accessibilityRole="button" accessibilityLabel="回首頁並重新整理公開清單"
+           style={[styles.menuMini,{backgroundColor:colors.lightPill}]} onPress={refreshApprovedHome}>
            <Text style={[styles.menuMiniText,{color:activeColor}]}>⌂ 回首頁</Text>
          </Pressable>
        </View>
