@@ -14,9 +14,11 @@ export type {SortOrder} from './cardSorting';
  * superseded v145 four-button toolbar.
  * Rights / stickers are intentionally read-only until authorized APIs exist.
  */
-export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice}:{
+export function LegacyFilterToolbar({categories,category,onCategory,order,onOrder,onNotice,onInteract}:{
  categories:string[];category:string|null;onCategory:(c:string|null)=>void;
  order:SortOrder;onOrder:(value:SortOrder)=>void;onNotice:(s:string)=>void;
+ /** Called by every handled toolbar gesture: RN may keep TextInput focused. */
+ onInteract?:()=>void;
 }){
  const {width}=useViewportDimensions(),t=useLegacyTheme();
  const [categoryOpen,setCategoryOpen]=useState(false);
@@ -24,6 +26,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
  const fields=visibleLegacySortFields(width);
  const active=sortFieldForOrder(order);
  const onField=(field:LegacySortField)=>{
+  onInteract?.();
   if(field==='category'){setCategoryOpen(value=>!value);return;}
   setCategoryOpen(false);
   const next=nextLegacySortOrder(order,field);
@@ -56,7 +59,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
    })}
   </View>
   {Boolean(category)&&<Pressable accessibilityRole="button" accessibilityLabel={'目前分類：'+category+'；點擊清除'}
-    onPress={()=>onCategory(null)} style={[styles.selectedCategory,{borderColor:t.border,backgroundColor:t.lightPill}]}>
+    onPress={()=>{onInteract?.();onCategory(null);}} style={[styles.selectedCategory,{borderColor:t.border,backgroundColor:t.lightPill}]}>
      <Text numberOfLines={1} style={{color:t.palette.primary,fontSize:12,fontWeight:'800'}}>分類：{category}　✕</Text>
    </Pressable>}
   {categoryOpen&&<View style={[styles.menu,{backgroundColor:t.palette.primary,borderColor:t.border,
@@ -65,12 +68,12 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
     {[null,...categories].map(value=><Pressable key={value??'all'}
      accessibilityRole="button" accessibilityLabel={'選擇分類：'+(value??'全部')}
      accessibilityState={{selected:category===value}}
-     onPress={()=>{onCategory(value);setCategoryOpen(false);}} style={styles.option}>
+     onPress={()=>{onInteract?.();onCategory(value);setCategoryOpen(false);}} style={styles.option}>
       <Text style={styles.optionText} numberOfLines={2}>{value??'全部分類'}</Text>
       {category===value&&<Text style={styles.optionText}>✓</Text>}
     </Pressable>)}
    </ScrollView>
-   <Pressable accessibilityRole="button" accessibilityLabel="關閉分類選單" onPress={()=>setCategoryOpen(false)}
+   <Pressable accessibilityRole="button" accessibilityLabel="關閉分類選單" onPress={()=>{onInteract?.();setCategoryOpen(false);}}
      style={styles.menuClose}><Text style={styles.optionText}>✕　關閉</Text></Pressable>
   </View>}
  </View>;

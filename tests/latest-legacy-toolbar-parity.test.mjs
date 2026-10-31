@@ -64,3 +64,17 @@ test('React Native toolbar keeps accessible category chooser and never invents m
  assert.match(home,/LegacyFilterToolbar categories=\{categories\}/);
  assert.doesNotMatch(src,/四個篩選按鈕/);
 });
+
+test('handled sort/category toolbar gestures close search suggestions even if native input remains focused',()=>{
+ const src=readFileSync(new URL('../src/ui/echo/LegacyFilterToolbar.tsx',import.meta.url),'utf8');
+ const home=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
+ // React Native ScrollView keyboardShouldPersistTaps="handled" does not
+ // promise to blur TextInput when a different Pressable handles the tap.
+ assert.match(home,/keyboardShouldPersistTaps="handled"/);
+ assert.match(home,/onInteract=\{\(\)=>searchSuggestionBlurGuard\.dismiss\(\)\}/);
+ assert.match(src,/const onField=\(field:LegacySortField\)=>\{\s*onInteract\?\.\(\);/);
+ assert.match(src,/onPress=\{\(\)=>\{onInteract\?\.\(\);onCategory\(null\);\}\}/);
+ assert.match(src,/onPress=\{\(\)=>\{onInteract\?\.\(\);onCategory\(value\);setCategoryOpen\(false\);\}\}/);
+ assert.match(src,/onPress=\{\(\)=>\{onInteract\?\.\(\);setCategoryOpen\(false\);\}\}/);
+ assert.match(src,/onInteract\?:\(\)=>void/);
+});
