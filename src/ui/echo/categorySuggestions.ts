@@ -15,7 +15,7 @@ export function publicCategorySuggestions(
  const limit=Math.min(16,Math.max(0,Math.floor(Number.isFinite(max)?max:0)));
  if(limit===0)return [];
  for(const raw of source){
-  if(typeof raw!=='string')continue;
+  if(typeof raw!=='string'||/[\x00-\x1f\x7f]/u.test(raw))continue;
   // Normalize only for matching/deduplication; the selected filter must
   // retain the exact category published in the approved API metadata.
   const value=categoryFromRoute(raw);
