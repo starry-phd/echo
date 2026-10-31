@@ -40,9 +40,9 @@ test('private stream and unlisted cover refuse access',()=>{
 
 test('live smoke probes all 28 guest stream HEAD statuses without reading any audio body',()=>{
  const script=readFileSync(new URL('../scripts/check-production-guest.mjs',import.meta.url),'utf8');
- assert.equal((script.match(/for\\(let index=0;index<tracks\\.length;index\\+\\+\\)/g)||[]).length,2);
- assert.match(script,/fetchPublic\\(path,'HEAD'\\)/);
- assert.match(script,/validateRefusal\\(r\\.status,r\\.headers,'guest stream HEAD '/);
- assert.match(script,/Validated 28\\/28 curated guest stream HEAD requests/);
- assert.doesNotMatch(script,/r\\.arrayBuffer\\(\\).*stream|r\\.text\\(\\).*stream/);
+ assert.equal((script.match(/for\(let index=0;index<tracks\.length;index\+\+\)/g)||[]).length,2);
+ assert.match(script,/fetchPublic\(path,'HEAD'\)/);
+ assert.match(script,/validateRefusal\(r\.status,r\.headers,'guest stream HEAD '/);
+ assert.match(script,/Validated 28\/28 curated guest stream HEAD requests/);
+ assert.doesNotMatch(script,/r\.arrayBuffer\(\).*stream|r\.text\(\).*stream/);
 });
