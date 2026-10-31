@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {historicallyRankableTracks} from '../src/ui/echo/historicallyRankableTracks.ts';
+import {missingHistoricalMetricCopy} from '../src/ui/echo/legacyRankingTabs.ts';
 import {sortEchoCards} from '../src/ui/echo/cardSorting.ts';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
@@ -44,6 +45,17 @@ test('hot rankings reuse currently approved visible guest/public metadata only a
  assert.match(page,/sortEchoCards\(historicallyRankableTracks\(visible,metric\),metric\)\.slice\(0,10\)/);
  assert.match(page,/preferences\.ready&&display==='ready'&&ranked\.length===0/);
  assert.match(page,/沒有數字的作品不視為 0 分/);
- assert.match(page,/可嘗試其他指標或繼續載入公開作品/);
+ assert.match(page,/missingHistoricalMetricCopy\(Boolean\(catalog\.hasNextPage\)\)/);
  assert.doesNotMatch(page,/R2\.get|privateAudio|centralUserId|memberProfile/);
+});
+
+test('no-metric rankings only offer load more when a verified-public next page exists',()=>{
+ const more=missingHistoricalMetricCopy(true);
+ const ended=missingHistoricalMetricCopy(false);
+ assert.match(more,/目前已載入的核准作品尚無/);
+ assert.match(more,/繼續載入公開作品/);
+ assert.match(ended,/目前已載入的核准作品尚無/);
+ assert.match(ended,/可嘗試其他指標/);
+ assert.doesNotMatch(ended,/繼續載入|載入更多|全站沒有|沒有公開作品/);
+ assert.doesNotMatch(more+ended,/私人音檔可播放|會員個資|VIP解鎖/);
 });
