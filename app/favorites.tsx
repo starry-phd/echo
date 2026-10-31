@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getGuestPreviewTracks,getPublicTracks} from '../src/api/client';
@@ -10,6 +10,7 @@ import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/ca
 import {restorableHiddenCards} from '../src/ui/echo/dislikedTracks';
 import {isSpeakerHidden,restorableHiddenSpeakers} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
+import {loadAuthorizedSavedPublicBatches} from '../src/ui/echo/authorizedSavedPublicBatches';
 
 export default function DeviceFavorites(){
  const t=useLegacyTheme();
@@ -17,25 +18,39 @@ export default function DeviceFavorites(){
  const [notice,setNotice]=useState('');
  const previews=useQuery({queryKey:['echo','guest-previews'],queryFn:({signal})=>getGuestPreviewTracks(signal),retry:1});
  const catalog=useQuery({queryKey:['echo','favorite-public-catalog'],queryFn:({signal})=>getPublicTracks(signal),retry:1});
- // Saved IDs are not an access grant: resolve only through current authorized lists.
- const authorized=mergeAuthorizedCards(catalog.data??[],previews.data??[]);
+ // A saved ID is only a local preference: resolve it again through the
+ // current verified-public API, even when it falls beyond catalog LIMIT 100.
+ // Guest-only saved cards must still come from the curated preview API.
+ const savedIds=useMemo(()=>[...new Set([...preferences.favoriteIds,...preferences.dislikedIds])],
+  [preferences.favoriteIds,preferences.dislikedIds]);
+ const savedPublic=useQuery({
+  queryKey:['echo','saved-public-metadata',savedIds],
+  enabled:preferences.ready&&savedIds.length>0,
+  queryFn:({signal})=>loadAuthorizedSavedPublicBatches(savedIds,
+   ids=>getPublicTracks(signal,{ids})),retry:1
+ });
+ const publicCards=mergeAuthorizedCards(catalog.data??[],savedPublic.data??[]);
+ const authorized=mergeAuthorizedCards(publicCards,previews.data??[]);
  const tracks=authorized.filter(track=>
   preferences.favoriteIds.includes(track.id)&&!preferences.dislikedIds.includes(track.id)&&
   !isSpeakerHidden(track.speaker,preferences.hiddenSpeakers));
- const publicSource={pending:catalog.isPending,failed:catalog.isError,count:catalog.data?.length??0};
+ const savedPending=preferences.ready&&savedIds.length>0&&savedPublic.isPending;
+ const savedFailed=preferences.ready&&savedIds.length>0&&savedPublic.isError;
+ const publicSource={pending:catalog.isPending||savedPending,
+  failed:catalog.isError||savedFailed,count:publicCards.length};
  const previewSource={pending:previews.isPending,failed:previews.isError,count:previews.data?.length??0};
  const display=getCatalogDisplayState(publicSource,previewSource,tracks.length);
  const partial=hasPartialCatalogFailure(publicSource,previewSource);
  const pending=!preferences.ready||display==='loading';
- const hiddenCards=restorableHiddenCards(catalog.data??[],previews.data??[],preferences.dislikedIds);
+ const hiddenCards=restorableHiddenCards(publicCards,previews.data??[],preferences.dislikedIds);
  const missingHiddenCount=Math.max(0,preferences.dislikedIds.length-hiddenCards.length);
  const hiddenSpeakerNames=restorableHiddenSpeakers(authorized,preferences.hiddenSpeakers);
  const missingSpeakerCount=Math.max(0,preferences.hiddenSpeakers.length-hiddenSpeakerNames.length);
- const retry=()=>{void previews.refetch();void catalog.refetch();};
+ const retry=()=>{void previews.refetch();void catalog.refetch();if(savedIds.length)void savedPublic.refetch();};
  return <ScrollView style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Text style={[styles.title,{color:t.ink}]}>我的收藏</Text>
-   <Text style={[styles.note,{color:t.muted}]}>僅保留在此裝置，尚未與會員同步。收藏不會開放錄音播放或分享。</Text>
+   <Text style={[styles.note,{color:t.muted}]}>僅保留在此裝置，尚未與會員同步。收藏會透過目前核准的公開 API 重新確認，不會開放私人錄音或分享。</Text>
    {preferences.storageError&&<Text style={[styles.note,{color:t.muted}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
    {!!notice&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
    {preferences.dislikedIds.length>0&&<View style={[styles.hiddenSection,{backgroundColor:t.card,borderColor:t.border}]}>
