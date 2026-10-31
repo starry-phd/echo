@@ -100,6 +100,15 @@
               "minimum": 0,
               "maximum": 999999
             }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "JSON-encoded array of 1–16 public track IDs for currently verified-public metadata only. Locally saved IDs never grant access; the curated guest previews endpoint is unchanged.",
+            "schema": {
+              "type": "string",
+              "maxLength": 4096
+            }
           }
         ],
         "responses": {

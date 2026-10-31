@@ -10,7 +10,7 @@ export type EchoTrack=components['schemas']['Track'];
 export type EchoHealth=components['schemas']['Health'];
 export type ApiProblem=components['schemas']['Problem'];
 export type CatalogResult={tracks:EchoTrack[]};
-export type CatalogFilters={query?:string;category?:string;speaker?:string;offset?:number};
+export type CatalogFilters={query?:string;category?:string;speaker?:string;offset?:number;ids?:string[]};
 export type EchoSpeaker=components['schemas']['Speaker'];
 
 export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=fetch){
@@ -20,11 +20,15 @@ export function createEchoPublicClient(baseUrl:string,clientFetch:typeof fetch=f
  const api=createClient<paths>({baseUrl:origin,fetch:clientFetch});
  return {
   async listTracks(signal?:AbortSignal,filters:CatalogFilters={}):Promise<EchoTrack[]>{
+   if(filters.ids!==undefined&&(!Array.isArray(filters.ids)||filters.ids.length<1||
+    filters.ids.length>16||!filters.ids.every(id=>typeof id==='string'&&id.length>0&&id.length<=200)))
+    throw new Error('Invalid saved public ID batch');
    const result=await api.GET('/api/v1/catalog',{params:{query:{
     q:filters.query?.trim().slice(0,100),
     category:filters.category?.trim().slice(0,80),
     speaker:filters.speaker?.trim().slice(0,80),
-    offset:filters.offset
+    offset:filters.offset,
+    ids:filters.ids?JSON.stringify(filters.ids):undefined
    }},signal});
    if(result.error||!result.data||!Array.isArray(result.data.tracks))
     throw new Error('Echo catalog unavailable or schema mismatch');
