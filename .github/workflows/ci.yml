@@ -32,6 +32,7 @@ jobs:
       - run: npm test
       # Static Expo/Hermes JS bundle checks only. Never run EAS signing,
       # Apple/Google submission or private audio audits in this CI.
+      # Each native bundle embeds the approved public workers.dev URL; Web keeps its own origin.
       - name: Verify iOS Hermes bundle export (no signing)
         env:
           EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
