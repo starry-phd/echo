@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {publicCategorySuggestions} from '../src/ui/echo/categorySuggestions.ts';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation.ts';
+import {approvedExactCategoryLink} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
 import {matchesCardFilters} from '../src/ui/echo/cardFilters.ts';
 
 test('search suggestion input matches only vetted public category labels',()=>{
@@ -14,8 +15,8 @@ test('search suggestion input matches only vetted public category labels',()=>{
 
 test('category lookup normalizes matching but retains exact published labels',()=>{
  const source=[' 新人 ','新人','ＡＩ','AI','事業',...Array.from({length:100},(_,i)=>'分類'+i)];
- assert.deepEqual(publicCategorySuggestions(source,'',3),['新人','ＡＩ','事業']);
- assert.deepEqual(publicCategorySuggestions(source,'AI'),['ＡＩ']);
+ assert.deepEqual(publicCategorySuggestions(source,'',3),['新人','ＡＩ','AI']);
+ assert.deepEqual(publicCategorySuggestions(source,'AI'),['ＡＩ','AI']);
  assert.equal(publicCategorySuggestions(source,'',50).length,16);
 });
 
@@ -27,7 +28,7 @@ test('no original track titles, usernames, free-text or unapproved keywords are 
 });
 
 test('discard invalid strings/control characters and do not mutate source',()=>{
- const data=['', '  ', '\n敏感', '健康', 'X'.repeat(81)];
+ const data=['', '  ', ' 健康 ', '\n敏感', '健康', '＜private＞', 'X'.repeat(81)];
  const orig=[...data];
  assert.deepEqual(publicCategorySuggestions(data,''),['健康']);
  assert.deepEqual(data,orig);
@@ -45,4 +46,26 @@ test('NFKC search hits preserve exact labels for both home and public route filt
 });
 test('reject non-navigable category hints instead of offering broken filters',()=>{
  assert.deepEqual(publicCategorySuggestions(['<script>','健康','＜private＞','健康\n其他'],''),['健康']);
+});
+
+
+test('different approved spellings are independently selectable exact categories',()=>{
+ const source=['ＡＩ','AI','ai','ＡＩ','健康・營養','健康・營養'];
+ const suggestions=publicCategorySuggestions(source,'ai');
+ assert.deepEqual(suggestions,['ＡＩ','AI','ai']);
+ for(const label of suggestions){
+  assert.equal(approvedExactCategoryLink(label),label);
+  const card={title:'公開講座',speaker:'講者',categories:[label]};
+  assert.equal(matchesCardFilters(card,{category:label}),true);
+ }
+ // Unicode/NFKC improves matching the typed query but NEVER collapses
+ // different exact filter values into a single suggestion.
+ assert.equal(matchesCardFilters({title:'講座',speaker:'講者',categories:['AI']},{category:'ＡＩ'}),false);
+});
+
+test('raw unvetted suggestions never silently trim or normalize selected filter values',()=>{
+ const source=[' 新人 ','新人 ','\n新人','新人\t','＜private＞','ＡＩ','AI','新人'];
+ assert.deepEqual(publicCategorySuggestions(source,'AI'),['ＡＩ','AI']);
+ assert.deepEqual(publicCategorySuggestions(source,'新人'),['新人']);
+ assert.deepEqual(publicCategorySuggestions(source,''),['ＡＩ','AI','新人']);
 });
