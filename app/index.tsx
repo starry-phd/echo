@@ -241,7 +241,8 @@ export default function CatalogScreen(){
      <View style={styles.searchRow}>
        <Pressable accessibilityRole="button" accessibilityLabel="召喚繁星解答"
          accessibilityState={{disabled:!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')}}
-         disabled={!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')} onPress={draw}
+         disabled={!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')}
+         onPress={()=>{searchSuggestionBlurGuard.dismiss();draw();}}
          style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
          <Text numberOfLines={2} style={styles.luckyText}>{luckyPhase==='spin'?'💫抽選中…':'💫召喚繁星解答'}</Text>
        </Pressable>
@@ -289,13 +290,14 @@ export default function CatalogScreen(){
       </View>}
      <Pressable accessibilityRole="button"
        accessibilityState={{expanded:advanced}}
-       onPress={()=>setAdvanced(value=>!value)}
+       onPress={()=>{searchSuggestionBlurGuard.dismiss();setAdvanced(value=>!value);}}
        style={styles.advancedHint}>
        <Text style={[styles.advancedHintText,{color:'#b47a08'}]}>
          按此 {advanced?'▲收起':'▼展開'} 進階篩選{speakerRank?'（已套用）':''}
        </Text>
      </Pressable>
-     {advanced&&<AdvancedCardFilters ranks={ranks} selectedRank={speakerRank} onRank={setSpeakerRank}/>}
+     {advanced&&<AdvancedCardFilters ranks={ranks} selectedRank={speakerRank}
+       onRank={value=>{searchSuggestionBlurGuard.dismiss();setSpeakerRank(value);}}/>}
      <LegacyFilterToolbar categories={categories} category={category}
        onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}
        onInteract={()=>searchSuggestionBlurGuard.dismiss()}/>
@@ -323,7 +325,7 @@ export default function CatalogScreen(){
         </Text>}
      </View>
      {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
-      onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
+      onPress={()=>{searchSuggestionBlurGuard.dismiss();setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
       <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
      </Pressable>}
      {storageError&&<Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
