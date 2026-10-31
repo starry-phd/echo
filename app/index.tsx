@@ -297,7 +297,8 @@ export default function CatalogScreen(){
      </Pressable>
      {advanced&&<AdvancedCardFilters ranks={ranks} selectedRank={speakerRank} onRank={setSpeakerRank}/>}
      <LegacyFilterToolbar categories={categories} category={category}
-       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}/>
+       onCategory={setCategory} order={order} onOrder={setOrder} onNotice={setNotice}
+       onInteract={()=>searchSuggestionBlurGuard.dismiss()}/>
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink,fontSize:fontSize(14)}]}>
