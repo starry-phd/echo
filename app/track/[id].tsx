@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {router,useLocalSearchParams} from 'expo-router';
@@ -19,6 +19,10 @@ import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackSha
 import {LegacyDetailDeviceActions} from '../../src/ui/echo/LegacyDetailDeviceActions';
 import {LegacyDetailSectionNavigation} from '../../src/ui/echo/LegacyDetailSectionNavigation';
 import {LegacyDetailSpeakerPortrait} from '../../src/ui/echo/LegacyDetailSpeakerPortrait';
+import {LegacyDetailEngagementSummary} from '../../src/ui/echo/LegacyDetailEngagementSummary';
+import {useFontZoom} from '../../src/ui/echo/FontZoom';
+import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
+import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
 
 /**
@@ -26,7 +30,7 @@ import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
  * browser/native audio during Expo 58 static Web prerendering.
  * Only the public+verified detail endpoint authorizes playback.
  */
-function AudioPlayback({track}:{track:EchoTrack}){
+function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(toggle:(()=>void)|null)=>void}){
  const t=useLegacyTheme();
  const player=useAudioPlayer(null);
  const status=useAudioPlayerStatus(player);
@@ -46,6 +50,13 @@ function AudioPlayback({track}:{track:EchoTrack}){
   if(!initialized.current){player.replace({uri:source});initialized.current=true;}
   player.play();
  };
+ const toggleRef=useRef<()=>void>(()=>{});
+ toggleRef.current=toggle;
+ const invokeToggle=useCallback(()=>toggleRef.current(),[]);
+ useEffect(()=>{
+  onToggleReady(invokeToggle);
+  return()=>onToggleReady(null);
+ },[onToggleReady,invokeToggle]);
  const seek=(delta:number)=>{
   if(!available||!status.isLoaded||status.duration<=0)return;
   void player.seekTo(clampSeekTime(status.currentTime+delta,status.duration));
@@ -65,7 +76,6 @@ function AudioPlayback({track}:{track:EchoTrack}){
    <Text style={[styles.skipText,{color:t.palette.primary}]}>{delta>0?'+':''}{delta}</Text>
   </Pressable>;
  return <View style={[styles.player,{backgroundColor:t.card,borderColor:t.border}]}>
-   <LegacyDetailSpeakerPortrait track={track} onPress={toggle}/>
    <LegacyPlaybackTimeline currentTime={status.currentTime} duration={duration}
     enabled={available&&status.isLoaded&&status.duration>0}
     color={t.palette.primary} trackColor={t.lightPill} onSeek={seconds=>{
@@ -102,6 +112,11 @@ export default function TrackDetails(){
  const t=useLegacyTheme();
  const preferences=useDevicePreferences();
  const sections=useDetailSectionJump();
+ const {fontSize}=useFontZoom();
+ const viewport=useViewportDimensions();
+ const hero=legacyDetailHeroSizing(viewport.width);
+ const [portraitToggle,setPortraitToggle]=useState<(()=>void)|null>(null);
+ const onToggleReady=useCallback((toggle:(()=>void)|null)=>setPortraitToggle(()=>toggle),[]);
  const {id}=useLocalSearchParams<{id:string}>();
  const trackId=typeof id==='string'&&id.length>0&&id.length<=200?id:null;
  const [hydrated,setHydrated]=useState(Platform.OS!=='web');
@@ -143,34 +158,34 @@ export default function TrackDetails(){
        </Pressable>
       </View>:
       <>
-       <Text style={[styles.title,{color:t.ink}]}>{track.title}</Text>
-       <View style={styles.speakerRow}>
-        <View style={[styles.speakerAvatar,{backgroundColor:t.lightPill}]}>
-         <Text style={[styles.speakerInitial,{color:t.palette.primary}]}>{Array.from(speakerNames[0]??'♪')[0]??'♪'}</Text>
+       <View style={styles.hero}>
+        <LegacyDetailSpeakerPortrait track={track} onPress={portraitToggle??undefined}/>
+        <View style={styles.tags}>{track.categories.map((category,i)=><Pressable key={category+i}
+         accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
+         onPress={()=>router.push({pathname:'/',params:{category}})}
+         style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
+         <Text style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(11)}]}>{category} ›</Text>
+        </Pressable>)}</View>
+        <Text style={[styles.title,{color:t.ink,fontSize:fontSize(hero.titleFont)}]}>{track.title}</Text>
+        <View style={styles.heroSpeakers}>
+         {speakerNames.length? speakerNames.map((name,i)=><View key={name+i} style={styles.speakerLinkItem}>
+          {i>0&&<Text style={[styles.speakerSeparator,{color:t.muted}]}> & </Text>}
+          <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
+           onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})} style={styles.speakerLink}>
+           <Text style={[styles.speakerName,{color:t.palette.primary,fontSize:fontSize(14)}]}>{name} ›</Text>
+          </Pressable>
+         </View>):<Text style={[styles.speakerName,{color:t.muted,fontSize:fontSize(14)}]}>講師資料待補</Text>}
+         {!!track.speakerRank&&<Text style={[styles.speakerRank,{color:t.muted,fontSize:fontSize(13)}]}>· {track.speakerRank}</Text>}
         </View>
-        <View style={styles.speakerText}>
-         {speakerNames.length?<View style={styles.speakerLinks}>
-          {speakerNames.map((name,i)=><View key={name} style={styles.speakerLinkItem}>
-           {i>0&&<Text style={[styles.speakerSeparator,{color:t.muted}]}> & </Text>}
-           <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
-            onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})}
-            style={styles.speakerLink}>
-            <Text style={[styles.speakerName,{color:t.palette.primary}]}>{name} ›</Text>
-           </Pressable>
-          </View>)}
-         </View>:<Text style={[styles.speakerName,{color:t.muted}]}>講師資料待補</Text>}
-         <Text style={[styles.speakerCaption,{color:t.muted}]}>查看演講者資料</Text>
-        </View>
+        <Text style={[styles.speakerCaption,{color:t.muted,fontSize:fontSize(11)}]}>查看演講者資料</Text>
+        <LegacyDetailEngagementSummary track={track} onViewEngagement={()=>sections.jumpTo('engagement')}/>
+        <Text style={[styles.duration,{color:t.muted,fontSize:fontSize(12)}]}>
+         錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}
+        </Text>
        </View>
-       <View style={styles.tags}>{track.categories.map((category,i)=><Pressable key={category+i}
-        accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+category}
-        onPress={()=>router.push({pathname:'/',params:{category}})}
-        style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-        <Text style={[styles.tagText,{color:t.palette.primary}]}>{category} ›</Text>
-       </Pressable>)}</View>
        <LegacyDetailSectionNavigation showPlayback={track.playable} onJump={sections.jumpTo}/>
        <View onLayout={sections.onSectionLayout('playback')}>
-        {hydrated?<AudioPlayback track={track}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
+        {hydrated?<AudioPlayback track={track} onToggleReady={onToggleReady}/>:<Text style={[styles.notice,{color:t.muted}]}>播放器準備中…</Text>}
        </View>
        <View onLayout={sections.onSectionLayout('notes')}>
         <LegacyLectureNotes track={track}/>
@@ -194,17 +209,15 @@ const styles=StyleSheet.create({
  backText:{fontSize:14,fontWeight:'800'},
  mainCard:{padding:16,borderRadius:21,borderWidth:1,minHeight:200,
   shadowColor:'#0f172a',shadowOpacity:.05,shadowRadius:13,elevation:1},
- title:{fontSize:22,fontWeight:'900',lineHeight:31,marginBottom:13},
- speakerRow:{flexDirection:'row',alignItems:'center',minHeight:52,gap:9,marginBottom:10},
- speakerAvatar:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center'},
- speakerInitial:{fontSize:20,fontWeight:'800'},
- speakerText:{flex:1},
- speakerLinks:{flexDirection:'row',flexWrap:'wrap',alignItems:'center'},
+ hero:{alignItems:'center',paddingTop:5,paddingBottom:10,gap:6},
+ title:{fontSize:20,fontWeight:'900',lineHeight:26,textAlign:'center'},
+ heroSpeakers:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'center',gap:7},
  speakerLinkItem:{flexDirection:'row',alignItems:'center'},
  speakerLink:{minHeight:44,justifyContent:'center'},
  speakerSeparator:{fontSize:14,fontWeight:'500'},
- speakerName:{fontSize:15,fontWeight:'900'},speakerCaption:{fontSize:11,marginTop:3},
- tags:{flexDirection:'row',flexWrap:'wrap',gap:5,marginBottom:10},
+ speakerName:{fontSize:15,fontWeight:'900'},speakerRank:{lineHeight:22},speakerCaption:{fontSize:11,marginTop:1},
+ tags:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:5,marginBottom:2},
+duration:{lineHeight:20},
  tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  tagText:{fontSize:11,fontWeight:'700'},
  player:{borderWidth:1,borderRadius:21,padding:15,alignItems:'center',marginVertical:12},
