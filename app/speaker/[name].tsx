@@ -2,10 +2,10 @@ import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {useEffect,useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
 import {useQuery} from '@tanstack/react-query';
-import {ActivityIndicator,Image,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getApiBaseUrl,getPublicTracks,getGuestPreviewTracks} from '../../src/api/client';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
-import {LegacyTrackCard} from '../../src/ui/echo/LegacyTrackCard';
+import {LegacySpeakerRecordingRow} from '../../src/ui/echo/LegacySpeakerRecordingRow';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
@@ -15,24 +15,33 @@ import {isSpeakerHidden} from '../../src/ui/echo/hiddenSpeakers';
 import {authorizedSpeakerProfileTracks,publicSpeakerRouteName} from '../../src/ui/echo/authorizedSpeakerProfile';
 import {mergeAuthorizedCards} from '../../src/ui/echo/mergeAuthorizedCards';
 import {speakerProfileSections,speakerBioUnavailableText,speakerQaUnavailableText} from '../../src/ui/echo/speakerProfileSections';
-import {formatSpeakerRecordingDate} from '../../src/ui/echo/speakerRecordingDate';
+import type {EchoTrack} from '../../src/types';
 import type {SpeakerProfileSection} from '../../src/ui/echo/speakerProfileSections';
 export default function PublicSpeakerTracks(){
  const t=useLegacyTheme();
  const {height}=useViewportDimensions();
  const {fontSize}=useFontZoom();
+ const [confirmTrack,setConfirmTrack]=useState<EchoTrack|null>(null);
  const close=()=>router.canGoBack()?router.back():router.replace('/');
  useEffect(()=>{
   if(Platform.OS!=='web'||typeof document==='undefined')return;
-  const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();close();}};
+  const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){
+   event.preventDefault();
+   if(confirmTrack)setConfirmTrack(null);else close();
+  }};
   document.addEventListener('keydown',onKey);
   return ()=>document.removeEventListener('keydown',onKey);
- },[]);
+ },[confirmTrack]);
  const [notice,setNotice]=useState('');
  const [section,setSection]=useState<SpeakerProfileSection>('audio');
- const {dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
+ const {favoriteIds,toggleFavorite,dislikedIds,hiddenSpeakers,ready,dislike,restoreHidden}=useDevicePreferences();
+ const toggleLocalFavorite=(id:string)=>{
+  const added=toggleFavorite(id);
+  setNotice(added?'已加入此裝置收藏（尚未與中央會員同步）。':'已取消此裝置的收藏。');
+ };
  const hide=(id:string)=>{
   dislike(id);
+  setConfirmTrack(null);
   setNotice('已在此裝置隱藏卡片。');
  };
  const {name}=useLocalSearchParams<{name:string}>();
@@ -112,7 +121,7 @@ export default function PublicSpeakerTracks(){
     <Text style={[styles.qaTitle,{color:t.ink,fontSize:fontSize(16)}]}>歷史問答</Text>
     <Text style={[styles.qaDescription,{color:t.muted,fontSize:fontSize(12)}]}>{speakerQaUnavailableText}</Text>
    </View>}
-   {section==='audio'&&<Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>演講音檔</Text>}
+   {section==='audio'&&<Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>所有錄音</Text>}
    {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
    </Pressable>}
@@ -134,15 +143,45 @@ export default function PublicSpeakerTracks(){
       <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重試載入</Text>
      </Pressable>
     </View>:
-    display==='ready'? visibleTracks.map(track=><View key={track.id} style={styles.recordingItem}>
-     <LegacyTrackCard track={track} onNotice={setNotice} onDislike={hide}/>
-     <Text style={[styles.recordingDate,{color:t.muted,fontSize:fontSize(12)}]}>
-      {track.speakerRank||'公開'} · {formatSpeakerRecordingDate(track.uploadDate)}
-     </Text>
-    </View>):
+    display==='ready'? visibleTracks.map(track=><LegacySpeakerRecordingRow key={track.id}
+     track={track} favorite={favoriteIds.includes(track.id)}
+     onSelect={()=>setConfirmTrack(track)}
+     onFavorite={()=>toggleLocalFavorite(track.id)} onHide={()=>hide(track.id)}/>):
     <View style={[styles.empty,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>目前沒有可瀏覽的講者作品資訊。</Text>
     </View>}
+   {confirmTrack&&<Modal visible transparent animationType="fade"
+    onRequestClose={()=>setConfirmTrack(null)}>
+    <View style={styles.confirmOverlay}>
+     <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="關閉錄音確認視窗背景"
+      accessibilityRole="button" onPress={()=>setConfirmTrack(null)}/>
+     <View style={[styles.confirmDialog,{backgroundColor:t.card,borderColor:t.border}]}>
+      <Text style={[styles.confirmTitle,{color:t.ink,fontSize:fontSize(17)}]}>
+       {confirmTrack.playable?'是否查看並播放這場公開錄音？':'這場錄音尚未開放播放'}
+      </Text>
+      <Text style={[styles.confirmDescription,{color:t.ink,fontSize:fontSize(14)}]}>
+       {[speaker,confirmTrack.speakerRank,confirmTrack.title].filter(Boolean).join(' ')}
+      </Text>
+      {!confirmTrack.playable&&<Text style={[styles.confirmDescription,{color:t.muted,fontSize:fontSize(12)}]}>
+       僅能查看已核准資訊，尚無權播放原音檔。
+      </Text>}
+      <View style={styles.confirmActions}>
+       <Pressable accessibilityRole="button" accessibilityLabel="取消" onPress={()=>setConfirmTrack(null)}
+        style={[styles.confirmAction,{borderColor:t.border}]}>
+        <Text style={[styles.confirmActionText,{color:t.ink,fontSize:fontSize(14)}]}>取消</Text>
+       </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={confirmTrack.playable?'查看公開錄音':'查看作品資訊'}
+        onPress={()=>{const selected=confirmTrack;setConfirmTrack(null);
+         if(selected)router.push({pathname:selected.playable?'/track/[id]':'/preview/[id]',params:{id:selected.id}});
+        }} style={[styles.confirmAction,{backgroundColor:t.palette.primary}]}>
+        <Text style={[styles.confirmActionText,{color:'#fff',fontSize:fontSize(14)}]}>
+         {confirmTrack.playable?'查看公開錄音':'查看作品資訊'}
+        </Text>
+       </Pressable>
+      </View>
+     </View>
+    </View>
+   </Modal>}
    <Text style={[styles.disclaimer,{color:t.muted}]}>
     原版會員限定的講師資料、AI 問答及私人錄音仍須授權驗證；本站只顯示已核准公開內容。
    </Text>
@@ -179,7 +218,11 @@ const styles=StyleSheet.create({
  retry:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:10},
  empty:{borderWidth:1,borderStyle:'dashed',borderRadius:19,minHeight:130,alignItems:'center',justifyContent:'center'},
  message:{fontSize:13,textAlign:'center',lineHeight:22,padding:10},
- recordingItem:{width:'100%'},
- recordingDate:{lineHeight:20,marginTop:-8,marginBottom:12,marginLeft:12},
+ confirmOverlay:{flex:1,backgroundColor:'rgba(15,23,42,.6)',justifyContent:'center',paddingHorizontal:22},
+ confirmDialog:{borderWidth:1,borderRadius:18,padding:19,gap:12,maxWidth:420,width:'100%',alignSelf:'center'},
+ confirmTitle:{fontWeight:'900'},confirmDescription:{lineHeight:22},
+ confirmActions:{flexDirection:'row',gap:10,marginTop:7},
+ confirmAction:{minHeight:48,borderRadius:12,borderWidth:1,flex:1,alignItems:'center',justifyContent:'center',paddingHorizontal:5},
+ confirmActionText:{fontWeight:'800'},
  disclaimer:{fontSize:11,lineHeight:18,marginTop:12,textAlign:'center'}
 });
