@@ -208,6 +208,17 @@ export default function CatalogScreen(){
  );
  const layout=viewportLayout(width);
  const twoColumns=layout.columns===2;
+ const clearAllHomeFilters=()=>{
+  searchSuggestionBlurGuard.dismiss();
+  setQuery('');
+  setDebouncedQuery(''); // Avoid rendering stale debounced results.
+  setCategory(null);
+  setSpeakerRank(null);
+  // A deep-link URL must not reapply a filter after the user explicitly clears it.
+  // Use a complete replacement href: deleting params with setParams(undefined)
+  // has differed between Expo Router releases and navigator contexts.
+  if(linkedCategory!==undefined||linkedSpeakerRank!==undefined)router.replace('/');
+ };
  const resetLucky=()=>{
    luckyGeneration.current++;
    if(luckyTimer.current){clearTimeout(luckyTimer.current);luckyTimer.current=null;}
@@ -349,7 +360,7 @@ export default function CatalogScreen(){
         </Text>}
      </View>
      {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
-      onPress={()=>{searchSuggestionBlurGuard.dismiss();setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
+      onPress={clearAllHomeFilters} style={styles.restore}>
       <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
      </Pressable>}
      {storageError&&<Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}

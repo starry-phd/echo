@@ -73,7 +73,8 @@ test('other handled home actions explicitly close hints on native where TextInpu
  assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);draw\(\);\}\}/);
  assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);setAdvanced\(value=>!value\);\}\}/);
  assert.match(home,/onRank=\{value=>\{searchSuggestionBlurGuard\.dismiss\(\);setSpeakerRank\(value\);\}\}/);
- assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);setQuery\(''\);setCategory\(null\);setSpeakerRank\(null\);\}\}/);
+ assert.match(home,/onPress=\{clearAllHomeFilters\}/);
+ assert.match(home,/const clearAllHomeFilters=\(\)=>\{\s*searchSuggestionBlurGuard\.dismiss\(\)/);
  // Keep chip selection on onPress, not on pressStart.
  assert.match(home,/onPress=\{\(\)=>selectSuggestedCategory\(label\)\}/);
 });
