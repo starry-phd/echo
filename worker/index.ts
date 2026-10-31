@@ -47,6 +47,8 @@ function publicTrack(row:TrackRow){
  return {id:row.id,title:row.title,speaker:row.speaker,description:row.description,durationSeconds:row.duration_seconds,categories,playable:true};
 }
 const filterSchema=z.object({q:z.string().max(100).optional(),category:z.string().max(80).optional(),speaker:z.string().max(80).optional()});
+// Pagination is PUBLIC VERIFIED catalog only: never extend the curated guest API.
+const publicCatalogFilterSchema=filterSchema.extend({offset:z.string().regex(/^(0|[1-9][0-9]{0,5})$/).optional()});
 app.options('*',c=>{
  const origin=c.req.header('Origin')||'';
  if(!allowed(origin))return new Response(null,{status:403});
@@ -90,11 +92,11 @@ app.get('/api/v1/speakers',speakers);
 
 
 const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env:Env})=>{
- const checked=filterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker')});
+ const checked=publicCatalogFilterSchema.safeParse({q:c.req.query('q'),category:c.req.query('category'),speaker:c.req.query('speaker'),offset:c.req.query('offset')});
  if(!checked.success)return json({code:'INVALID_QUERY'},400,c.req.raw);
  const query=(checked.data.q||'').trim(),category=(checked.data.category||'').trim();
  let sql="SELECT id,title,speaker,description,duration_seconds,category_labels_json FROM echo_tracks WHERE visibility = 'public' AND migration_status = 'verified'";
- const args:string[]=[];
+ const args:(string|number)[]=[];
  if(query){
   sql+=" AND NOT EXISTS (SELECT 1 FROM json_each(?) term WHERE instr(lower(COALESCE(title,'')),lower(term.value))=0 AND instr(lower(COALESCE(speaker,'')),lower(term.value))=0 AND instr(lower(COALESCE(category_labels_json,'')),lower(term.value))=0)";
   args.push(JSON.stringify(query.split(/\s+/u).filter(Boolean)));
@@ -111,7 +113,9 @@ const catalog=async(c:{req:{raw:Request;query(name:string):string|undefined};env
   sql+=" AND instr('&' || replace(replace(COALESCE(speaker,''),'＆','&'),' ','') || '&', '&' || replace(replace(?,'＆','&'),' ','') || '&') > 0";
   args.push(speaker);
  }
- sql+=' ORDER BY updated_at DESC LIMIT 100';
+ // Deterministic tie-breaking ensures adjacent pages do not reorder tracks.
+ sql+=' ORDER BY updated_at DESC, id ASC LIMIT 100';
+ if(checked.data.offset!==undefined){sql+=' OFFSET ?';args.push(Number(checked.data.offset));}
  const s=c.env.DB.prepare(sql);
  const r=await(args.length?s.bind(...args):s).all<TrackRow>();
  return json({tracks:(r.results||[]).map(publicTrack)},200,c.req.raw);
