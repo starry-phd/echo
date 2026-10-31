@@ -24,7 +24,7 @@ test('home shows only loaded counts, safely filters all pages, and allows retry 
  assert.match(page,/tracksQuery\.isError\|\|tracksQuery\.isFetchNextPageError/);
  assert.match(page,/void tracksQuery\.refetch\(\)/);
  assert.match(page,/tracksQuery\.hasNextPage\?'（仍有更多公開作品）':''/);
- assert.match(page,/currentDisplay==='ready'&&tracksQuery\.hasNextPage&&<Pressable/);
+ assert.match(page,/canLoadMoreAuthorizedPublic\(currentDisplay,tracksQuery\.hasNextPage,ready\)&&<Pressable/);
  assert.match(page,/accessibilityLabel="載入更多已核准公開音檔"/);
  assert.match(page,/disabled=\{tracksQuery\.isFetchingNextPage\}/);
  assert.match(page,/tracksQuery\.fetchNextPage\(\)/);
