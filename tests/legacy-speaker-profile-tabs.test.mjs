@@ -37,7 +37,7 @@ test('speaker profile summary and QA are fail-closed, never synthesized from pri
 test('only current approved speaker cards grant a rendered profile and tabs',()=>{
  assert.match(page,/publicSpeakerRouteName\(name\)/);
  assert.match(page,/authorizedSpeakerProfileTracks\(speaker,/);
- assert.match(page,/mergeAuthorizedCards\(q\.data\?\?\[\],p\.data\?\?\[\]\)/);
+ assert.match(page,/mergeAuthorizedCards\(publicTracks,p\.data\?\?\[\]\)/);
  assert.match(page,/showBio=ready&&display==='ready'&&!speakerHidden/);
  assert.match(page,/showBio&&<View style=\{styles\.tabList\}/);
  assert.match(page,/showBio&&section==='qa'&&<View/);
