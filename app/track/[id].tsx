@@ -177,6 +177,7 @@ export default function TrackDetails(){
          </View>):<Text style={[styles.speakerName,{color:t.muted,fontSize:fontSize(14)}]}>講師資料待補</Text>}
          {!!track.speakerRank&&<Text style={[styles.speakerRank,{color:t.muted,fontSize:fontSize(13)}]}>· {track.speakerRank}</Text>}
         </View>
+        <Text style={[styles.speakerCaption,{color:t.muted,fontSize:fontSize(11)}]}>查看演講者資料</Text>
         <LegacyDetailEngagementSummary track={track} onViewEngagement={()=>sections.jumpTo('engagement')}/>
         <Text style={[styles.duration,{color:t.muted,fontSize:fontSize(12)}]}>
          錄音長度：{track.durationSeconds>0?'約 '+Math.max(1,Math.round(track.durationSeconds/60))+' 分鐘':'時間待確認'}
@@ -214,7 +215,7 @@ const styles=StyleSheet.create({
  speakerLinkItem:{flexDirection:'row',alignItems:'center'},
  speakerLink:{minHeight:44,justifyContent:'center'},
  speakerSeparator:{fontSize:14,fontWeight:'500'},
- speakerName:{fontSize:15,fontWeight:'900'},speakerRank:{lineHeight:22},
+ speakerName:{fontSize:15,fontWeight:'900'},speakerRank:{lineHeight:22},speakerCaption:{fontSize:11,marginTop:1},
  tags:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:5,marginBottom:2},
 duration:{lineHeight:20},
  tag:{borderWidth:1,borderRadius:20,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
