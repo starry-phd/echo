@@ -14,7 +14,7 @@ import {legacyAudioCardSizing} from './legacyAudioCardSizing';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
 import {categoryFromRoute} from './publicCategoryNavigation';
-import {approvedGuestSpeakerRank} from './publicSpeakerRankNavigation';
+import {approvedGuestSpeakerRank,approvedVerifiedSpeakerRank} from './publicSpeakerRankNavigation';
 import {readHistoricalEngagement,historicalCountLabel} from './legacyEngagementSnapshot';
 
 export function LegacyTrackCard({track,onNotice,onDislike}:{
@@ -49,7 +49,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
  useEffect(()=>setCoverError(false),[coverUri,track.id]);
  const duration=Math.max(0,Math.floor(track.durationSeconds));
  const speakerRank=track.speakerRank?.trim()||'';
- const approvedRankLink=approvedGuestSpeakerRank(track);
+ const approvedRankLink=approvedGuestSpeakerRank(track)??approvedVerifiedSpeakerRank(track);
  const legacy=track.legacySnapshot===true;
  const historical=readHistoricalEngagement(track);
  const publicShareMessage=approvedPublicTrackShareMessage(track,track.id,apiOrigin);
