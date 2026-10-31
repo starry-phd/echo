@@ -9,6 +9,7 @@ import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
 import {InstallAppButton} from './InstallAppButton';
 import {useQuickActions} from './QuickActions';
+import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
 import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
@@ -17,6 +18,7 @@ export function LegacyHeader(){
  const colors=useLegacyTheme();
  const {zoom,ready:fontReady,increase,decrease,fontSize}=useFontZoom();
  const quick=useQuickActions();
+ const {requestReset}=useHomeResetSignal();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
  const quickDevice=quickDeviceForWidth(width);
@@ -28,7 +30,15 @@ export function LegacyHeader(){
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
   ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
- const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{setOpen(false);router.push(path);};
+ const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{
+  setOpen(false);
+  if(path==='/'){
+   requestReset();
+   router.replace('/'); // Clear stale category/rank deep-link parameters.
+   return;
+  }
+  router.push(path);
+ };
  const activeColor=colors.palette.primary;
  const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[

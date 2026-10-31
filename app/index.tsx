@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
+import type {ComponentRef} from 'react';
 import {useInfiniteQuery,useQuery} from '@tanstack/react-query';
 import {router,useLocalSearchParams} from 'expo-router';
 import {AccessibilityInfo,ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
@@ -29,6 +30,7 @@ import {canLoadMoreAuthorizedPublic} from '../src/ui/echo/publicLoadMoreEligibil
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 import {visibleAuthorizedRankFacets} from '../src/ui/echo/visibleAuthorizedRankFacets';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
+import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -38,6 +40,9 @@ import {useFontZoom} from '../src/ui/echo/FontZoom';
  */
 export default function CatalogScreen(){
  const theme=useLegacyTheme();
+ const {revision:homeResetRevision}=useHomeResetSignal();
+ const seenHomeResetRevision=useRef(homeResetRevision);
+ const homeScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  const {fontSize}=useFontZoom();
  const {category:linkedCategory,rank:linkedSpeakerRank}=useLocalSearchParams<{category?:string;rank?:string}>();
  const {width}=useViewportDimensions();
@@ -61,6 +66,25 @@ export default function CatalogScreen(){
  const [advanced,setAdvanced]=useState(()=>Boolean(speakerRankFromRoute(linkedSpeakerRank)));
  const [speakerRank,setSpeakerRank]=useState<string|null>(()=>speakerRankFromRoute(linkedSpeakerRank));
  const {dislikedIds,hiddenSpeakers,dislike,restoreHidden,storageError,ready}=useDevicePreferences();
+ // Original home logo and main-menu home action clear the already-mounted list.
+ useEffect(()=>{
+  if(seenHomeResetRevision.current===homeResetRevision)return;
+  seenHomeResetRevision.current=homeResetRevision;
+  searchSuggestionBlurGuard.dismiss();
+  setQuery('');
+  setDebouncedQuery('');
+  setCategory(null);
+  setSpeakerRank(null);
+  setOrder('newest'); // No trusted permission ranking contract yet.
+  setAdvanced(false);
+  setNotice('');
+  luckyGeneration.current++;
+  if(luckyTimer.current){clearTimeout(luckyTimer.current);luckyTimer.current=null;}
+  setLuckySpinId(null);
+  setLuckyPreviewId(null);
+  setLuckyPhase('idle');
+  homeScrollRef.current?.scrollTo({y:0,animated:true});
+ },[homeResetRevision,searchSuggestionBlurGuard]);
  const dislikeTrack=(id:string)=>{
   dislike(id);
   setNotice('已在此裝置隱藏這張音檔卡；可點「還原隱藏」恢復。');
@@ -235,7 +259,7 @@ export default function CatalogScreen(){
    };
    void AccessibilityInfo.isReduceMotionEnabled().then(begin,()=>begin(true));
  };
- return <ScrollView style={[styles.page,{backgroundColor:theme.bg}]}
+ return <ScrollView ref={homeScrollRef} style={[styles.page,{backgroundColor:theme.bg}]}
    contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
    <View style={styles.shell}>
      <View style={styles.searchRow}>

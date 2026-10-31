@@ -6,6 +6,7 @@ import {LegacyHeader} from '../src/ui/echo/LegacyHeader';
 import {DevicePreferencesProvider} from '../src/ui/echo/DevicePreferences';
 import {FontZoomProvider} from '../src/ui/echo/FontZoom';
 import {QuickActionProvider} from '../src/ui/echo/QuickActions';
+import {HomeResetProvider} from '../src/ui/echo/HomeResetSignal';
 
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 
@@ -34,6 +35,6 @@ function AppShell(){
 }
 export default function RootLayout(){
  return <QueryClientProvider client={queryClient}>
-   <LegacyThemeProvider><FontZoomProvider><QuickActionProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></QuickActionProvider></FontZoomProvider></LegacyThemeProvider>
+   <LegacyThemeProvider><FontZoomProvider><QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></HomeResetProvider></QuickActionProvider></FontZoomProvider></LegacyThemeProvider>
  </QueryClientProvider>;
 }
