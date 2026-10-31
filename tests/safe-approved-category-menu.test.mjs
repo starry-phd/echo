@@ -37,7 +37,7 @@ test('home safely merges public API categories with local-visibility-filtered gu
  assert.match(home,/const categories=useMemo\(\(\)=>ready\?safeApprovedCategoryOptions\(\[/);
  assert.match(home,/\.\.\.\(categoriesQuery\.data\?\?\[\]\),\.\.\.guestFacets\.categories/);
  assert.match(home,/<LegacyFilterToolbar categories=\{categories\}/);
- assert.match(home,/publicCategorySuggestions\(categories,query\)/);
+ assert.match(home,/publicCategorySuggestions\(categories,query,4\)/);
  assert.match(menu,/\[null,\.\.\.categories\]\.map\(value=>/);
  assert.match(helper,/categoryFromRoute\(raw\)/);
  assert.match(helper,/safe!==raw/);

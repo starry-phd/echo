@@ -87,3 +87,12 @@ test('legacy search panel stays closed on focus without meaningful typed keyword
  assert.match(home,/shouldShowCategorySuggestions\(searchSuggestionsOpen,query,categorySuggestions\)/);
  assert.doesNotMatch(home,/\{searchSuggestionsOpen&&categorySuggestions\.length>0&&/);
 });
+
+test('original Echo category suggestion UI is capped at four without truncating toolbar filters',()=>{
+ const source=['分類一','分類二','分類三','分類四','分類五','分類六'];
+ assert.deepEqual(publicCategorySuggestions(source,'分類',4),source.slice(0,4));
+ assert.equal(publicCategorySuggestions(source,'分類',16).length,source.length);
+ const home=readFileSync(new URL('../app/index.tsx',import.meta.url),'utf8');
+ assert.match(home,/publicCategorySuggestions\(categories,query,4\)/);
+ assert.match(home,/<LegacyFilterToolbar categories=\{categories\}/);
+});
