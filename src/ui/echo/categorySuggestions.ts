@@ -1,4 +1,4 @@
-import {categoryFromRoute} from './publicCategoryNavigation';
+import {approvedExactCategoryLink} from './safeApprovedCategoryOptions';
 
 /** Original Echo search suggests *only* category tags and approved community
  * keywords, not track titles. Until a moderated public-keyword API exists,
@@ -15,16 +15,16 @@ export function publicCategorySuggestions(
  const limit=Math.min(16,Math.max(0,Math.floor(Number.isFinite(max)?max:0)));
  if(limit===0)return [];
  for(const raw of source){
-  if(typeof raw!=='string'||/[\x00-\x1f\x7f]/u.test(raw))continue;
-  // Normalize only for matching/deduplication; the selected filter must
-  // retain the exact category published in the approved API metadata.
-  const value=categoryFromRoute(raw);
+  // The homepage currently passes pre-vetted options, but this exported
+  // helper must not trim an unvetted label into a broken exact-match chip.
+  const value=approvedExactCategoryLink(raw);
   if(!value)continue;
-  const normalized=value.normalize('NFKC');
-  if(!categoryFromRoute(normalized))continue;
-  const key=normalized.toLocaleLowerCase('zh-Hant');
-  if(seen.has(key)||!terms.every(term=>key.includes(term)))continue;
-  seen.add(key);out.push(value);
+  // Unicode normalization affects search only. Distinct published labels
+  // such as "AI" and "ＡＩ" are distinct exact category filters and must
+  // each remain independently selectable from suggestions.
+  const searchKey=value.normalize('NFKC').toLocaleLowerCase('zh-Hant');
+  if(seen.has(value)||!terms.every(term=>searchKey.includes(term)))continue;
+  seen.add(value);out.push(value);
   if(out.length>=limit)break;
  }
  return out;
