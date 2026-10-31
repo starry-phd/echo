@@ -13,7 +13,7 @@ import {cardMenuLayout} from './cardMenuLayout';
 import {legacyAudioCardSizing} from './legacyAudioCardSizing';
 import {useFontZoom} from './FontZoom';
 import {approvedPublicTrackShareMessage} from './publicTrackSharing';
-import {categoryFromRoute} from './publicCategoryNavigation';
+import {approvedExactCategoryLink} from './safeApprovedCategoryOptions';
 import {approvedGuestSpeakerRank,approvedVerifiedSpeakerRank} from './publicSpeakerRankNavigation';
 import {readHistoricalEngagement,historicalCountLabel} from './legacyEngagementSnapshot';
 
@@ -127,7 +127,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
     </View>
     <View style={styles.tags}>
      {track.categories.slice(0,3).map((c,i)=>{
-      const selected=categoryFromRoute(c);
+      const selected=approvedExactCategoryLink(c);
       return selected?<Pressable key={c+i} accessibilityRole="link"
        accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
        onPress={()=>router.push({pathname:'/',params:{category:selected}})}

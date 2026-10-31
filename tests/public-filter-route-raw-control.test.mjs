@@ -29,10 +29,10 @@ test('both authorized detail pages and list/home routes share the fail-closed va
  assert.match(rank,/test\(value\)\)return null/);
  assert.match(home,/categoryFromRoute\(linkedCategory\)/);
  assert.match(home,/speakerRankFromRoute\(linkedSpeakerRank\)/);
- assert.match(card,/categoryFromRoute\(c\)/);
+ assert.match(card,/approvedExactCategoryLink\(c\)/);
  for(const path of ['app/preview/[id].tsx','app/track/[id].tsx']){
   const page=read(path);
-  assert.match(page,/categoryFromRoute\(category\)/);
+  assert.match(page,/approvedExactCategoryLink\(category\)/);
  }
  assert.doesNotMatch(category,/test\(clean\)/);
  assert.doesNotMatch(rank,/test\(clean\)/);

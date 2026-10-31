@@ -13,7 +13,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
-import {categoryFromRoute} from '../../src/ui/echo/publicCategoryNavigation';
+import {approvedExactCategoryLink} from '../../src/ui/echo/safeApprovedCategoryOptions';
 import {approvedVerifiedSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
@@ -164,7 +164,7 @@ export default function TrackDetails(){
        <View style={styles.hero}>
         <LegacyDetailSpeakerPortrait track={track} onPress={portraitToggle??undefined}/>
         <View style={styles.tags}>{track.categories.map((category,i)=>{
-         const selected=categoryFromRoute(category);
+         const selected=approvedExactCategoryLink(category);
          return selected?<Pressable key={category+i}
           accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
           onPress={()=>router.push({pathname:'/',params:{category:selected}})}

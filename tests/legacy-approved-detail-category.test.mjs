@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation.ts';
+import {approvedExactCategoryLink} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('category links accept only short, exact, human-readable public labels',()=>{
@@ -12,11 +13,19 @@ test('category links accept only short, exact, human-readable public labels',()=
   assert.equal(categoryFromRoute(value),null,String(value));
  }
 });
+test('card chips require exact approved labels while external deep links may trim',()=>{
+ assert.equal(categoryFromRoute(' 新人 '),'新人');
+ assert.equal(approvedExactCategoryLink(' 新人 '),null);
+ assert.equal(approvedExactCategoryLink('新人'),'新人');
+ assert.equal(approvedExactCategoryLink('ＡＩ'),'ＡＩ');
+ assert.equal(approvedExactCategoryLink('＜private＞'),null);
+});
+
 test('both source-authorized detail routes offer true clickable category links',()=>{
  for(const path of ['app/preview/[id].tsx','app/track/[id].tsx']){
   const src=read(path);
   assert.match(src,/LegacyLectureNotes track=\{track\}/);
-  assert.match(src,/const selected=categoryFromRoute\(category\)/);
+  assert.match(src,/const selected=approvedExactCategoryLink\(category\)/);
   assert.match(src,/return selected\?<Pressable/);
   assert.match(src,/accessibilityLabel=\{'瀏覽同分類已核准作品：'\+selected\}/);
   assert.match(src,/router\.push\(\{pathname:'\/',params:\{category:selected\}\}\)/);
