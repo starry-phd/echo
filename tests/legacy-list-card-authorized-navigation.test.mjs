@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation.ts';
+import {approvedExactCategoryLink} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
 import {approvedPublicTrackShareMessage} from '../src/ui/echo/publicTrackSharing.ts';
 import {readHistoricalEngagement,historicalCountLabel} from '../src/ui/echo/legacyEngagementSnapshot.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
@@ -10,12 +11,14 @@ const approved={id:'pub_123',playable:true,title:'合法講座',speaker:'公開�
 test('list category chips preserve approved exact label and reject dangerous filter values',()=>{
  assert.equal(categoryFromRoute(' 新人 '),'新人');
  assert.equal(categoryFromRoute('健康管理'),'健康管理');
+ assert.equal(approvedExactCategoryLink(' 新人 '),null);
+ assert.equal(approvedExactCategoryLink('新人'),'新人');
  for(const bad of ['',' '.repeat(9),'<secret>','test\nitem','x'.repeat(81)]){
   assert.equal(categoryFromRoute(bad),null);
  }
  const card=read('src/ui/echo/LegacyTrackCard.tsx');
  assert.match(card,/track\.categories\.slice\(0,3\)\.map/);
- assert.match(card,/categoryFromRoute\(c\)/);
+ assert.match(card,/approvedExactCategoryLink\(c\)/);
  assert.match(card,/accessibilityLabel=\{'瀏覽同分類已核准作品：'\+selected\}/);
  assert.match(card,/router\.push\(\{pathname:'\/',params:\{category:selected\}\}\)/);
  assert.match(card,/minHeight:44/);
