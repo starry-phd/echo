@@ -13,6 +13,7 @@ import {visualMetrics} from '../../packages/ui/src/tokens';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {isLocallyHiddenCard} from '../../src/ui/echo/localCardVisibility';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
+import {approvedVerifiedSpeakerRank} from '../../src/ui/echo/publicSpeakerRankNavigation';
 import {LegacyLectureNotes} from '../../src/ui/echo/LegacyLectureNotes';
 import {LegacyEngagementDetail} from '../../src/ui/echo/LegacyEngagementDetail';
 import {LegacyVerifiedTrackShare} from '../../src/ui/echo/LegacyVerifiedTrackShare';
@@ -124,6 +125,7 @@ export default function TrackDetails(){
  const q=useQuery({queryKey:['echo','public-track',trackId],enabled:Boolean(trackId),
   queryFn:({signal})=>getPublicTrack(trackId!,signal),retry:1});
  const track=q.data;
+ const approvedRankLink=approvedVerifiedSpeakerRank(track);
  const speakerNames=splitSpeakerNames(track?.speaker);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
  return <ScrollView ref={sections.scrollRef} style={[styles.root,{backgroundColor:t.bg}]}
@@ -175,7 +177,12 @@ export default function TrackDetails(){
            <Text style={[styles.speakerName,{color:t.palette.primary,fontSize:fontSize(14)}]}>{name} ›</Text>
           </Pressable>
          </View>):<Text style={[styles.speakerName,{color:t.muted,fontSize:fontSize(14)}]}>講師資料待補</Text>}
-         {!!track.speakerRank&&<Text style={[styles.speakerRank,{color:t.muted,fontSize:fontSize(13)}]}>· {track.speakerRank}</Text>}
+         {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
+          accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
+          onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
+          style={styles.rankLink}>
+          <Text style={[styles.speakerRank,{color:t.palette.primary,fontSize:fontSize(13)}]}>· {track.speakerRank} ›</Text>
+         </Pressable>:<Text style={[styles.speakerRank,{color:t.muted,fontSize:fontSize(13)}]}>· {track.speakerRank}</Text>)}
         </View>
         <Text style={[styles.speakerCaption,{color:t.muted,fontSize:fontSize(11)}]}>查看演講者資料</Text>
         <LegacyDetailEngagementSummary track={track} onViewEngagement={()=>sections.jumpTo('engagement')}/>
@@ -215,6 +222,7 @@ const styles=StyleSheet.create({
  speakerLinkItem:{flexDirection:'row',alignItems:'center'},
  speakerLink:{minHeight:44,justifyContent:'center'},
  speakerSeparator:{fontSize:14,fontWeight:'500'},
+ rankLink:{minHeight:44,justifyContent:'center'},
  speakerName:{fontSize:15,fontWeight:'900'},speakerRank:{lineHeight:22},speakerCaption:{fontSize:11,marginTop:1},
  tags:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:5,marginBottom:2},
 duration:{lineHeight:20},
