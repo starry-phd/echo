@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery,useQuery} from '@tanstack/react-query';
 import {router,useLocalSearchParams} from 'expo-router';
 import {AccessibilityInfo,ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useViewportDimensions} from '../src/ui/useViewportDimensions';
@@ -74,11 +74,14 @@ export default function CatalogScreen(){
    const timer=setTimeout(()=>setDebouncedQuery(query),250);
    return ()=>clearTimeout(timer);
  },[query]);
- const tracksQuery=useQuery({
+ const tracksQuery=useInfiniteQuery({
    queryKey:['echo','public-tracks',debouncedQuery,category],
-   queryFn:({signal})=>getPublicTracks(signal,{
-     query:debouncedQuery,category:category??undefined,
+   // Only public+verified catalog may page; guest metadata cards stay curated.
+   queryFn:({signal,pageParam})=>getPublicTracks(signal,{
+     query:debouncedQuery,category:category??undefined,offset:pageParam,
    }),
+   initialPageParam:0,
+   getNextPageParam:(lastPage,allPages)=>lastPage.length===100?allPages.length*100:undefined,
    retry:1,
  });
  const previewsQuery=useQuery({
@@ -93,9 +96,10 @@ export default function CatalogScreen(){
    queryKey:['echo','categories'],
    queryFn:({signal})=>getCategories(signal),retry:1,
  });
+ const verifiedPublicTracks=useMemo(()=>tracksQuery.data?.pages.flat()??[],[tracksQuery.data]);
  const tracks=useMemo(()=>sortEchoCards(mergeAuthorizedCards(
-  tracksQuery.data??[],previewsQuery.data??[]
- ),order),[tracksQuery.data,previewsQuery.data,order]);
+  verifiedPublicTracks,previewsQuery.data??[]
+ ),order),[verifiedPublicTracks,previewsQuery.data,order]);
  const visibleTracks=useMemo(()=>tracks.filter(t=>!dislikedIds.includes(t.id)&&!isSpeakerHidden(t.speaker,hiddenSpeakers)&&matchesCardFilters(t,{
   query:debouncedQuery,category,speakerRank
  })),[tracks,dislikedIds,hiddenSpeakers,debouncedQuery,category,speakerRank]);
@@ -139,7 +143,7 @@ export default function CatalogScreen(){
    setDebouncedQuery('');
    setSearchSuggestionsOpen(false);
  };
- const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError,count:tracksQuery.data?.length??0};
+ const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError||tracksQuery.isFetchNextPageError,count:verifiedPublicTracks.length};
  const previewSource={pending:previewsQuery.isPending,failed:previewsQuery.isError,count:previewsQuery.data?.length??0};
  const catalogDisplay=getCatalogDisplayState(publicSource,previewSource,visibleTracks.length);
  const currentDisplay=currentCatalogDisplayState(ready,query,debouncedQuery,catalogDisplay);
@@ -260,7 +264,7 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink,fontSize:fontSize(14)}]}>
-         訪客可瀏覽 <Text style={[styles.teaserCount,{color:theme.palette.primary,fontSize:fontSize(19)}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡；目前條件可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
+         訪客目前已載入 <Text style={[styles.teaserCount,{color:theme.palette.primary,fontSize:fontSize(19)}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡{tracksQuery.hasNextPage?'（仍有更多公開作品）':''}；其中可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
@@ -367,6 +371,16 @@ export default function CatalogScreen(){
          <LegacyTrackCard track={track} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
+     {currentDisplay==='ready'&&tracksQuery.hasNextPage&&<Pressable
+       accessibilityRole="button" accessibilityLabel="載入更多已核准公開音檔"
+       accessibilityState={{disabled:tracksQuery.isFetchingNextPage}}
+       disabled={tracksQuery.isFetchingNextPage}
+       onPress={()=>void tracksQuery.fetchNextPage()}
+       style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
+       <Text style={[styles.restoreText,{color:theme.palette.primary,fontSize:fontSize(14)}]}>
+        {tracksQuery.isFetchingNextPage?'載入中…':'載入更多公開音檔'}
+       </Text>
+     </Pressable>}
      <View style={styles.footer}>
        <Text style={[styles.footerText,{color:theme.muted,fontSize:fontSize(12)}]}>
          繁星回聲 · 訪客資訊卡（唯讀）　│　播放須另經授權　│　廣告關閉
