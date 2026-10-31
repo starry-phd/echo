@@ -283,6 +283,11 @@ export default function CatalogScreen(){
        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
        </Text>
+       {ready&&(currentDisplay==='ready'||currentDisplay==='empty')&&
+        (order==='newest'||order==='oldest')&&visibleTracks.some(track=>!track.uploadDate)&&
+        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
+         部分核准公開作品尚無可排序的公開日期；這些作品排在有日期的作品後方，保留原清單順序，不代表實際上傳先後。
+        </Text>}
      </View>
      {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
       onPress={()=>{setQuery('');setCategory(null);setSpeakerRank(null);}} style={styles.restore}>
