@@ -382,7 +382,7 @@ test('all 28 synthetic guest stream HEAD probes fail closed without reading any 
  assert.equal(sqlSeen.length,28);
  assert.deepEqual(bindings.map(values=>values[0]),ids);
  for(const sql of sqlSeen){
-  assert.match(sql,/visibility\\s*=\\s*'public'/);
-  assert.match(sql,/migration_status\\s*=\\s*'verified'/);
+  assert.match(sql,/visibility\s*=\s*'public'/);
+  assert.match(sql,/migration_status\s*=\s*'verified'/);
  }
 });
