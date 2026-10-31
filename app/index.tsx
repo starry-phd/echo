@@ -18,6 +18,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions,shouldShowCategorySuggestions} from '../src/ui/echo/categorySuggestions';
+import {createCategorySuggestionBlurGuard} from '../src/ui/echo/categorySuggestionBlurGuard';
 import {safeApprovedCategoryOptions,shouldResetUnavailableCategory} from '../src/ui/echo/safeApprovedCategoryOptions';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
 import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
@@ -42,6 +43,12 @@ export default function CatalogScreen(){
  const {width}=useViewportDimensions();
  const [query,setQuery]=useState('');
  const [searchSuggestionsOpen,setSearchSuggestionsOpen]=useState(false);
+ const searchSuggestionBlurGuardRef=useRef<ReturnType<typeof createCategorySuggestionBlurGuard>|null>(null);
+ if(!searchSuggestionBlurGuardRef.current){
+  searchSuggestionBlurGuardRef.current=createCategorySuggestionBlurGuard(()=>setSearchSuggestionsOpen(false));
+ }
+ const searchSuggestionBlurGuard=searchSuggestionBlurGuardRef.current;
+ useEffect(()=>()=>searchSuggestionBlurGuard.dispose(),[searchSuggestionBlurGuard]);
  const [debouncedQuery,setDebouncedQuery]=useState('');
  const [category,setCategory]=useState<string|null>(()=>speakerRankFromRoute(linkedSpeakerRank)?null:categoryFromRoute(linkedCategory));
  const [order,setOrder]=useState<SortOrder>('newest');
@@ -163,7 +170,7 @@ export default function CatalogScreen(){
    setCategory(value);
    setQuery('');
    setDebouncedQuery('');
-   setSearchSuggestionsOpen(false);
+   searchSuggestionBlurGuard.dismiss();
  };
  const publicSource={pending:tracksQuery.isPending,failed:tracksQuery.isError||tracksQuery.isFetchNextPageError,count:verifiedPublicTracks.length};
  const previewSource={pending:previewsQuery.isPending,failed:previewsQuery.isError,count:previewsQuery.data?.length??0};
@@ -245,10 +252,11 @@ export default function CatalogScreen(){
            placeholder={layout.phone?'搜尋演講者、主題、分類...':'搜尋演講者、主題、分類或獎銜...'}
            placeholderTextColor="rgba(255,255,255,.75)"
            style={styles.input} value={query}
-           onFocus={()=>setSearchSuggestionsOpen(true)}
+           onFocus={()=>{searchSuggestionBlurGuard.focus();setSearchSuggestionsOpen(true);}}
+           onBlur={()=>searchSuggestionBlurGuard.blur()}
            onChangeText={value=>{setQuery(value);setSearchSuggestionsOpen(true);}}
            onKeyPress={event=>{
-             if(event.nativeEvent.key==='Escape')setSearchSuggestionsOpen(false);
+             if(event.nativeEvent.key==='Escape')searchSuggestionBlurGuard.dismiss();
            }}
            maxLength={100} returnKeyType="search" autoCapitalize="none"/>
          {query.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="清除搜尋"
@@ -262,13 +270,17 @@ export default function CatalogScreen(){
        <View style={styles.suggestionHeading}>
         <Text style={[styles.suggestionTitle,{color:theme.muted,fontSize:fontSize(11)}]}>🏷️ 分類標籤（已核准）</Text>
         <Pressable accessibilityRole="button" accessibilityLabel="關閉搜尋建議"
-         onPress={()=>setSearchSuggestionsOpen(false)} style={styles.suggestionClose}>
+         onPressIn={()=>searchSuggestionBlurGuard.pressStart()}
+         onPressOut={()=>searchSuggestionBlurGuard.pressEnd()}
+         onPress={()=>searchSuggestionBlurGuard.dismiss()} style={styles.suggestionClose}>
          <Text style={[styles.restoreText,{color:theme.muted}]}>✕ 關閉</Text>
         </Pressable>
        </View>
        <View style={styles.suggestionChoices}>
         {categorySuggestions.map(label=><Pressable key={label}
          accessibilityRole="button" accessibilityLabel={'依分類搜尋：'+label}
+         onPressIn={()=>searchSuggestionBlurGuard.pressStart()}
+         onPressOut={()=>searchSuggestionBlurGuard.pressEnd()}
          onPress={()=>selectSuggestedCategory(label)}
          style={[styles.suggestionChip,{backgroundColor:theme.lightPill,borderColor:theme.border}]}>
          <Text style={[styles.suggestionChipText,{color:theme.palette.primary}]}>#{label}</Text>
