@@ -6,8 +6,8 @@ const base=(process.env.ECHO_URL||'https://echo-starry.starry-phd.workers.dev').
 const allowed='https://echo-starry.starry-phd.workers.dev';
 if(base!==allowed)throw Error('Unexpected Production origin');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-const fetchPublic=async(path)=>{
- const r=await fetch(base+path,{cache:'no-store',signal:AbortSignal.timeout(15000)});
+const fetchPublic=async(path,method='GET')=>{
+ const r=await fetch(base+path,{method,cache:'no-store',signal:AbortSignal.timeout(15000)});
  return r;
 };
 async function eventually(label,operation,attempts=10){
@@ -42,6 +42,17 @@ await eventually('listed private stream denied',async()=>{
  const r=await fetchPublic('/api/v1/tracks/'+encodeURIComponent(tracks[0].id)+'/stream');
  validateRefusal(r.status,r.headers,'listed guest private stream');
 },5);
+ // Probe only HEAD headers/status for every approved guest ID. Never request
+ // or consume private media bytes; all 28 must refuse streaming even if the
+ // sampled GET above would return 404.
+for(let index=0;index<tracks.length;index++){
+ const path='/api/v1/tracks/'+encodeURIComponent(tracks[index].id)+'/stream';
+ await eventually('guest stream HEAD '+(index+1)+'/28',async()=>{
+  const r=await fetchPublic(path,'HEAD');
+  validateRefusal(r.status,r.headers,'guest stream HEAD '+(index+1));
+ },4);
+}
+console.log('Validated 28/28 curated guest stream HEAD requests: 404/no-store, no audio downloaded');
 await eventually('unknown cover denied',async()=>{
  const r=await fetchPublic('/api/v1/previews/not-a-whitelisted-track-20261030/cover?policy=2');
  validateRefusal(r.status,r.headers,'unlisted cover');
