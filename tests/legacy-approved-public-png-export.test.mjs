@@ -22,6 +22,7 @@ test('private, preview, stale route, invalid origin or malformed metadata cannot
  for(const [track,id,origin] of [
   [null,approved.id,'https://echo.example'],
   [{...approved,playable:false},approved.id,'https://echo.example'],
+  [{...approved,legacySnapshot:true},approved.id,'https://echo.example'],
   [approved,'not-the-same','https://echo.example'],
   [{...approved,id:'../private'},'../private','https://echo.example'],
   [approved,approved.id,'http://random.example'],
