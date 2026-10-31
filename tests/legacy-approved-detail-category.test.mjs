@@ -16,8 +16,12 @@ test('both source-authorized detail routes offer true clickable category links',
  for(const path of ['app/preview/[id].tsx','app/track/[id].tsx']){
   const src=read(path);
   assert.match(src,/LegacyLectureNotes track=\{track\}/);
-  assert.match(src,/accessibilityLabel=\{'瀏覽同分類已核准作品：'\+category\}/);
-  assert.match(src,/router\.push\(\{pathname:'\/',params:\{category\}\}\)/);
+  assert.match(src,/const selected=categoryFromRoute\(category\)/);
+  assert.match(src,/return selected\?<Pressable/);
+  assert.match(src,/accessibilityLabel=\{'瀏覽同分類已核准作品：'\+selected\}/);
+  assert.match(src,/router\.push\(\{pathname:'\/',params:\{category:selected\}\}\)/);
+  assert.match(src,/<\/Pressable>:<View key=\{category/);
+  assert.doesNotMatch(src,/router\.push\(\{pathname:'\/',params:\{category\}\}\)/);
  }
  const home=read('app/index.tsx');
  assert.match(home,/useLocalSearchParams<\{category\?:string;rank\?:string\}>\(\)/);
