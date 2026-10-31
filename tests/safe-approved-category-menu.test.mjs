@@ -41,6 +41,7 @@ test('home safely merges public API categories with local-visibility-filtered gu
  assert.match(menu,/\[null,\.\.\.categories\]\.map\(value=>/);
  assert.match(helper,/categoryFromRoute\(raw\)/);
  assert.match(helper,/safe!==raw/);
+ assert.match(helper,/approvedExactCategoryLink/);
  assert.match(helper,/categoryFromRoute\(raw\.normalize\('NFKC'\)\)/);
  assert.doesNotMatch(helper,/R2\.get|localStorage|privateAudio|SELECT |memberProfile/);
 });

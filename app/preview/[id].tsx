@@ -4,7 +4,7 @@ import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View} from 'react
 import {getGuestPreviewTracks} from '../../src/api/client';
 import {useDevicePreferences} from '../../src/ui/echo/DevicePreferences';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
-import {categoryFromRoute} from '../../src/ui/echo/publicCategoryNavigation';
+import {approvedExactCategoryLink} from '../../src/ui/echo/safeApprovedCategoryOptions';
 import {AnimatedNewcomerTag} from '../../src/ui/echo/AnimatedNewcomerTag';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
@@ -62,7 +62,7 @@ export default function GuestPreviewDetails(){
       <View style={styles.hero}>
        <LegacyDetailSpeakerPortrait track={track}/>
        <View style={styles.heroTags}>{track.categories.map(category=>{
-        const selected=categoryFromRoute(category);
+        const selected=approvedExactCategoryLink(category);
         return selected?<Pressable key={category}
          accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
          onPress={()=>router.push({pathname:'/',params:{category:selected}})}
