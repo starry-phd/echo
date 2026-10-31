@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {safeApprovedCategoryOptions} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
+import {safeApprovedCategoryOptions,shouldResetUnavailableCategory} from '../src/ui/echo/safeApprovedCategoryOptions.ts';
 import {matchesCardFilters} from '../src/ui/echo/cardFilters.ts';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
@@ -44,4 +44,27 @@ test('home safely merges public API categories with local-visibility-filtered gu
  assert.match(helper,/approvedExactCategoryLink/);
  assert.match(helper,/categoryFromRoute\(raw\.normalize\('NFKC'\)\)/);
  assert.doesNotMatch(helper,/R2\.get|localStorage|privateAudio|SELECT |memberProfile/);
+});
+
+test('selected removed category resets only after BOTH authorized sources finish successfully',()=>{
+ const options=safeApprovedCategoryOptions(['新人','ＡＩ','健康・營養']);
+ assert.equal(shouldResetUnavailableCategory('新人',options,true),false);
+ assert.equal(shouldResetUnavailableCategory(null,options,true),false);
+ assert.equal(shouldResetUnavailableCategory('已移除',options,true),true);
+ assert.equal(shouldResetUnavailableCategory('已移除',options,false),false);
+ assert.equal(shouldResetUnavailableCategory('AI',options,true),true);
+ assert.equal(shouldResetUnavailableCategory('ＡＩ',options,true),false);
+ assert.equal(shouldResetUnavailableCategory('健康・營養',options,true),false);
+ assert.equal(shouldResetUnavailableCategory('新人',[],true),true);
+ assert.equal(shouldResetUnavailableCategory('新人',[],false),false);
+});
+
+test('home category reconciliation waits for healthy complete public and guest API sources',()=>{
+ const home=read('app/index.tsx');
+ assert.match(home,/categorySourcesReady=ready&&categoriesQuery\.isSuccess&&!categoriesQuery\.isFetching/);
+ assert.match(home,/&&previewsQuery\.isSuccess&&!previewsQuery\.isFetching/);
+ assert.match(home,/shouldResetUnavailableCategory\(category,categories,categorySourcesReady\)/);
+ assert.match(home,/setCategory\(null\)/);
+ assert.match(home,/setNotice\('原選取分類目前不在已核准且可見的分類清單中，已清除該分類篩選。'\)/);
+ assert.doesNotMatch(home,/getPrivateTracks|R2\.get|readCentralMember/);
 });
