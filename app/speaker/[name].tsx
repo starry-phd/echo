@@ -45,7 +45,11 @@ export default function PublicSpeakerTracks(){
  });
  const q=useQuery({
   queryKey:['echo','public-speaker-recordings',speaker],
-  queryFn:({signal})=>getPublicTracks(signal,{speaker:speaker!}),enabled:Boolean(speaker),retry:1,
+  // The public catalog's speaker= filter is whole-string only; a verified
+  // '王小明 & 林美麗' co-presented track would be omitted for either person.
+  // Use the public-only bound keyword search for candidates, then require
+  // exact normalized speaker-part matching in authorizedSpeakerProfileTracks.
+  queryFn:({signal})=>getPublicTracks(signal,{query:speaker!}),enabled:Boolean(speaker),retry:1,
  });
  // A name in a URL is not evidence that the API currently approves it.
  // Check current approved metadata and both local visibility preferences.
