@@ -34,3 +34,16 @@ export function safeApprovedCategoryOptions(source:readonly unknown[]):string[]{
  }
  return options;
 }
+
+/**
+ * The original Echo category toolbar drops a selected category when the
+ * refreshed authorized category list no longer contains it. Do so only
+ * after BOTH approved sources loaded successfully and settled: a pending
+ * or failed public/guest API is never evidence that an option was removed.
+ * Match exact original labels; NFKC-equivalent labels can be separate tags.
+ */
+export function shouldResetUnavailableCategory(
+ selected:string|null,available:readonly string[],sourcesReady:boolean
+):boolean{
+ return sourcesReady&&typeof selected==='string'&&selected.length>0&&!available.includes(selected);
+}

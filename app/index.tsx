@@ -18,7 +18,7 @@ import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
 import {publicCategorySuggestions,shouldShowCategorySuggestions} from '../src/ui/echo/categorySuggestions';
-import {safeApprovedCategoryOptions} from '../src/ui/echo/safeApprovedCategoryOptions';
+import {safeApprovedCategoryOptions,shouldResetUnavailableCategory} from '../src/ui/echo/safeApprovedCategoryOptions';
 import {categoryFromRoute} from '../src/ui/echo/publicCategoryNavigation';
 import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
@@ -143,6 +143,16 @@ export default function CatalogScreen(){
  const categories=useMemo(()=>ready?safeApprovedCategoryOptions([
   ...(categoriesQuery.data??[]),...guestFacets.categories
  ]):[],[ready,categoriesQuery.data,guestFacets]);
+ // The old Echo fetchCategories() reset a deleted category to "全部".
+ // Avoid clearing a valid selection during API loading, retry or a failed
+ // refresh: only a settled SUCCESS from both current approved sources counts.
+ const categorySourcesReady=ready&&categoriesQuery.isSuccess&&!categoriesQuery.isFetching
+   &&previewsQuery.isSuccess&&!previewsQuery.isFetching;
+ useEffect(()=>{
+   if(!shouldResetUnavailableCategory(category,categories,categorySourcesReady))return;
+   setCategory(null);
+   setNotice('原選取分類目前不在已核准且可見的分類清單中，已清除該分類篩選。');
+ },[category,categories,categorySourcesReady]);
  // The original Echo search suggestion panel shows at most FOUR categories.
  // The separate dropdown retains the full authorized category list.
  const categorySuggestions=useMemo(()=>
