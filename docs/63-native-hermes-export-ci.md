@@ -8,7 +8,7 @@ Expo CLI 官方文件 <https://docs.expo.dev/more/expo-cli/> 明確支援 `npx e
 
 ## 修復
 
-在既有 `.github/workflows/ci.yml` 的所有單元測試後、Web build 前，連續執行 iOS 與 Android **無簽章** Expo Hermes 靜態 bundle export 至 runner 暫存資料夾 `/tmp/echo-native-ios`、`/tmp/echo-native-android`，若 CLI 失敗或目錄為空，CI 必須拒絕合併。加入 `tests/native-hermes-export-ci.test.mjs` 防止未來刪掉任一端的檢查。
+在既有 `.github/workflows/ci.yml` 的所有單元測試後、Web build 前，連續執行 iOS 與 Android **無簽章** Expo Hermes 靜態 bundle export 至 runner 暫存資料夾 `/tmp/echo-native-ios`、`/tmp/echo-native-android`，每個原生步驟都只注入公開環境變數 \`EXPO_PUBLIC_ECHO_API_BASE_URL=https://echo-starry.starry-phd.workers.dev\`，確保原生匯出包實際包含已核准新版 API 入口，且避免使用沒有 API URL 的假通過。Web 建置不注入此值、仍使用自身 origin。若 CLI 失敗或目錄為空，CI 必須拒絕合併。加入 `tests/native-hermes-export-ci.test.mjs` 防止未來刪掉任一端的檢查。
 
 保留 Production `.github/workflows/deploy-worker.yml` **只發布 Web Worker + Assets**；原生 export 不上傳為對外 artifact，不做 EAS Build、簽章、裝置安裝、Google/Apple Sandbox、商店提交。Web 28 核准訪客封面與私人音訊拒絕測試不受影響。
 
