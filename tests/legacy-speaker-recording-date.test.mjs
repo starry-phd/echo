@@ -18,7 +18,7 @@ test('speaker profile dates appear only on current authorized recording cards, n
  assert.match(profile,/authorizedSpeakerProfileTracks\(speaker,/);
  assert.match(profile,/display==='ready'\? visibleTracks\.map\(track=><View key=\{track\.id\}/);
  assert.match(profile,/formatSpeakerRecordingDate\(track\.uploadDate\)/);
- assert.match(profile,/上架日期：/);
+ assert.match(profile,/\{track\.speakerRank\|\|'公開'\}\s*·\s*\{formatSpeakerRecordingDate\(track\.uploadDate\)\}/);
  assert.match(profile,/LegacyTrackCard track=\{track\} onNotice=\{setNotice\} onDislike=\{hide\}/);
  assert.match(profile,/section==='audio'/);
  assert.doesNotMatch(profile,/\/api\/speaker-profiles\/view/);
