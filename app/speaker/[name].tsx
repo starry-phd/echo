@@ -1,7 +1,7 @@
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {useEffect,useState} from 'react';
 import {router,useLocalSearchParams} from 'expo-router';
-import {useQuery} from '@tanstack/react-query';
+import {useInfiniteQuery,useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Image,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {getApiBaseUrl,getPublicTracks,getGuestPreviewTracks} from '../../src/api/client';
 import {splitSpeakerNames} from '../../src/ui/echo/speakerNames';
@@ -52,20 +52,23 @@ export default function PublicSpeakerTracks(){
   select:tracks=>tracks.filter(track=>splitSpeakerNames(track.speaker).includes(speaker!)),
   enabled:Boolean(speaker),retry:1
  });
- const q=useQuery({
+ const q=useInfiniteQuery({
   queryKey:['echo','public-speaker-recordings',speaker],
-  // The API's bound speaker filter now matches & / ＆ co-presenter tokens
-  // before LIMIT 100; still enforce exact normalized name and visibility
-  // in authorizedSpeakerProfileTracks after the response.
-  queryFn:({signal})=>getPublicTracks(signal,{speaker:speaker!}),enabled:Boolean(speaker),retry:1,
+  // Server first narrows to public+verified speaker tokens before paging.
+  // The client continues exact NFKC/visibility/hide filtering on all pages.
+  queryFn:({signal,pageParam})=>getPublicTracks(signal,{speaker:speaker!,offset:pageParam}),
+  initialPageParam:0,
+  getNextPageParam:(lastPage,allPages)=>lastPage.length===100?allPages.length*100:undefined,
+  enabled:Boolean(speaker),retry:1,
  });
  // A name in a URL is not evidence that the API currently approves it.
  // Check current approved metadata and both local visibility preferences.
  const speakerHidden=Boolean(speaker&&isSpeakerHidden(speaker,hiddenSpeakers));
+ const publicTracks=q.data?.pages.flat()??[];
  const visibleTracks=authorizedSpeakerProfileTracks(speaker,
-  mergeAuthorizedCards(q.data??[],p.data??[]),dislikedIds,hiddenSpeakers);
+  mergeAuthorizedCards(publicTracks,p.data??[]),dislikedIds,hiddenSpeakers);
  const origin=getApiBaseUrl();
- const publicSource={pending:q.isPending,failed:q.isError,count:q.data?.length??0};
+ const publicSource={pending:q.isPending,failed:q.isError||q.isFetchNextPageError,count:publicTracks.length};
  const guestSource={pending:p.isPending,failed:p.isError,count:p.data?.length??0};
  const display=getCatalogDisplayState(publicSource,guestSource,visibleTracks.length);
  const partial=hasPartialCatalogFailure(publicSource,guestSource);
@@ -109,7 +112,7 @@ export default function PublicSpeakerTracks(){
      style={[styles.tab,{borderColor:section===item.id?t.palette.primary:t.border,
       backgroundColor:section===item.id?t.palette.primary:t.card}]}>
      <Text style={[styles.tabText,{color:section===item.id?'#fff':t.ink,fontSize:fontSize(13)}]}>
-      {item.id==='audio'?`所有錄音（${visibleTracks.length}）`:'歷史問答'}
+      {item.id==='audio'?`所有錄音（${visibleTracks.length}${q.hasNextPage?'+':''}）`:'歷史問答'}
      </Text>
     </Pressable>)}
    </View>}
@@ -181,6 +184,14 @@ export default function PublicSpeakerTracks(){
      </View>
     </View>
    </Modal>}
+   {showBio&&section==='audio'&&q.hasNextPage&&<Pressable
+    accessibilityRole="button" accessibilityLabel="載入更多公開講者錄音"
+    disabled={q.isFetchingNextPage} onPress={()=>void q.fetchNextPage()}
+    style={[styles.moreButton,{borderColor:t.border,backgroundColor:t.card}]}>
+    <Text style={[styles.moreButtonText,{color:t.palette.primary,fontSize:fontSize(13)}]}>
+     {q.isFetchingNextPage?'載入中…':'載入更多錄音'}
+    </Text>
+   </Pressable>}
    <Text style={[styles.disclaimer,{color:t.muted}]}>
     原版會員限定的講師資料、AI 問答及私人錄音仍須授權驗證；本站只顯示已核准公開內容。
    </Text>
@@ -217,6 +228,8 @@ const styles=StyleSheet.create({
  retry:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:10},
  empty:{borderWidth:1,borderStyle:'dashed',borderRadius:19,minHeight:130,alignItems:'center',justifyContent:'center'},
  message:{fontSize:13,textAlign:'center',lineHeight:22,padding:10},
+ moreButton:{width:'100%',minHeight:48,borderRadius:12,borderWidth:1,alignItems:'center',justifyContent:'center',marginTop:8},
+ moreButtonText:{fontWeight:'800'},
  confirmOverlay:{flex:1,backgroundColor:'rgba(15,23,42,.6)',justifyContent:'center',paddingHorizontal:22},
  confirmDialog:{borderWidth:1,borderRadius:18,padding:19,gap:12,maxWidth:420,width:'100%',alignSelf:'center'},
  confirmTitle:{fontWeight:'900'},confirmDescription:{lineHeight:22},
