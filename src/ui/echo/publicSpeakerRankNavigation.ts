@@ -4,9 +4,10 @@ import {baseSpeakerRank} from './cardFilters';
  * Match the rank normalization used by the existing AdvancedCardFilters UI.
  */
 export function speakerRankFromRoute(value:unknown):string|null{
- if(typeof value!=='string')return null;
+ // Reject malicious route control characters BEFORE trim can erase them.
+ if(typeof value!=='string'||/[\x00-\x1f\x7f<>\/?#&%\\]/u.test(value))return null;
  const clean=value.trim();
- if(!clean||clean.length>80||/[\x00-\x1f\x7f<>\/?#&%\\]/u.test(clean))return null;
+ if(!clean||clean.length>80)return null;
  const normalized=baseSpeakerRank(clean);
  return normalized&&normalized.length<=80?normalized:null;
 }
