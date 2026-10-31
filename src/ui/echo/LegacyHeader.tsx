@@ -1,6 +1,6 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {router,usePathname} from 'expo-router';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
@@ -11,6 +11,7 @@ import {InstallAppButton} from './InstallAppButton';
 import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
+import {headerMenuMaxHeight} from './headerMenuPlacement';
 import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
 
@@ -21,6 +22,7 @@ export function LegacyHeader(){
  const {requestReset}=useHomeResetSignal();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
+ const menuTop=visualMetrics.headerHeight+visualMetrics.headerActionsHeight;
  const quickDevice=quickDeviceForWidth(width);
  const chosenQuickActions=quick.choices[quickDevice];
  const pathname=usePathname();
@@ -30,8 +32,11 @@ export function LegacyHeader(){
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
   ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
+ const closeMenu=()=>{setOpen(false);setDraggingQuickId(null);};
+ // Window coordinates and the menu's scroll bounds change on resize/rotation.
+ useEffect(()=>{setOpen(false);setDraggingQuickId(null);},[width,height]);
  const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{
-  setOpen(false);
+  closeMenu();
   if(path==='/'){
    requestReset();
    router.replace('/'); // Clear stale category/rank deep-link parameters.
@@ -102,12 +107,22 @@ export function LegacyHeader(){
       <Text style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>＋ 設定快捷功能</Text>
     </Pressable>}
    </View>
-   {open&&<View style={[
-      styles.menuPanel,
-      {backgroundColor:colors.card,borderColor:colors.border,maxHeight:Math.max(300,height-160),
-       right:10,width:layout.menuWidth}
-    ]}>
+   <Modal visible={open} transparent animationType="none" onRequestClose={closeMenu}>
+    <View style={styles.menuModalRoot} accessibilityViewIsModal onAccessibilityEscape={closeMenu}>
+     {/* A full-screen native/web surface closes on outside touch without
+         stealing presses or long-press drag from the later sibling panel. */}
+     <Pressable accessibilityRole="button" accessibilityLabel="點選主選單外側關閉"
+       onPress={closeMenu} style={styles.menuBackdrop}/>
+     <View style={[
+       styles.menuPanel,
+       {backgroundColor:colors.card,borderColor:colors.border,
+        maxHeight:headerMenuMaxHeight(height,menuTop),right:10,width:layout.menuWidth}
+     ]}>
      <ScrollView scrollEnabled={draggingQuickId===null} contentContainerStyle={styles.menuContents}>
+       <Pressable accessibilityRole="button" accessibilityLabel="關閉主選單"
+        onPress={closeMenu} style={styles.menuItem}>
+        <Text style={[styles.itemLabel,{color:colors.muted}]}>✕　關閉主選單</Text>
+       </Pressable>
        <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
          <View style={[styles.avatar,{backgroundColor:activeColor}]}><Text style={styles.avatarText}>♙</Text></View>
          <View style={styles.identityBody}>
@@ -197,10 +212,14 @@ export function LegacyHeader(){
        </View>)}
        <Text style={[styles.note,{color:colors.muted}]}>會員與管理功能待中央 API 驗收，不沿用舊帳號權限。</Text>
      </ScrollView>
-   </View>}
+     </View>
+    </View>
+   </Modal>
  </View>;
 }
 const styles=StyleSheet.create({
+ menuModalRoot:{flex:1},
+ menuBackdrop:{position:'absolute',top:0,bottom:0,left:0,right:0,backgroundColor:'rgba(15,23,42,.12)'},
  outer:{zIndex:100,borderBottomWidth:1,shadowColor:'#c13f6f',shadowOffset:{width:0,height:4},shadowOpacity:.08,shadowRadius:18,elevation:3},
  main:{height:visualMetrics.headerHeight,maxWidth:832,width:'100%',alignSelf:'center',paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  brand:{flexDirection:'row',alignItems:'center',gap:9,flex:1},
