@@ -23,6 +23,7 @@ import {speakerRankFromRoute} from '../src/ui/echo/publicSpeakerRankNavigation';
 import {isSpeakerHidden} from '../src/ui/echo/hiddenSpeakers';
 import {mergeAuthorizedCards} from '../src/ui/echo/mergeAuthorizedCards';
 import {currentCatalogDisplayState,canDrawFromCurrentCatalog} from '../src/ui/echo/currentCatalogDisplayState';
+import {canLoadMoreAuthorizedPublic} from '../src/ui/echo/publicLoadMoreEligibility';
 import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 
@@ -356,7 +357,7 @@ export default function CatalogScreen(){
        </Pressable>
      </View>:currentDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>
        <Text style={[styles.emptyText,{color:theme.muted,fontSize:fontSize(15)}]}>
-         {emptyCopy.title}
+         {tracksQuery.hasNextPage?'目前已載入的作品沒有符合條件的資料，仍可繼續載入其他已核准公開作品。':emptyCopy.title}
        </Text>
        <Text style={[styles.emptyExplanation,{color:theme.muted,fontSize:fontSize(12)}]}>
          {emptyCopy.detail}
@@ -371,7 +372,7 @@ export default function CatalogScreen(){
          <LegacyTrackCard track={track} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
-     {currentDisplay==='ready'&&tracksQuery.hasNextPage&&<Pressable
+     {canLoadMoreAuthorizedPublic(currentDisplay,tracksQuery.hasNextPage,ready)&&<Pressable
        accessibilityRole="button" accessibilityLabel="載入更多已核准公開音檔"
        accessibilityState={{disabled:tracksQuery.isFetchingNextPage}}
        disabled={tracksQuery.isFetchingNextPage}
