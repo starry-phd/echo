@@ -14,7 +14,8 @@ test('approved verified public detail generates a stable HTTPS PAGE link, not st
 test('guest-only, wrong ID and malformed public origin fail closed',()=>{
  for(const t of [null,undefined,{...track,playable:false},{...track,id:'../private'},
   {...track,id:'a/b'},{...track,id:'%2F'},{...track,id:'a?secret=1'},
-  {...track,id:''},{...track,id:'x'.repeat(201)}, {...track,title:' '}])
+  {...track,id:''},{...track,id:'x'.repeat(201)}, {...track,title:' '},
+  {...track,legacySnapshot:true}])
   assert.equal(approvedPublicTrackShareMessage(t,track.id,'https://example.com'),null);
  assert.equal(approvedPublicTrackShareMessage(track,'other','https://example.com'),null);
  for(const origin of [null,'','http://example.com','https://user:secret@example.com',
@@ -35,8 +36,12 @@ test('share action is mounted only in individually verified public detail, after
  assert.ok(detail.indexOf('<LegacyVerifiedTrackShare')<detail.indexOf('<LegacyEngagementDetail'));
  assert.doesNotMatch(preview,/LegacyVerifiedTrackShare|Share\.share|approvedPublicTrackShareMessage/);
  assert.match(component,/approvedPublicTrackShareMessage\(track,routeId,getApiBaseUrl\(\)\)/);
- assert.match(component,/if\(!message\|\|busy\)return/);
- assert.match(component,/Share\.share\(\{message,title:track.title\}\)/);
+ assert.match(component,/if\(!message\|\|!routeId\|\|busy\)return/);
+ assert.match(component,/const latest=await getPublicTrack\(routeId\)/);
+ assert.match(component,/const currentMessage=approvedPublicTrackShareMessage\(latest,routeId,getApiBaseUrl\(\)\)/);
+ assert.match(component,/if\(!currentMessage\|\|!latest\)/);
+ assert.match(component,/Share\.share\(\{message:currentMessage,title:latest.title\}\)/);
+ assert.doesNotMatch(component,/Share\.share\(\{message,title:track.title\}\)/);
  assert.match(component,/disabled=\{!message\|\|busy\}/);
  assert.doesNotMatch(component,/getPublicStreamUrl|\/api\/v1\/tracks|\/api\/v1\/previews|R2|\/private\//);
 });

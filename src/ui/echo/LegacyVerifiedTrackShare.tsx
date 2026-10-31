@@ -22,10 +22,19 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
  const message=approvedPublicTrackShareMessage(track,routeId,getApiBaseUrl());
  const infoCard=Platform.OS==='web'?buildApprovedPublicInfoCard(track,routeId,getApiBaseUrl()):null;
  const doShare=async()=>{
-  if(!message||busy)return;
+  if(!message||!routeId||busy)return;
   setBusy(true);setError('');
-  try{await Share.share({message,title:track.title});}
-  catch{setError('此裝置目前無法開啟系統分享，請稍後再試。');}
+  try{
+   // A published track can become private after the detail page loads.
+   // Recheck the currently verified public-by-ID API before system sharing.
+   const latest=await getPublicTrack(routeId);
+   const currentMessage=approvedPublicTrackShareMessage(latest,routeId,getApiBaseUrl());
+   if(!currentMessage||!latest){
+    setError('音檔公開授權已變更，無法分享；請重新載入資料。');
+    return;
+   }
+   await Share.share({message:currentMessage,title:latest.title});
+  }catch{setError('目前無法確認最新公開權限或開啟系統分享，請稍後再試。');}
   finally{setBusy(false);}
  };
  const doExport=async()=>{

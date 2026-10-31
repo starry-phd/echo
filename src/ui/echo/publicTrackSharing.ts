@@ -2,11 +2,14 @@
  * This is NOT an audio URL, signed media URL, or legacy guest-preview link. */
 export type PublicShareTrack={
  id:string;title:string;speaker:string;playable:boolean;
+ /** The 28 curated guest metadata-only cards must not be shareable,
+  * even if a caller accidentally marks a preview playable. */
+ legacySnapshot?:boolean;
 };
 export function approvedPublicTrackShareMessage(
  track:PublicShareTrack|null|undefined,routeId:string|null,apiOrigin:string|null
 ):string|null{
- if(!track||track.playable!==true||typeof routeId!=='string'||track.id!==routeId)return null;
+ if(!track||track.legacySnapshot===true||track.playable!==true||typeof routeId!=='string'||track.id!==routeId)return null;
  // IDs originate from the current verified-public endpoint. Do not permit
  // path-control characters, '.', '..', encoded separators or arbitrary URLs.
  if(!/^[A-Za-z0-9_-]{1,200}$/u.test(track.id))return null;

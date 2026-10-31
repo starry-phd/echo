@@ -8,6 +8,8 @@ test('curated guest information cards cannot obtain a public share page',()=>{
  const track={id:'guest-1',title:'原版核准資訊卡',speaker:'訪客講師',playable:false};
  assert.equal(approvedPublicTrackShareMessage(track,track.id,
   'https://echo-starry.starry-phd.workers.dev'),null);
+ assert.equal(approvedPublicTrackShareMessage({...track,playable:true,legacySnapshot:true},track.id,
+  'https://echo-starry.starry-phd.workers.dev'),null);
  assert.equal(approvedPublicTrackShareMessage({...track,playable:true},'different-id',
   'https://echo-starry.starry-phd.workers.dev'),null);
 });
