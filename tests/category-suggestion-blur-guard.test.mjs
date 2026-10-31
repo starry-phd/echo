@@ -64,3 +64,16 @@ test('home wires TextInput blur and suggestion press handlers without early chip
  assert.match(home,/searchSuggestionBlurGuard\.dispose\(\)/);
  assert.doesNotMatch(home,/onPressIn=\{\(\)=>selectSuggestedCategory\(label\)\}/);
 });
+
+test('other handled home actions explicitly close hints on native where TextInput may stay focused',()=>{
+ const home=read('app/index.tsx');
+ // The old Web app closes on outside mousedown, but in React Native handled
+ // Pressable actions do not guarantee a TextInput blur with this ScrollView.
+ assert.match(home,/keyboardShouldPersistTaps="handled"/);
+ assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);draw\(\);\}\}/);
+ assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);setAdvanced\(value=>!value\);\}\}/);
+ assert.match(home,/onRank=\{value=>\{searchSuggestionBlurGuard\.dismiss\(\);setSpeakerRank\(value\);\}\}/);
+ assert.match(home,/onPress=\{\(\)=>\{searchSuggestionBlurGuard\.dismiss\(\);setQuery\(''\);setCategory\(null\);setSpeakerRank\(null\);\}\}/);
+ // Keep chip selection on onPress, not on pressStart.
+ assert.match(home,/onPress=\{\(\)=>selectSuggestedCategory\(label\)\}/);
+});
