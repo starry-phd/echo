@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {GUEST_TUTORIAL_KEY,LEGACY_TUTORIAL_KEYS,isLegacyTutorialOptedOut,shouldShowGuestTutorial} from './legacyGuestTutorialPolicy';
 
 /**
  * The original Echo home uses TutorialSpotlight with an opt-out checkbox.
@@ -8,13 +9,6 @@ import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
  * UI affordances only. It must not promise guest audio, member identity,
  * stickers, progress or any other service without an approved contract.
  */
-export const GUEST_TUTORIAL_KEY='echostars_guest_safe_tutorial_never_remind_v1';
-export const LEGACY_TUTORIAL_KEYS=[
- 'echostars_home_tutorial_group_never_remind_v2',
- 'echostars_home_tutorial_never_remind_v1',
- 'echostars_photo_play_tutorial_never_remind_v1',
-] as const;
-
 // Remember an ordinary dismissal while the app remains open, just like
 // old App.tsx's showHomeTutorial state; opt-out persists across restarts.
 let dismissedForThisAppRun=false;
@@ -68,7 +62,10 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   setClosed(true);
  };
 
- const visible=active&&loaded&&!suppressed&&!closed;
+ const visible=shouldShowGuestTutorial({
+  catalogReady:active,preferencesReady:loaded,visibleCount:active?1:0,
+  storedOptOut:suppressed,legacyOptOut:false,dismissedInRun:closed,
+ });
  return <Modal visible={visible} transparent animationType="fade" onRequestClose={()=>void dismiss()}>
   <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={()=>void dismiss()}>
    <Pressable accessibilityRole="button" accessibilityLabel="關閉新手教學背景"
