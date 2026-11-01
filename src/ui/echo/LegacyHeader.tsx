@@ -78,7 +78,7 @@ export function LegacyHeader(){
  };
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
    <View style={styles.main}>
-     <Pressable accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
+     <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
        onPress={()=>go('/')} style={styles.brand}>
        <View style={[styles.brandIcon,{backgroundColor:activeColor,shadowColor:activeColor}]}>
          <Text style={styles.mic}>🎙</Text>
