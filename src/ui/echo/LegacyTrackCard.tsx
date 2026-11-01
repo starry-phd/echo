@@ -17,8 +17,8 @@ import {approvedExactCategoryLink} from './safeApprovedCategoryOptions';
 import {approvedGuestSpeakerRank,approvedVerifiedSpeakerRank} from './publicSpeakerRankNavigation';
 import {readHistoricalEngagement,historicalCountLabel} from './legacyEngagementSnapshot';
 
-export function LegacyTrackCard({track,onNotice,onDislike}:{
- track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;
+export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:{
+ track:EchoTrack;onNotice:(message:string)=>void;onDislike:(id:string)=>void;tutorialTarget?:boolean;
 }){
  const t=useLegacyTheme();
  const {fontSize}=useFontZoom();
@@ -98,6 +98,7 @@ export function LegacyTrackCard({track,onNotice,onDislike}:{
   <View style={[styles.body,{padding:cardSizing.bodyPadding,gap:cardSizing.bodyGap}]}>
    <View style={[styles.mediaSide,{width:cardSizing.cover}]}>
     <Pressable onPress={playFromPhoto}
+     nativeID={tutorialTarget?'echo-tutorial-first-public-photo':undefined}
      accessibilityRole="button"
      accessibilityLabel={track.playable?'點擊照片開始播放':'音檔尚未開放播放'}
      style={[styles.portrait,{width:cardSizing.cover,height:cardSizing.cover},

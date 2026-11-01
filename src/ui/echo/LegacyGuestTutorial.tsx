@@ -2,6 +2,8 @@ import {useEffect,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GUEST_TUTORIAL_KEY,LEGACY_TUTORIAL_KEYS,isLegacyTutorialOptedOut,shouldShowGuestTutorial} from './legacyGuestTutorialPolicy';
+import {normalizeTutorialTarget,tutorialCalloutPlacement,tutorialSpotlightScrim} from './legacyTutorialSpotlightGeometry';
+import type {TutorialRect,TutorialViewport} from './legacyTutorialSpotlightGeometry';
 
 /**
  * The original Echo home uses TutorialSpotlight with an opt-out checkbox.
@@ -19,6 +21,9 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
  const [closed,setClosed]=useState(false);
  const [neverAgain,setNeverAgain]=useState(false);
  const [error,setError]=useState('');
+ const [step,setStep]=useState<0|1>(0);
+ const [anchor,setAnchor]=useState<{rect:TutorialRect;viewport:TutorialViewport}|null>(null);
+ const [geometryLoaded,setGeometryLoaded]=useState(false);
 
  useEffect(()=>{
   let mounted=true;
@@ -60,8 +65,86 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   catalogReady:active,preferencesReady:loaded,visibleCount:active?1:0,
   storedOptOut:suppressed,legacyOptOut:false,dismissedInRun:closed,
  });
- return <Modal visible={visible} transparent animationType="fade" onRequestClose={()=>void dismiss()}>
-  <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={()=>void dismiss()}>
+ // This is the exact Web homepage geometry, not a simulated card layout.
+ // Native devices retain the accessible modal until real-device positioning
+ // and VoiceOver/TalkBack acceptance can be performed.
+ useEffect(()=>{
+  if(!visible||Platform.OS!=='web'||typeof document==='undefined')return;
+  let frame=0;
+  const measure=()=>{
+   window.cancelAnimationFrame(frame);
+   frame=window.requestAnimationFrame(()=>{
+    const id=step===0?'echo-tutorial-home-logo':'echo-tutorial-first-public-photo';
+    const element=document.getElementById(id);
+    const viewport={width:window.innerWidth,height:window.innerHeight};
+    const bounds=element?.getBoundingClientRect();
+    const style=element?window.getComputedStyle(element):null;
+    const rect=bounds&&style?.display!=='none'&&style?.visibility!=='hidden'
+     ?normalizeTutorialTarget(bounds,viewport):null;
+    setAnchor(rect?{rect,viewport}:null);
+    setGeometryLoaded(true);
+   });
+  };
+  measure();
+  const delayed=window.setTimeout(measure,180);
+  window.addEventListener('resize',measure);
+  window.addEventListener('orientationchange',measure);
+  window.addEventListener('scroll',measure,true);
+  return ()=>{
+   window.clearTimeout(delayed);
+   window.cancelAnimationFrame(frame);
+   window.removeEventListener('resize',measure);
+   window.removeEventListener('orientationchange',measure);
+   window.removeEventListener('scroll',measure,true);
+  };
+ },[visible,step]);
+
+ const spotlight=Platform.OS==='web'&&anchor;
+ const callout=spotlight?tutorialCalloutPlacement(spotlight.rect,spotlight.viewport):null;
+ const next=()=>{
+  if(step===0){
+   setStep(1);
+   if(Platform.OS==='web'&&typeof document!=='undefined'){
+    document.getElementById('echo-tutorial-first-public-photo')?.scrollIntoView({block:'center'});
+   }
+  }else void dismiss();
+ };
+ return <Modal visible={visible&&(Platform.OS!=='web'||geometryLoaded)}
+  transparent animationType="fade" onRequestClose={()=>void dismiss()}>
+  <View style={[styles.overlay,spotlight&&styles.spotlightOverlay]}
+   accessibilityViewIsModal onAccessibilityEscape={()=>void dismiss()}>
+   {spotlight&&callout?<>
+    <Pressable accessibilityRole="button" accessibilityLabel="關閉新手教學背景"
+     onPress={()=>void dismiss()} style={StyleSheet.absoluteFill}/>
+    {tutorialSpotlightScrim(spotlight.rect,spotlight.viewport).map((mask,index)=>
+     <View key={index} pointerEvents="none"
+      style={[styles.spotlightScrim,{left:mask.left,top:mask.top,width:mask.width,height:mask.height}]}/>
+    )}
+    <View pointerEvents="none" style={[styles.spotlightOutline,{
+     left:spotlight.rect.left,top:spotlight.rect.top,
+     width:spotlight.rect.right-spotlight.rect.left,
+     height:spotlight.rect.bottom-spotlight.rect.top
+    }]}/>
+    <View style={[styles.spotlightCallout,{left:callout.left,top:callout.top,width:callout.width,
+     maxHeight:callout.height}]}>
+     <Text style={styles.spotlightTitle}>{step===0?'① 回首頁':'② 查看已核准作品'}</Text>
+     <Text style={styles.spotlightDescription}>{step===0
+      ?'點選「繁星回聲」標誌可返回公開作品清單。'
+      :'點封面會告知播放尚未開放；點作品標題可查閱已核准資訊。本裝置可收藏，不等於會員同步。'}</Text>
+     <Text style={styles.spotlightWarning}>私人錄音、正式會員登入及付費功能尚未開放。</Text>
+     <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
+      accessibilityState={{checked:neverAgain}}
+      onPress={()=>{setNeverAgain(value=>!value);setError('');}}
+      style={styles.spotlightCheckbox}>
+      <Text style={styles.spotlightCheckboxText}>{neverAgain?'☑':'☐'} 打勾不再顯示新手教學</Text>
+     </Pressable>
+     {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+     <Pressable accessibilityRole="button" accessibilityLabel={step===0?'下一步：查看作品資訊':'完成新手教學'}
+      onPress={next} style={styles.spotlightNext}>
+      <Text style={styles.spotlightNextText}>{step===0?'下一步':'知道了'}</Text>
+     </Pressable>
+    </View>
+   </>:<>
    <Pressable accessibilityRole="button" accessibilityLabel="關閉新手教學背景"
     onPress={()=>void dismiss()} style={StyleSheet.absoluteFill}/>
    <View style={styles.panel} accessibilityViewIsModal>
@@ -86,11 +169,25 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
      <Text style={styles.doneText}>我知道了，開始瀏覽</Text>
     </Pressable>
    </View>
+   </>}
   </View>
  </Modal>;
 }
 
 const styles=StyleSheet.create({
+ spotlightOverlay:{backgroundColor:'transparent',padding:0,alignItems:'stretch',justifyContent:'flex-start'},
+ spotlightScrim:{position:'absolute',backgroundColor:'rgba(0,0,0,.89)'},
+ spotlightOutline:{position:'absolute',borderColor:'#ffffff',borderWidth:2,borderRadius:16},
+ spotlightCallout:{position:'absolute',backgroundColor:'#fff9fb',padding:12,borderRadius:14,
+  borderColor:'#db8ea8',borderWidth:2,gap:8,justifyContent:'space-around'},
+ spotlightTitle:{fontWeight:'900',fontSize:17,color:'#8f3556'},
+ spotlightDescription:{fontSize:12,lineHeight:19,color:'#453a45'},
+ spotlightWarning:{fontSize:11,lineHeight:16,color:'#84475b'},
+ spotlightCheckbox:{minHeight:38,justifyContent:'center'},
+ spotlightCheckboxText:{fontSize:12,fontWeight:'700',color:'#453a45'},
+ spotlightNext:{minHeight:42,backgroundColor:'#9e4667',borderRadius:11,
+  alignItems:'center',justifyContent:'center'},
+ spotlightNextText:{fontWeight:'900',fontSize:14,color:'#fff'},
  overlay:{flex:1,backgroundColor:'rgba(15,23,42,.78)',alignItems:'center',justifyContent:'center',padding:16},
  panel:{width:'100%',maxWidth:450,backgroundColor:'#fff9fb',borderRadius:22,padding:22,gap:12,
   borderWidth:1,borderColor:'#f5c8d6'},

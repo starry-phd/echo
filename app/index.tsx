@@ -476,13 +476,13 @@ export default function CatalogScreen(){
          {emptyCopy.detail}
        </Text>
      </View>:<View style={styles.cardGrid}>
-       {displayedTracks.map(track=><View key={track.id} style={[styles.cardCell,
+       {displayedTracks.map((track,index)=><View key={track.id} style={[styles.cardCell,
          {width:twoColumns?'49%':'100%'},
          focusedId===track.id&&{borderWidth:2,borderColor:theme.palette.primary,
            borderRadius:23,padding:2}]}>
          {luckyPhase==='win'&&luckyPreview?.id===track.id&&
           <Text style={[styles.luckyBadge,{color:theme.palette.primary}]}>✨ 好手氣！✨　僅資訊卡</Text>}
-         <LegacyTrackCard track={track} onNotice={setNotice} onDislike={dislikeTrack}/>
+         <LegacyTrackCard track={track} tutorialTarget={index===0} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
      {canLoadMoreAuthorizedPublic(currentDisplay,tracksQuery.hasNextPage,ready)&&<Pressable
