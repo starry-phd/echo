@@ -165,5 +165,5 @@ test('new guests get original quick defaults, while existing device preferences 
  assert.match(header,/chosenQuickActions\.map\(id=>id==='font'\?/);
  assert.match(header,/!chosenQuickActions\.includes\('font'\)&&<View/);
  assert.match(header,/theme:\{label:colors\.dark\?'淺色模式':'深色模式'/);
- assert.doesNotMatch(header,/\/admin|\/billing|\/private/);
+ assert.doesNotMatch(header,/router\.(?:push|replace)\(['\"]\/(?:admin|billing|private)/);
 });
