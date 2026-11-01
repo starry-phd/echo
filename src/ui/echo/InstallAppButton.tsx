@@ -38,7 +38,9 @@ export function InstallAppButton(){
    media?.removeEventListener?.('change',checkInstalled);
   };
  },[]);
- if(Platform.OS!=='web')return null;
+ // The original Navbar hides the install entry when the PWA is already in standalone mode.
+ // Keep this check after all hooks; a late appinstalled event can hide the row safely.
+ if(Platform.OS!=='web'||installed)return null;
  const nav=typeof navigator!=='undefined'?navigator:null;
  const device=detectInstallPlatform(nav?.userAgent??'',nav?.platform??'',nav?.maxTouchPoints??0);
  const install=async()=>{

@@ -59,6 +59,7 @@ test('real web install button handles native browser install events and safe man
  assert.match(button,/display-mode: standalone/);
  assert.match(button,/manualInstallHelp\[device\]/);
  assert.match(button,/Platform\.OS!=='web'/);
+ assert.match(button,/if\(Platform\.OS!=='web'\|\|installed\)return null;/,'already installed standalone must not offer installation');
  assert.match(button,/不會開放尚未授權的音檔/);
  assert.doesNotMatch(button,/serviceWorker\.register|cache\.addAll|navigator\.serviceWorker/);
  assert.match(header,/import \{InstallAppButton\} from '\.\/InstallAppButton'/);

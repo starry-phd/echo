@@ -44,3 +44,10 @@ test('landscape/compact viewports keep the panel inside the visible screen',()=>
  assert.equal(headerMenuMaxHeight(Infinity,104),0);
  assert.equal(headerMenuMaxHeight(844,NaN),0);
 });
+
+
+test('hamburger announces the correct open or close action as expanded state changes',()=>{
+ assert.match(header,/accessibilityLabel=\{open\?'關閉主選單':'開啟主選單'\}/);
+ assert.match(header,/accessibilityState=\{\{expanded:open\}\}/);
+ assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);setOpen\(x=>!x\);\}\}/);
+});
