@@ -167,6 +167,7 @@ export function LegacyHeader(){
            <Text style={[styles.menuMiniText,{color:activeColor}]}>⌂ 回首頁</Text>
          </Pressable>
        </View>
+       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt} installedInThisTab={installedInThisTab}/>
        <Pressable accessibilityRole="button" accessibilityState={{expanded:showColors}} style={styles.menuItem} onPress={()=>setShowColors(!showColors)}>
          <Text style={[styles.itemLabel,{color:colors.ink,fontSize:fontSize(14)}]}>◐　主題顏色　{colors.palette.name}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>{showColors?'⌃':'⌄'}</Text>
@@ -235,7 +236,6 @@ export function LegacyHeader(){
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
-       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt} installedInThisTab={installedInThisTab}/>
        {['我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>

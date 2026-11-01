@@ -111,3 +111,30 @@ test('legacy PWA installed/uninstalled browser lifecycle survives a closed menu'
  assert.doesNotMatch(header,/document\.addEventListener|window\.addEventListener/);
  assert.doesNotMatch(hook,/localStorage|sessionStorage|serviceWorker|fetch\(|R2\.get\(/);
 });
+
+test('legacy installation action is near the top of the guest menu, before theme and shortcut editor',()=>{
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ const action='<InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt} installedInThisTab={installedInThisTab}/>';
+ const position=header.indexOf(action);
+ assert.ok(position>0);
+ assert.equal(header.indexOf(action,position+action.length),-1,'only one install entry');
+ assert.ok(position>header.indexOf('⌂ 回首頁'),'original Navbar places install after the profile header shortcuts');
+ assert.ok(position<header.indexOf('accessibilityState={{expanded:showColors}}'),'install precedes theme palette and pin editor');
+ assert.ok(position<header.indexOf('quickEditorOrder.map'),'install should not hide under a long pinned-action editor');
+ const installer=read('src/ui/echo/InstallAppButton.tsx');
+ assert.match(installer,/Platform\.OS!=='web'\|\|isInstalled/,'already installed PWA stays hidden');
+});
+test('iOS install guide retains original four Safari steps and messenger escape path',()=>{
+ const guide=manualInstallHelp.ios;
+ assert.match(guide,/iPhone／iPad/);
+ assert.match(guide,/通訊軟體/);
+ assert.match(guide,/以 Safari 開啟/);
+ assert.match(guide,/分享/);
+ assert.match(guide,/向下捲動/);
+ assert.match(guide,/加入主畫面/);
+ assert.match(guide,/確認名稱/);
+ assert.match(guide,/1\.[\s\S]*2\.[\s\S]*3\.[\s\S]*4\./);
+ const installer=read('src/ui/echo/InstallAppButton.tsx');
+ assert.match(installer,/manualInstallHelp\[device\]/);
+ assert.doesNotMatch(installer,/serviceWorker|navigator\.serviceWorker|R2\.get\(/);
+});
