@@ -11,9 +11,10 @@ export type InstallPromptEvent=Event&{
  * Original legacy menu entry, scoped to public Web. No service worker or
  * offline caching: 28 curated previews are revocable and media is private.
  */
-export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{}}:{
+export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{},installedInThisTab=false}:{
  earlyPrompt?:InstallPromptEvent|null;
  onPromptConsumed?:()=>void;
+ installedInThisTab?:boolean;
 }={}){
  const theme=useLegacyTheme();
  const [prompt,setPrompt]=useState<InstallPromptEvent|null>(null);
@@ -29,6 +30,7 @@ export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{}}:{
   const onPrompt=(event:Event)=>{
    event.preventDefault();
    setPrompt(event as InstallPromptEvent);
+   setInstalled(false);
   };
   const onInstalled=()=>{setInstalled(true);setGuideOpen(false);setPrompt(null);setMessage('繁星回聲已安裝到此裝置。');};
   checkInstalled();
@@ -41,14 +43,17 @@ export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{}}:{
    media?.removeEventListener?.('change',checkInstalled);
   };
  },[]);
+ // A new browser install offer may follow an uninstall while this Modal stays mounted.
+ useEffect(()=>{if(earlyPrompt)setInstalled(false);},[earlyPrompt]);
+ const isInstalled=installed||installedInThisTab;
  // The original Navbar hides the install entry when the PWA is already in standalone mode.
  // Keep this check after all hooks; a late appinstalled event can hide the row safely.
- if(Platform.OS!=='web'||installed)return null;
+ if(Platform.OS!=='web'||isInstalled)return null;
  const nav=typeof navigator!=='undefined'?navigator:null;
  const pendingPrompt=prompt??earlyPrompt;
  const device=detectInstallPlatform(nav?.userAgent??'',nav?.platform??'',nav?.maxTouchPoints??0);
  const install=async()=>{
-  if(installed){setMessage('目前已使用主畫面安裝模式。');return;}
+  if(isInstalled){setMessage('目前已使用主畫面安裝模式。');return;}
   if(!pendingPrompt){setGuideOpen(true);return;}
   const current=pendingPrompt;
   setPrompt(null);
