@@ -8,7 +8,7 @@ test('original mobile/tablet/desktop quick action limits preserved for the safe 
  assert.deepEqual(quickLimits,{mobile:3,tablet:5,desktop:7});
  assert.deepEqual([320,390,599,600,820,899,900,1440].map(quickDeviceForWidth),
   ['mobile','mobile','mobile','tablet','tablet','tablet','desktop','desktop']);
- assert.deepEqual(allowedQuickActions,['home','palette','stats','favorites','profile','theme']);
+ assert.deepEqual(allowedQuickActions,['home','palette','stats','favorites','profile','theme','font']);
 });
 test('untrusted saved IDs, duplicates and over-capacity items are dropped',()=>{
  const choices=normalizeQuickChoices({
@@ -65,7 +65,8 @@ test('empty quick-bar remains recoverable through main menu, without privileged 
 test('quick toolbar and editor are actual accessible navigation wired to root state',()=>{
  const layout=read('app/_layout.tsx'),header=read('src/ui/echo/LegacyHeader.tsx');
  assert.match(layout,/<QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/);
- assert.match(header,/chosenQuickActions\.map\(id=><Pressable/);
+ assert.match(header,/chosenQuickActions\.map\(id=>id==='font'\?/);
+ assert.match(header,/accessibilityLabel="置頂字體調整"/);
  assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);quickActions\[id\]\.run\(\);\}\}/);
  assert.match(header,/quickEditorOrder\.map\(id=><View/);
  assert.match(header,/quick\.togglePinned\(quickDevice,id\)/);
@@ -119,4 +120,29 @@ test('dedicated drag responder has long-press cancel and retains accessible arro
  assert.match(source,/quickDragTargetIndex/);
  assert.match(source,/clearTimeout/);
  assert.doesNotMatch(source,/fetch\(|\/api\/|Audio\.|R2|localStorage/);
+});
+
+test('legacy guest font can be pinned and unpinned without changing the default toolbar or private scopes',async()=>{
+ const storage=new Map();const store=createQuickActionStore({
+  getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{storage.set(k,v);}
+ });
+ await store.hydrate();
+ assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette']);
+ assert.equal(store.togglePinned('mobile','font'),true);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette','font']);
+ assert.equal(store.togglePinned('mobile','stats'),false,'mobile limit still applies to font pin');
+ await store.flush();
+ const restored=createQuickActionStore({getItem:async k=>storage.get(k)??null,setItem:async()=>{}});
+ await restored.hydrate();
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['home','palette','font']);
+ assert.equal(restored.togglePinned('mobile','font'),true);
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['home','palette']);
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ assert.match(header,/!chosenQuickActions\.includes\('font'\)&&<View style=\{styles\.fontActions\}/);
+ assert.match(header,/id==='font'\?/);
+ assert.match(header,/accessibilityLabel="縮小字體"/);
+ assert.match(header,/accessibilityLabel="放大字體"/);
+ assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);decrease\(\);\}\}/);
+ assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);increase\(\);\}\}/);
+ assert.doesNotMatch(header,/router\.(?:push|replace)\(['"]\/(?:admin|billing|private)/);
 });

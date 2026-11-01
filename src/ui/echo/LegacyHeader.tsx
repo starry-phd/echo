@@ -67,7 +67,8 @@ export function LegacyHeader(){
   stats:{label:'排行榜',glyph:'▥',run:()=>go('/stats')},
   favorites:{label:'我的收藏',glyph:'♡',run:()=>go('/favorites')},
   profile:{label:'會員',glyph:'♙',run:()=>go('/profile')},
-  theme:{label:colors.dark?'淺色模式':'深色模式',glyph:'◐',run:colors.toggleDark}
+  theme:{label:colors.dark?'淺色模式':'深色模式',glyph:'◐',run:colors.toggleDark},
+  font:{label:'字體',glyph:'A±',run:()=>setOpen(true)}
  };
  const togglePin=(id:QuickActionId)=>{
   const ok=quick.togglePinned(quickDevice,id);
@@ -86,7 +87,7 @@ export function LegacyHeader(){
           style={{height:value,width:3,borderRadius:4,backgroundColor:activeColor,opacity:0.55+i*0.13}}/>)}
        </View>}
      </Pressable>
-     <View style={styles.fontActions} accessibilityLabel="調整字體大小">
+     {!chosenQuickActions.includes('font')&&<View style={styles.fontActions} accessibilityLabel="調整字體大小">
        <Pressable accessibilityRole="button" accessibilityLabel="縮小字體" accessibilityHint="最低100%，每次調整10%"
         accessibilityState={{disabled:!fontReady||zoom<=1}} disabled={!fontReady||zoom<=1}
         onPress={()=>{requestDismissSearch();decrease();}} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
@@ -97,7 +98,7 @@ export function LegacyHeader(){
         onPress={()=>{requestDismissSearch();increase();}} style={[styles.fontButton,{backgroundColor:colors.lightPill}]}>
         <Text style={[styles.fontButtonText,{color:activeColor}]}>A＋</Text>
        </Pressable>
-     </View>
+     </View>}
      <Pressable accessibilityRole="button" accessibilityLabel="開啟主選單"
        accessibilityState={{expanded:open}} onPress={()=>{requestDismissSearch();setOpen(x=>!x);}}
        style={[styles.menuButton,{backgroundColor:colors.dark?'#253145':'#f1f5f9'}]}>
@@ -105,7 +106,20 @@ export function LegacyHeader(){
      </Pressable>
    </View>
    <View style={[styles.quickRow,{borderTopColor:colors.border}]}>
-    {chosenQuickActions.map(id=><Pressable key={id} accessibilityRole="button"
+    {chosenQuickActions.map(id=>id==='font'?
+     <View key={id} style={styles.pinnedFontQuick} accessibilityLabel="置頂字體調整">
+      <Pressable accessibilityRole="button" accessibilityLabel="縮小字體" accessibilityHint="最低100%，每次調整10%"
+       accessibilityState={{disabled:!fontReady||zoom<=1}} disabled={!fontReady||zoom<=1}
+       onPress={()=>{requestDismissSearch();decrease();}} style={[styles.pinnedFontButton,{backgroundColor:colors.lightPill}]}>
+       <Text style={[styles.fontButtonText,{color:activeColor}]}>A−</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="放大字體" accessibilityHint="最高140%，每次調整10%"
+       accessibilityState={{disabled:!fontReady||zoom>=1.4}} disabled={!fontReady||zoom>=1.4}
+       onPress={()=>{requestDismissSearch();increase();}} style={[styles.pinnedFontButton,{backgroundColor:colors.lightPill}]}>
+       <Text style={[styles.fontButtonText,{color:activeColor}]}>A＋</Text>
+      </Pressable>
+     </View>:
+     <Pressable key={id} accessibilityRole="button"
      accessibilityLabel={'快捷功能：'+quickActions[id].label}
      accessibilityState={{selected:id==='home'&&isHome}}
      onPress={()=>{requestDismissSearch();quickActions[id].run();}} style={styles.quick}>
@@ -242,6 +256,8 @@ const styles=StyleSheet.create({
  brandName:{fontSize:21,fontWeight:'900',letterSpacing:1},
  wave:{flexDirection:'row',alignItems:'center',gap:3,height:22,marginLeft:3},
  fontActions:{flexDirection:'row',alignItems:'center',gap:4,marginRight:5},
+ pinnedFontQuick:{flexDirection:'row',alignItems:'center',gap:3,minHeight:44,flexShrink:0},
+ pinnedFontButton:{minHeight:44,minWidth:42,borderRadius:11,alignItems:'center',justifyContent:'center'},
  fontButton:{minHeight:42,minWidth:37,borderRadius:11,alignItems:'center',justifyContent:'center'},
  fontButtonText:{fontSize:12,fontWeight:'900'},
  fontMenuRow:{flexDirection:'row',minHeight:45,alignItems:'center',paddingHorizontal:9,gap:7,borderRadius:11},
