@@ -59,7 +59,7 @@ test('real web install button handles native browser install events and safe man
  assert.match(button,/display-mode: standalone/);
  assert.match(button,/manualInstallHelp\[device\]/);
  assert.match(button,/Platform\.OS!=='web'/);
- assert.match(button,/if\(Platform\.OS!=='web'\|\|installed\)return null;/,'already installed standalone must not offer installation');
+ assert.match(button,/if\(Platform\.OS!=='web'\|\|isInstalled\)return null;/,'already installed standalone must not offer installation');
  assert.match(button,/不會開放尚未授權的音檔/);
  assert.doesNotMatch(button,/serviceWorker\.register|cache\.addAll|navigator\.serviceWorker/);
  assert.match(header,/import \{InstallAppButton\} from '\.\/InstallAppButton'/);
@@ -72,13 +72,13 @@ test('Web PWA install prompt buffer is mounted with the Header, separate from me
  const button=read('src/ui/echo/InstallAppButton.tsx');
  const layout=read('app/_layout.tsx');
  assert.match(layout,/<LegacyHeader\/>/);
- assert.match(header,/const \{earlyInstallPrompt,consumeEarlyPrompt\}=useEarlyInstallPrompt\(\)/);
- assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=\{consumeEarlyPrompt\}\/>/);
+ assert.match(header,/const \{earlyInstallPrompt,installedInThisTab,consumeEarlyPrompt\}=useEarlyInstallPrompt\(\)/);
+ assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=\{consumeEarlyPrompt\} installedInThisTab=\{installedInThisTab\}\/>/);
  assert.match(hook,/if\(Platform\.OS!=='web'\|\|typeof window==='undefined'\)return/);
  assert.match(hook,/window\.addEventListener\('beforeinstallprompt',capture\)/);
  assert.match(hook,/window\.removeEventListener\('beforeinstallprompt',capture\)/);
- assert.match(hook,/window\.addEventListener\('appinstalled',clear\)/);
- assert.match(hook,/window\.removeEventListener\('appinstalled',clear\)/);
+ assert.match(hook,/window\.addEventListener\('appinstalled',markInstalled\)/);
+ assert.match(hook,/window\.removeEventListener\('appinstalled',markInstalled\)/);
  assert.match(hook,/event\.preventDefault\(\)/);
  assert.match(button,/const pendingPrompt=prompt\?\?earlyPrompt/);
  assert.match(button,/if\(!pendingPrompt\)\{setGuideOpen\(true\);return;\}/);
@@ -92,4 +92,22 @@ test('Web PWA install prompt buffer is mounted with the Header, separate from me
  assert.doesNotMatch(header,/document\.addEventListener|window\.addEventListener/);
  assert.doesNotMatch(hook,/serviceWorker|R2\.get\(|\.prepare\(/);
  assert.doesNotMatch(button,/serviceWorker|R2\.get\(|\.prepare\(/);
+});
+
+test('legacy PWA installed/uninstalled browser lifecycle survives a closed menu',()=>{
+ const hook=read('src/ui/echo/useEarlyInstallPrompt.ts');
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ const button=read('src/ui/echo/InstallAppButton.tsx');
+ assert.match(hook,/const \[installedInThisTab,setInstalledInThisTab\]=useState\(false\)/);
+ // The original module-level appinstalled updates the status even if menu was closed.
+ assert.match(hook,/const markInstalled=\(\)=>\{\s*setEarlyInstallPrompt\(null\);\s*setInstalledInThisTab\(true\);/s);
+ // The original capturePrompt resets installed=false after an uninstall offers a new prompt.
+ assert.match(hook,/const capture=\(event:Event\)=>\{[\s\S]*?setInstalledInThisTab\(false\);[\s\S]*?setEarlyInstallPrompt\(event as InstallPromptEvent\);/);
+ assert.match(header,/installedInThisTab=\{installedInThisTab\}/);
+ assert.match(button,/const isInstalled=installed\|\|installedInThisTab/);
+ assert.match(button,/if\(Platform\.OS!=='web'\|\|isInstalled\)return null/);
+ assert.match(button,/setPrompt\(event as InstallPromptEvent\);\s*setInstalled\(false\)/);
+ assert.match(button,/useEffect\(\(\)=>\{if\(earlyPrompt\)setInstalled\(false\);\},\[earlyPrompt\]\)/);
+ assert.doesNotMatch(header,/document\.addEventListener|window\.addEventListener/);
+ assert.doesNotMatch(hook,/localStorage|sessionStorage|serviceWorker|fetch\(|R2\.get\(/);
 });

@@ -32,7 +32,7 @@ export function LegacyHeader(){
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
  const [quickNotice,setQuickNotice]=useState('');
- const {earlyInstallPrompt,consumeEarlyPrompt}=useEarlyInstallPrompt();
+ const {earlyInstallPrompt,installedInThisTab,consumeEarlyPrompt}=useEarlyInstallPrompt();
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
   ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
@@ -235,7 +235,7 @@ export function LegacyHeader(){
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
-       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt}/>
+       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt} installedInThisTab={installedInThisTab}/>
        {['我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>

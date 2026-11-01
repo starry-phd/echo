@@ -10,19 +10,25 @@ import type {InstallPromptEvent} from './InstallAppButton';
  */
 export function useEarlyInstallPrompt(){
  const [earlyInstallPrompt,setEarlyInstallPrompt]=useState<InstallPromptEvent|null>(null);
+ const [installedInThisTab,setInstalledInThisTab]=useState(false);
  useEffect(()=>{
   if(Platform.OS!=='web'||typeof window==='undefined')return;
   const capture=(event:Event)=>{
    event.preventDefault();
+   // A new install offer is evidence that a previous installation was removed.
+   setInstalledInThisTab(false);
    setEarlyInstallPrompt(event as InstallPromptEvent);
   };
-  const clear=()=>setEarlyInstallPrompt(null);
+  const markInstalled=()=>{
+   setEarlyInstallPrompt(null);
+   setInstalledInThisTab(true);
+  };
   window.addEventListener('beforeinstallprompt',capture);
-  window.addEventListener('appinstalled',clear);
+  window.addEventListener('appinstalled',markInstalled);
   return ()=>{
    window.removeEventListener('beforeinstallprompt',capture);
-   window.removeEventListener('appinstalled',clear);
+   window.removeEventListener('appinstalled',markInstalled);
   };
  },[]);
- return {earlyInstallPrompt,consumeEarlyPrompt:()=>setEarlyInstallPrompt(null)};
+ return {earlyInstallPrompt,installedInThisTab,consumeEarlyPrompt:()=>setEarlyInstallPrompt(null)};
 }
