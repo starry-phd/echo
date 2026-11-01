@@ -26,20 +26,20 @@ test('pin/unpin at capacity and up/down reorder persist in separate device confi
  const store=createQuickActionStore(api);
  assert.equal(store.togglePinned('mobile','stats'),false,'changes disabled before hydration');
  await store.hydrate();
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette']);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['font','theme']);
  assert.equal(store.togglePinned('mobile','stats'),true,'mobile has a free slot');
- assert.equal(store.togglePinned('mobile','profile'),false,'mobile reaches the original three-slot limit');
- assert.equal(store.togglePinned('mobile','palette'),true);
+ assert.equal(store.togglePinned('mobile','profile'),false,'mobile reaches the three-slot limit');
+ assert.equal(store.togglePinned('mobile','theme'),true,'unpin theme to free one slot');
  assert.equal(store.togglePinned('mobile','profile'),true);
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','stats','profile']);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['font','stats','profile']);
  assert.equal(store.movePinned('mobile','stats',-1),true);
  assert.equal(store.movePinned('mobile','stats',-1),false);
- assert.deepEqual(store.getSnapshot().choices.mobile,['stats','home','profile']);
- assert.deepEqual(store.getSnapshot().choices.desktop,['home','palette','profile']);
+ assert.deepEqual(store.getSnapshot().choices.mobile,['stats','font','profile']);
+ assert.deepEqual(store.getSnapshot().choices.desktop,['font','theme']);
  await store.flush();
  const next=createQuickActionStore(api);await next.hydrate();
- assert.deepEqual(next.getSnapshot().choices.mobile,['stats','home','profile']);
- assert.deepEqual(next.getSnapshot().choices.desktop,['home','palette','profile']);
+ assert.deepEqual(next.getSnapshot().choices.mobile,['stats','font','profile']);
+ assert.deepEqual(next.getSnapshot().choices.desktop,['font','theme']);
  assert.ok(storage.get(QUICK_PIN_KEY));
 });
 test('a failed AsyncStorage read never overwrites a possibly recoverable preferences file',async()=>{
@@ -127,16 +127,19 @@ test('legacy guest font can be pinned and unpinned without changing the default 
   getItem:async k=>storage.get(k)??null,setItem:async(k,v)=>{storage.set(k,v);}
  });
  await store.hydrate();
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette']);
- assert.equal(store.togglePinned('mobile','font'),true);
- assert.deepEqual(store.getSnapshot().choices.mobile,['home','palette','font']);
- assert.equal(store.togglePinned('mobile','stats'),false,'mobile limit still applies to font pin');
+ assert.deepEqual(store.getSnapshot().choices.mobile,['font','theme']);
+ assert.equal(store.togglePinned('mobile','font'),true,'unpin original font');
+ assert.deepEqual(store.getSnapshot().choices.mobile,['theme']);
+ assert.equal(store.togglePinned('mobile','font'),true,'restore font pin');
+ assert.deepEqual(store.getSnapshot().choices.mobile,['theme','font']);
+ assert.equal(store.togglePinned('mobile','stats'),true);
+ assert.equal(store.togglePinned('mobile','profile'),false,'mobile limit still applies');
  await store.flush();
  const restored=createQuickActionStore({getItem:async k=>storage.get(k)??null,setItem:async()=>{}});
  await restored.hydrate();
- assert.deepEqual(restored.getSnapshot().choices.mobile,['home','palette','font']);
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['theme','font','stats']);
  assert.equal(restored.togglePinned('mobile','font'),true);
- assert.deepEqual(restored.getSnapshot().choices.mobile,['home','palette']);
+ assert.deepEqual(restored.getSnapshot().choices.mobile,['theme','stats']);
  const header=read('src/ui/echo/LegacyHeader.tsx');
  assert.match(header,/!chosenQuickActions\.includes\('font'\)&&<View style=\{styles\.fontActions\}/);
  assert.match(header,/id==='font'\?/);
@@ -145,4 +148,22 @@ test('legacy guest font can be pinned and unpinned without changing the default 
  assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);decrease\(\);\}\}/);
  assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);increase\(\);\}\}/);
  assert.doesNotMatch(header,/router\.(?:push|replace)\(['"]\/(?:admin|billing|private)/);
+});
+
+test('new guests get original quick defaults, while existing device preferences remain untouched',async()=>{
+ const oldSaved={mobile:['home','palette'],tablet:['home','palette','profile'],desktop:['home','palette','profile']};
+ assert.deepEqual(normalizeQuickChoices(null),{mobile:['font','theme'],tablet:['font','theme'],desktop:['font','theme']});
+ const storage=new Map([[QUICK_PIN_KEY,JSON.stringify(oldSaved)]]),writes=[];
+ const api={getItem:async key=>storage.get(key)??null,
+  setItem:async(key,value)=>{writes.push([key,value]);storage.set(key,value);}};
+ const userStore=createQuickActionStore(api);
+ await userStore.hydrate();
+ assert.deepEqual(userStore.getSnapshot().choices,oldSaved);
+ await userStore.flush();
+ assert.deepEqual(writes,[],'hydration may not rewrite saved user choices');
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ assert.match(header,/chosenQuickActions\.map\(id=>id==='font'\?/);
+ assert.match(header,/!chosenQuickActions\.includes\('font'\)&&<View/);
+ assert.match(header,/theme:\{label:colors\.dark\?'淺色模式':'深色模式'/);
+ assert.doesNotMatch(header,/\/admin|\/billing|\/private/);
 });
