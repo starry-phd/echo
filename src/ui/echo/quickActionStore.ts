@@ -1,6 +1,6 @@
 type Storage={getItem(key:string):Promise<string|null>;setItem(key:string,value:string):Promise<unknown>};
 export const QUICK_PIN_KEY='echo-ui-pinned-quick-actions-v1';
-export const allowedQuickActions=['home','palette','stats','favorites','profile','theme'] as const;
+export const allowedQuickActions=['home','palette','stats','favorites','profile','theme','font'] as const;
 export type QuickActionId=(typeof allowedQuickActions)[number];
 export type QuickDeviceKind='mobile'|'tablet'|'desktop';
 export type QuickActionChoices=Record<QuickDeviceKind,QuickActionId[]>;
