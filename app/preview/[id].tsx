@@ -20,6 +20,7 @@ import {LegacyDetailSpeakerPortrait} from '../../src/ui/echo/LegacyDetailSpeaker
 import {LegacyDetailEngagementSummary} from '../../src/ui/echo/LegacyDetailEngagementSummary';
 import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
+import {LegacyBackToTop} from '../../src/ui/echo/LegacyBackToTop';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -34,7 +35,7 @@ export default function GuestPreviewDetails(){
  const track=q.data?.find(item=>item.id===id);
  const approvedRankLink=approvedGuestSpeakerRank(track);
  const hidden=isLocallyHiddenCard(track,preferences.dislikedIds,preferences.hiddenSpeakers);
- return <ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
+ return <View style={styles.screen}><ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell} onLayout={sections.onShellLayout}>
    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
     <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回音檔列表</Text>
@@ -106,9 +107,12 @@ export default function GuestPreviewDetails(){
      </>}
    </View>
   </View>
- </ScrollView>;
+ </ScrollView>
+ <LegacyBackToTop onPress={()=>sections.scrollRef.current?.scrollTo({y:0,animated:true})}/>
+ </View>;
 }
 const styles=StyleSheet.create({
+ screen:{flex:1},
  page:{alignItems:'center',padding:12,paddingBottom:32},shell:{width:'100%',maxWidth:visualMetrics.contentMaxWidth},
  back:{minHeight:44,justifyContent:'center'},backText:{fontSize:14,fontWeight:'800'},
  card:{padding:16,borderWidth:1,borderRadius:21,gap:10},

@@ -31,6 +31,7 @@ import {visibleGuestFacets} from '../src/ui/echo/visibleGuestFacets';
 import {visibleAuthorizedRankFacets} from '../src/ui/echo/visibleAuthorizedRankFacets';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
+import {LegacyBackToTop} from '../src/ui/echo/LegacyBackToTop';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -280,7 +281,7 @@ export default function CatalogScreen(){
    };
    void AccessibilityInfo.isReduceMotionEnabled().then(begin,()=>begin(true));
  };
- return <ScrollView ref={homeScrollRef} style={[styles.page,{backgroundColor:theme.bg}]}
+ return <View style={styles.screen}><ScrollView ref={homeScrollRef} style={[styles.page,{backgroundColor:theme.bg}]}
    contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
    <View style={styles.shell}>
      <View style={styles.searchRow}>
@@ -482,9 +483,16 @@ export default function CatalogScreen(){
        </Text>
      </View>
    </View>
- </ScrollView>;
+ </ScrollView>
+ <LegacyBackToTop onPress={()=>{
+  searchSuggestionBlurGuard.dismiss();
+  Keyboard.dismiss();
+  homeScrollRef.current?.scrollTo({y:0,animated:true});
+ }}/>
+ </View>;
 }
 const styles=StyleSheet.create({
+ screen:{flex:1},
  page:{flex:1},
  pageContent:{flexGrow:1,alignItems:'center',paddingHorizontal:12,paddingBottom:38},
  shell:{maxWidth:visualMetrics.contentMaxWidth,width:'100%',paddingTop:14},
