@@ -3,7 +3,7 @@ import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useLegacyTheme} from './legacyTheme';
 import {detectInstallPlatform,manualInstallHelp} from './installGuide';
 
-type InstallPromptEvent=Event&{
+export type InstallPromptEvent=Event&{
  prompt:()=>Promise<void>;
  userChoice:Promise<{outcome:string}>;
 };
@@ -11,7 +11,10 @@ type InstallPromptEvent=Event&{
  * Original legacy menu entry, scoped to public Web. No service worker or
  * offline caching: 28 curated previews are revocable and media is private.
  */
-export function InstallAppButton(){
+export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{}}:{
+ earlyPrompt?:InstallPromptEvent|null;
+ onPromptConsumed?:()=>void;
+}={}){
  const theme=useLegacyTheme();
  const [prompt,setPrompt]=useState<InstallPromptEvent|null>(null);
  const [installed,setInstalled]=useState(false);
@@ -42,12 +45,14 @@ export function InstallAppButton(){
  // Keep this check after all hooks; a late appinstalled event can hide the row safely.
  if(Platform.OS!=='web'||installed)return null;
  const nav=typeof navigator!=='undefined'?navigator:null;
+ const pendingPrompt=prompt??earlyPrompt;
  const device=detectInstallPlatform(nav?.userAgent??'',nav?.platform??'',nav?.maxTouchPoints??0);
  const install=async()=>{
   if(installed){setMessage('目前已使用主畫面安裝模式。');return;}
-  if(!prompt){setGuideOpen(true);return;}
-  const current=prompt;
+  if(!pendingPrompt){setGuideOpen(true);return;}
+  const current=pendingPrompt;
   setPrompt(null);
+  onPromptConsumed();
   setBusy(true);
   try{
    // Must run within the direct user gesture, before any awaited operation.
@@ -69,7 +74,7 @@ export function InstallAppButton(){
    accessibilityState={{disabled:busy}} disabled={busy} onPress={()=>void install()}
    style={styles.menuRow}>
    <Text style={[styles.menuText,{color:theme.ink}]}>⇩　安裝到桌面</Text>
-   <Text style={[styles.status,{color:theme.muted}]}>{installed?'已安裝':busy?'處理中':prompt?'可安裝':'查看步驟'}</Text>
+   <Text style={[styles.status,{color:theme.muted}]}>{installed?'已安裝':busy?'處理中':pendingPrompt?'可安裝':'查看步驟'}</Text>
   </Pressable>
   {message.length>0&&<Text accessibilityLiveRegion="polite" style={[styles.feedback,{color:theme.muted}]}>{message}</Text>}
   <Modal visible={guideOpen} transparent animationType="fade" onRequestClose={()=>setGuideOpen(false)}>

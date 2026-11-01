@@ -63,5 +63,29 @@ test('real web install button handles native browser install events and safe man
  assert.match(button,/不會開放尚未授權的音檔/);
  assert.doesNotMatch(button,/serviceWorker\.register|cache\.addAll|navigator\.serviceWorker/);
  assert.match(header,/import \{InstallAppButton\} from '\.\/InstallAppButton'/);
- assert.match(header,/<InstallAppButton\/>/);
+ assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=/);
+});
+
+test('Web header buffers browser install prompt while nested menu is closed',()=>{
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ const button=read('src/ui/echo/InstallAppButton.tsx');
+ const layout=read('app/_layout.tsx');
+ assert.match(layout,/<LegacyHeader\/>/);
+ assert.match(header,/const \[earlyInstallPrompt,setEarlyInstallPrompt\]=useState<InstallPromptEvent\|null>\(null\)/);
+ assert.match(header,/if\(Platform\.OS!=='web'\|\|typeof window==='undefined'\)return/);
+ assert.match(header,/window\.addEventListener\('beforeinstallprompt',capture\)/);
+ assert.match(header,/window\.removeEventListener\('beforeinstallprompt',capture\)/);
+ assert.match(header,/window\.addEventListener\('appinstalled',clear\)/);
+ assert.match(header,/window\.removeEventListener\('appinstalled',clear\)/);
+ assert.match(header,/event\.preventDefault\(\)/);
+ assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=\{\(\)=>setEarlyInstallPrompt\(null\)\}\/>/);
+ assert.match(button,/const pendingPrompt=prompt\?\?earlyPrompt/);
+ assert.match(button,/if\(!pendingPrompt\)\{setGuideOpen\(true\);return;\}/);
+ assert.match(button,/const current=pendingPrompt/);
+ assert.match(button,/onPromptConsumed\(\)/);
+ assert.match(button,/await current\.prompt\(\)/);
+ assert.match(button,/await current\.userChoice/);
+ assert.match(button,/pendingPrompt\?'可安裝':'查看步驟'/);
+ assert.doesNotMatch(header,/serviceWorker|R2\.get\(|\.prepare\(/);
+ assert.doesNotMatch(button,/serviceWorker|R2\.get\(|\.prepare\(/);
 });
