@@ -9,6 +9,7 @@ import {visualMetrics} from '../../../packages/ui/src/tokens';
 import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
 import {InstallAppButton} from './InstallAppButton';
+import {isSelectedPublicMenu} from './mainMenuSelection';
 import {useEarlyInstallPrompt} from './useEarlyInstallPrompt';
 import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
@@ -232,8 +233,11 @@ export function LegacyHeader(){
          </>}
         </View>)}
        </View>
-       {buttons.map(([label,fn])=><Pressable key={label} accessibilityRole="button" style={styles.menuItem} onPress={fn}>
-         <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
+       {buttons.map(([label,fn])=><Pressable key={label} accessibilityRole="button"
+        accessibilityState={{selected:isSelectedPublicMenu(label,pathname)}}
+        style={[styles.menuItem,isSelectedPublicMenu(label,pathname)&&{backgroundColor:colors.lightPill,borderRadius:11}]}
+        onPress={fn}>
+         <Text style={[styles.itemLabel,{color:isSelectedPublicMenu(label,pathname)?activeColor:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
        {['我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
