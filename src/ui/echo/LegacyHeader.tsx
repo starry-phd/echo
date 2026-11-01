@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
-import {Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
@@ -9,7 +9,7 @@ import {visualMetrics} from '../../../packages/ui/src/tokens';
 import {viewportLayout} from '../responsive';
 import {useFontZoom} from './FontZoom';
 import {InstallAppButton} from './InstallAppButton';
-import type {InstallPromptEvent} from './InstallAppButton';
+import {useEarlyInstallPrompt} from './useEarlyInstallPrompt';
 import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
@@ -32,22 +32,7 @@ export function LegacyHeader(){
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
  const [quickNotice,setQuickNotice]=useState('');
- const [earlyInstallPrompt,setEarlyInstallPrompt]=useState<InstallPromptEvent|null>(null);
- // Keep the original early beforeinstallprompt event while the menu Modal is closed.
- useEffect(()=>{
-  if(Platform.OS!=='web'||typeof window==='undefined')return;
-  const capture=(event:Event)=>{
-   event.preventDefault();
-   setEarlyInstallPrompt(event as InstallPromptEvent);
-  };
-  const clear=()=>setEarlyInstallPrompt(null);
-  window.addEventListener('beforeinstallprompt',capture);
-  window.addEventListener('appinstalled',clear);
-  return ()=>{
-   window.removeEventListener('beforeinstallprompt',capture);
-   window.removeEventListener('appinstalled',clear);
-  };
- },[]);
+ const {earlyInstallPrompt,consumeEarlyPrompt}=useEarlyInstallPrompt();
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
   ...allowedQuickActions.filter(id=>!chosenQuickActions.includes(id))];
@@ -250,7 +235,7 @@ export function LegacyHeader(){
          <Text style={[styles.itemLabel,{color:colors.ink}]}>◈　{label}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>)}
-       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={()=>setEarlyInstallPrompt(null)}/>
+       <InstallAppButton earlyPrompt={earlyInstallPrompt} onPromptConsumed={consumeEarlyPrompt}/>
        {['我的貼紙','音檔管理'].map(label=><View key={label} style={styles.menuItem}>
          <Text style={[styles.itemLabel,{color:colors.muted}]}>◇　{label}</Text>
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>

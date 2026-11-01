@@ -66,19 +66,20 @@ test('real web install button handles native browser install events and safe man
  assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=/);
 });
 
-test('Web header buffers browser install prompt while nested menu is closed',()=>{
+test('Web PWA install prompt buffer is mounted with the Header, separate from menu click handling',()=>{
  const header=read('src/ui/echo/LegacyHeader.tsx');
+ const hook=read('src/ui/echo/useEarlyInstallPrompt.ts');
  const button=read('src/ui/echo/InstallAppButton.tsx');
  const layout=read('app/_layout.tsx');
  assert.match(layout,/<LegacyHeader\/>/);
- assert.match(header,/const \[earlyInstallPrompt,setEarlyInstallPrompt\]=useState<InstallPromptEvent\|null>\(null\)/);
- assert.match(header,/if\(Platform\.OS!=='web'\|\|typeof window==='undefined'\)return/);
- assert.match(header,/window\.addEventListener\('beforeinstallprompt',capture\)/);
- assert.match(header,/window\.removeEventListener\('beforeinstallprompt',capture\)/);
- assert.match(header,/window\.addEventListener\('appinstalled',clear\)/);
- assert.match(header,/window\.removeEventListener\('appinstalled',clear\)/);
- assert.match(header,/event\.preventDefault\(\)/);
- assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=\{\(\)=>setEarlyInstallPrompt\(null\)\}\/>/);
+ assert.match(header,/const \{earlyInstallPrompt,consumeEarlyPrompt\}=useEarlyInstallPrompt\(\)/);
+ assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\} onPromptConsumed=\{consumeEarlyPrompt\}\/>/);
+ assert.match(hook,/if\(Platform\.OS!=='web'\|\|typeof window==='undefined'\)return/);
+ assert.match(hook,/window\.addEventListener\('beforeinstallprompt',capture\)/);
+ assert.match(hook,/window\.removeEventListener\('beforeinstallprompt',capture\)/);
+ assert.match(hook,/window\.addEventListener\('appinstalled',clear\)/);
+ assert.match(hook,/window\.removeEventListener\('appinstalled',clear\)/);
+ assert.match(hook,/event\.preventDefault\(\)/);
  assert.match(button,/const pendingPrompt=prompt\?\?earlyPrompt/);
  assert.match(button,/if\(!pendingPrompt\)\{setGuideOpen\(true\);return;\}/);
  assert.match(button,/const current=pendingPrompt/);
@@ -86,6 +87,9 @@ test('Web header buffers browser install prompt while nested menu is closed',()=
  assert.match(button,/await current\.prompt\(\)/);
  assert.match(button,/await current\.userChoice/);
  assert.match(button,/pendingPrompt\?'可安裝':'查看步驟'/);
- assert.doesNotMatch(header,/serviceWorker|R2\.get\(|\.prepare\(/);
+ // Only the dedicated lifecycle hook may touch window events. Header's
+ // backdrop/search dismissal remains cross-platform rather than DOM-wide.
+ assert.doesNotMatch(header,/document\.addEventListener|window\.addEventListener/);
+ assert.doesNotMatch(hook,/serviceWorker|R2\.get\(|\.prepare\(/);
  assert.doesNotMatch(button,/serviceWorker|R2\.get\(|\.prepare\(/);
 });
