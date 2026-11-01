@@ -78,3 +78,28 @@ test('other handled home actions explicitly close hints on native where TextInpu
  // Keep chip selection on onPress, not on pressStart.
  assert.match(home,/onPress=\{\(\)=>selectSuggestedCategory\(label\)\}/);
 });
+
+test('original clear-search action returns focus to TextInput for the next query',()=>{
+ const home=read('app/index.tsx');
+ assert.match(home,/const searchInputRef=useRef<ComponentRef<typeof TextInput>>\(null\)/);
+ assert.match(home,/<TextInput ref=\{searchInputRef\}/);
+ assert.match(home,/accessibilityLabel="清除搜尋"[\s\S]*?onPress=\{\(\)=>\{[\s\S]*?setQuery\(''\);[\s\S]*?setDebouncedQuery\(''\);[\s\S]*?searchSuggestionBlurGuard\.focus\(\);[\s\S]*?setSearchSuggestionsOpen\(true\);[\s\S]*?searchInputRef\.current\?\.focus\(\);[\s\S]*?\}\} style=\{styles\.clear\}/);
+ // The approved category suggestion gate is unchanged: empty text never
+ // opens a full suggestion catalogue or a private community-keyword search.
+ const suggestions=read('src/ui/echo/categorySuggestions.ts');
+ assert.match(suggestions,/focused&&typedQuery\.trim\(\)\.length>0&&suggestions\.length>0/);
+ assert.doesNotMatch(home,/getPrivateTracks|legacyUserKeywords|\/api\/private/);
+});
+
+test('clearing while a native TextInput blur timeout is pending cancels the stale dismissal',()=>{
+ const clock=fakeClock();let closes=0;
+ const guard=createCategorySuggestionBlurGuard(()=>closes++,clock);
+ guard.focus();guard.blur();
+ assert.equal(clock.size,1);
+ guard.focus(); // Clear-search handler refocuses the input before next typing.
+ clock.tick();
+ assert.equal(closes,0,'stale blur may not dismiss newly focused search');
+ guard.blur();clock.tick();
+ assert.equal(closes,1,'real later outside blur still dismisses');
+ guard.dispose();
+});

@@ -46,6 +46,7 @@ export default function CatalogScreen(){
  const seenDismissSearchRevision=useRef(dismissSearchRevision);
  const seenHomeResetRevision=useRef(homeResetRevision);
  const homeScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
+ const searchInputRef=useRef<ComponentRef<typeof TextInput>>(null);
  const {fontSize}=useFontZoom();
  const {category:linkedCategory,rank:linkedSpeakerRank}=useLocalSearchParams<{category?:string;rank?:string}>();
  const {width}=useViewportDimensions();
@@ -302,7 +303,7 @@ export default function CatalogScreen(){
        </Pressable>
        <View style={[styles.search,{backgroundColor:theme.palette.primary}]}>
          <Text style={styles.searchIcon}>⌕</Text>
-         <TextInput
+         <TextInput ref={searchInputRef}
            accessibilityLabel="搜尋演講者、主題、分類或獎銜"
            placeholder={layout.phone?'搜尋演講者、主題、分類...':'搜尋演講者、主題、分類或獎銜...'}
            placeholderTextColor="rgba(255,255,255,.75)"
@@ -315,7 +316,15 @@ export default function CatalogScreen(){
            }}
            maxLength={100} returnKeyType="search" autoCapitalize="none"/>
          {query.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="清除搜尋"
-           onPress={()=>setQuery('')} style={styles.clear}>
+           onPress={()=>{
+            // Original search clear keeps the field ready for the next query.
+            // Cancel a pending blur before returning focus to TextInput.
+            setQuery('');
+            setDebouncedQuery('');
+            searchSuggestionBlurGuard.focus();
+            setSearchSuggestionsOpen(true);
+            searchInputRef.current?.focus();
+           }} style={styles.clear}>
            <Text style={styles.clearText}>✕</Text>
          </Pressable>}
        </View>
