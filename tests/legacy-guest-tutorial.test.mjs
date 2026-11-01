@@ -43,7 +43,7 @@ test('home only mounts onboarding over ready public information, not loading or 
  assert.match(guide,/Modal visible=\{visible&&\(Platform\.OS!=='web'\|\|geometryLoaded\)\}/);
  assert.match(guide,/accessibilityRole="checkbox"/);
  assert.match(guide,/打勾不再顯示新手教學/);
- assert.match(guide,/AsyncStorage\.setItem\(GUEST_TUTORIAL_KEY,'1'\)/);
+ assert.match(guide,/persistGuestTutorialOptOut\(next,AsyncStorage,mirror\)/);
  assert.match(guide,/isLegacyTutorialOptedOut/);
 });
 

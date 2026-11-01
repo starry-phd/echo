@@ -1,7 +1,8 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
-import {GUEST_TUTORIAL_KEY,LEGACY_TUTORIAL_KEYS,isLegacyTutorialOptedOut,shouldShowGuestTutorial} from './legacyGuestTutorialPolicy';
+import {GUEST_TUTORIAL_KEY,isLegacyTutorialOptedOut,shouldShowGuestTutorial} from './legacyGuestTutorialPolicy';
+import {persistGuestTutorialOptOut} from './legacyTutorialPreferencePersistence';
 import {normalizeTutorialTarget,tutorialCalloutPlacement,tutorialSpotlightScrim} from './legacyTutorialSpotlightGeometry';
 import type {TutorialRect,TutorialViewport} from './legacyTutorialSpotlightGeometry';
 
@@ -21,6 +22,8 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
  const [closed,setClosed]=useState(false);
  const [neverAgain,setNeverAgain]=useState(false);
  const [error,setError]=useState('');
+ const [saving,setSaving]=useState(false);
+ const preferenceWriteInFlight=useRef(false);
  const [step,setStep]=useState<0|1>(0);
  const [anchor,setAnchor]=useState<{rect:TutorialRect;viewport:TutorialViewport}|null>(null);
  const [geometryLoaded,setGeometryLoaded]=useState(false);
@@ -44,19 +47,31 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   return ()=>{mounted=false;};
  },[]);
 
- const dismiss=async()=>{
-  if(neverAgain){
-   try{
-    await AsyncStorage.setItem(GUEST_TUTORIAL_KEY,'1');
-    // Preserve the legacy Web opt-out, without changing unrelated settings.
-    if(Platform.OS==='web'&&typeof window!=='undefined'){
-     for(const key of LEGACY_TUTORIAL_KEYS)window.localStorage.setItem(key,'1');
-    }
-   }catch{
-    setError('目前無法儲存「不再提醒」的設定，請取消勾選後關閉，或稍後重試。');
-    return;
+ // The original Echo records opt-out when checkbox is changed (including
+ // unchecking), not after the user later closes the tutorial.
+ const changeNeverAgain=async()=>{
+  if(preferenceWriteInFlight.current)return;
+  const next=!neverAgain;
+  preferenceWriteInFlight.current=true;
+  setSaving(true);
+  setError('');
+  try{
+   const mirror=Platform.OS==='web'&&typeof window!=='undefined'?window.localStorage:undefined;
+   const result=await persistGuestTutorialOptOut(next,AsyncStorage,mirror);
+   setNeverAgain(next);
+   if(!result.legacySynced){
+    setError('此 App 的選擇已儲存，但舊版網站的偏好設定未能同步。');
    }
+  }catch{
+   setError('目前無法儲存「不再提醒」，已維持原本選擇，請稍後重試。');
+  }finally{
+   preferenceWriteInFlight.current=false;
+   setSaving(false);
   }
+ };
+ const dismiss=()=>{
+  // An in-flight checkbox write must settle before closing the tutorial.
+  if(preferenceWriteInFlight.current)return;
   dismissedForThisAppRun=true;
   setClosed(true);
  };
@@ -133,13 +148,14 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
       :'點封面會告知播放尚未開放；點作品標題可查閱已核准資訊。本裝置可收藏，不等於會員同步。'}</Text>
      <Text style={styles.spotlightWarning}>私人錄音、正式會員登入及付費功能尚未開放。</Text>
      <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
-      accessibilityState={{checked:neverAgain}}
-      onPress={()=>{setNeverAgain(value=>!value);setError('');}}
+      accessibilityState={{checked:neverAgain,disabled:saving}}
+      disabled={saving} onPress={()=>void changeNeverAgain()}
       style={styles.spotlightCheckbox}>
       <Text style={styles.spotlightCheckboxText}>{neverAgain?'☑':'☐'} 打勾不再顯示新手教學</Text>
      </Pressable>
      {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
      <Pressable accessibilityRole="button" accessibilityLabel={step===0?'下一步：查看作品資訊':'完成新手教學'}
+      disabled={saving} accessibilityState={{disabled:saving}}
       onPress={next} style={styles.spotlightNext}>
       <Text style={styles.spotlightNextText}>{step===0?'下一步':'知道了'}</Text>
      </Pressable>
@@ -158,13 +174,14 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
      <Text style={styles.lineText}>可在這個裝置收藏或隱藏資訊卡；目前不會同步到會員帳號。</Text></View>
     <Text style={styles.warning}>私人錄音、正式會員登入及付費功能尚未開放，教學不會解鎖這些權限。</Text>
     <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
-     accessibilityState={{checked:neverAgain}} onPress={()=>{setNeverAgain(v=>!v);setError('');}}
+     accessibilityState={{checked:neverAgain,disabled:saving}} disabled={saving} onPress={()=>void changeNeverAgain()}
      style={styles.checkRow}>
      <Text style={styles.checkMark}>{neverAgain?'☑':'☐'}</Text>
      <Text style={styles.checkText}>打勾不再顯示新手教學</Text>
     </Pressable>
     {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
     <Pressable accessibilityRole="button" accessibilityLabel="關閉新手教學並開始瀏覽"
+     disabled={saving} accessibilityState={{disabled:saving}}
      onPress={()=>void dismiss()} style={styles.done}>
      <Text style={styles.doneText}>我知道了，開始瀏覽</Text>
     </Pressable>
