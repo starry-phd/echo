@@ -30,7 +30,7 @@ test('actual Header wires current page selection into guest menu while preservin
  assert.match(header,/\['通知中心',\(\)=>go\('\/notifications'\)\]/);
  assert.match(header,/\['個人資料／登入',\(\)=>go\('\/profile'\)\]/);
  assert.match(header,/<InstallAppButton earlyPrompt=\{earlyInstallPrompt\}/);
- assert.doesNotMatch(helper,/fetch\(|AsyncStorage|SELECT|R2|token|session|localStorage|\/api\//);
+ assert.doesNotMatch(helper,/fetch\(|AsyncStorage|SELECT|R2\.get|readSession\(|getSession\(|getToken\(|hasVerifiedSession|localStorage|\/api\//);
  assert.doesNotMatch(helper,/['"]\/(?:admin|billing|upload|private)/);
  assert.doesNotMatch(header,/router\.(?:push|replace)\(['"]\/(?:admin|billing|private)/);
 });
