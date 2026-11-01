@@ -18,6 +18,7 @@ import {useDevicePreferences} from '../src/ui/echo/DevicePreferences';
 import {AdvancedCardFilters} from '../src/ui/echo/AdvancedCardFilters';
 import {getCatalogDisplayState,hasPartialCatalogFailure} from '../src/ui/echo/catalogDisplayState';
 import {chooseSafeLuckyCard,isApprovedPreview,moveLuckyCardToSecondSlot} from '../src/ui/echo/safeLuckyDraw';
+import {guestLuckyResultAnnouncement} from '../src/ui/echo/guestLuckyResultAnnouncement';
 import {publicCategorySuggestions,shouldShowCategorySuggestions} from '../src/ui/echo/categorySuggestions';
 import {createCategorySuggestionBlurGuard} from '../src/ui/echo/categorySuggestionBlurGuard';
 import {safeApprovedCategoryOptions,shouldResetUnavailableCategory} from '../src/ui/echo/safeApprovedCategoryOptions';
@@ -281,6 +282,13 @@ export default function CatalogScreen(){
    };
    void AccessibilityInfo.isReduceMotionEnabled().then(begin,()=>begin(true));
  };
+ // Original web lucky-winner badge uses aria-live="polite". Announce only
+ // a CURRENTLY authorized preview in the visible filtered result set.
+ // For cancelled, hidden or no-longer-authorized cards, never announce a name.
+ useEffect(()=>{
+  const announcement=guestLuckyResultAnnouncement(luckyPhase,currentDisplay,luckyPreview);
+  if(announcement)AccessibilityInfo.announceForAccessibility(announcement);
+ },[luckyPhase,currentDisplay,luckyPreview?.id,luckyPreview?.title,luckyPreview?.speaker]);
  return <View style={styles.screen}><ScrollView ref={homeScrollRef} style={[styles.page,{backgroundColor:theme.bg}]}
    contentContainerStyle={[styles.pageContent,{paddingHorizontal:layout.horizontalGutter}]} keyboardShouldPersistTaps="handled">
    <View style={styles.shell}>
@@ -411,7 +419,7 @@ export default function CatalogScreen(){
          <Text style={[styles.restoreText,{color:theme.muted}]}>取消抽選</Text>
        </Pressable>
      </View>}
-     {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
+      {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" accessibilityLiveRegion="polite" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
        <Text style={[styles.luckyResultTitle,{color:theme.palette.primary,fontSize:fontSize(16)}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
        <Text style={[styles.luckyResultName,{color:theme.ink,fontSize:fontSize(17)}]} numberOfLines={2}>{luckyPreview.title}</Text>
