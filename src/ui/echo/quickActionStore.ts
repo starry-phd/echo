@@ -2,6 +2,18 @@ type Storage={getItem(key:string):Promise<string|null>;setItem(key:string,value:
 export const QUICK_PIN_KEY='echo-ui-pinned-quick-actions-v1';
 export const allowedQuickActions=['home','palette','stats','favorites','profile','theme','font'] as const;
 export type QuickActionId=(typeof allowedQuickActions)[number];
+
+/** Original Navbar highlights the current page's pinned action.
+ * Only public routes are eligible; visual actions never appear selected. */
+export function isActiveQuickAction(id:QuickActionId,pathname:string):boolean{
+ switch(id){
+  case 'home':return pathname==='/';
+  case 'stats':return pathname==='/stats';
+  case 'favorites':return pathname==='/favorites';
+  case 'profile':return pathname==='/profile';
+  default:return false;
+ }
+}
 export type QuickDeviceKind='mobile'|'tablet'|'desktop';
 export type QuickActionChoices=Record<QuickDeviceKind,QuickActionId[]>;
 export const quickLimits:Record<QuickDeviceKind,number>={mobile:3,tablet:5,desktop:7};

@@ -14,7 +14,7 @@ import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
 import {headerMenuMaxHeight} from './headerMenuPlacement';
-import {allowedQuickActions,quickDeviceForWidth,quickLimits} from './quickActionStore';
+import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
 
 export function LegacyHeader(){
@@ -59,7 +59,6 @@ export function LegacyHeader(){
   }
  };
  const activeColor=colors.palette.primary;
- const isHome=pathname==='/';
  const buttons:[string,()=>void][]=[
   ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
@@ -123,8 +122,9 @@ export function LegacyHeader(){
      </View>:
      <Pressable key={id} accessibilityRole="button"
      accessibilityLabel={'快捷功能：'+quickActions[id].label}
-     accessibilityState={{selected:id==='home'&&isHome}}
-     onPress={()=>{requestDismissSearch();quickActions[id].run();}} style={styles.quick}>
+     accessibilityState={{selected:isActiveQuickAction(id,pathname)}}
+     onPress={()=>{requestDismissSearch();quickActions[id].run();}}
+      style={[styles.quick,isActiveQuickAction(id,pathname)&&{backgroundColor:colors.lightPill,borderRadius:10}]}>
      <Text numberOfLines={1} adjustsFontSizeToFit
       style={[styles.quickText,{color:activeColor,fontSize:fontSize(12)}]}>
       {quickActions[id].glyph} {quickActions[id].label}
