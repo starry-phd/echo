@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {QUICK_PIN_KEY,allowedQuickActions,quickDeviceForWidth,quickLimits,normalizeQuickChoices,
- createQuickActionStore,quickDragTargetIndex} from '../src/ui/echo/quickActionStore.ts';
+ createQuickActionStore,quickDragTargetIndex,isActiveQuickAction} from '../src/ui/echo/quickActionStore.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 test('original mobile/tablet/desktop quick action limits preserved for the safe authorized subset',()=>{
  assert.deepEqual(quickLimits,{mobile:3,tablet:5,desktop:7});
@@ -166,4 +166,29 @@ test('new guests get original quick defaults, while existing device preferences 
  assert.match(header,/!chosenQuickActions\.includes\('font'\)&&<View/);
  assert.match(header,/theme:\{label:colors\.dark\?'淺色模式':'深色模式'/);
  assert.doesNotMatch(header,/router\.(?:push|replace)\(['\"]\/(?:admin|billing|private)/);
+});
+
+test('original current-tab highlight is preserved for each safe pinned route, including local favorites',()=>{
+ const routes={home:'/',stats:'/stats',favorites:'/favorites',profile:'/profile'};
+ for(const [id,pathname] of Object.entries(routes)){
+  assert.equal(isActiveQuickAction(id,pathname),true);
+  for(const other of Object.values(routes).filter(path=>path!==pathname))
+   assert.equal(isActiveQuickAction(id,other),false);
+  assert.equal(isActiveQuickAction(id,'/preview/guest'),false);
+ }
+ for(const id of ['font','theme','palette']){
+  assert.equal(isActiveQuickAction(id,'/'),false);
+  assert.equal(isActiveQuickAction(id,'/stats'),false);
+  assert.equal(isActiveQuickAction(id,'/profile'),false);
+ }
+ // The original admin, notifications, media and sticker routes are NOT
+ // included merely by claiming a route or altering saved shortcuts.
+ assert.equal(isActiveQuickAction('stats','/admin'),false);
+ assert.equal(isActiveQuickAction('profile','/notifications'),false);
+ assert.equal(isActiveQuickAction('favorites','/stickers/spend'),false);
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ assert.match(header,/accessibilityState=\{\{selected:isActiveQuickAction\(id,pathname\)\}\}/);
+ assert.match(header,/style=\{\[styles\.quick,isActiveQuickAction\(id,pathname\)&&\{backgroundColor:colors\.lightPill,borderRadius:10\}\]\}/);
+ assert.match(header,/const pathname=usePathname\(\)/);
+ assert.doesNotMatch(header,/accessibilityState=\{\{selected:id==='home'/);
 });
