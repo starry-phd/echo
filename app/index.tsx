@@ -33,6 +33,7 @@ import {visibleAuthorizedRankFacets} from '../src/ui/echo/visibleAuthorizedRankF
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
 import {LegacyBackToTop} from '../src/ui/echo/LegacyBackToTop';
+import {LegacyGuestTutorial} from '../src/ui/echo/LegacyGuestTutorial';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -501,6 +502,7 @@ export default function CatalogScreen(){
      </View>
    </View>
  </ScrollView>
+ <LegacyGuestTutorial active={ready&&currentDisplay==='ready'&&visibleTracks.length>0}/>
  <LegacyBackToTop onPress={()=>{
   searchSuggestionBlurGuard.dismiss();
   Keyboard.dismiss();
