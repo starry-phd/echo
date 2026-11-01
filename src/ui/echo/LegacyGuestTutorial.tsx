@@ -13,12 +13,6 @@ import {GUEST_TUTORIAL_KEY,LEGACY_TUTORIAL_KEYS,isLegacyTutorialOptedOut,shouldS
 // old App.tsx's showHomeTutorial state; opt-out persists across restarts.
 let dismissedForThisAppRun=false;
 
-export function isLegacyTutorialOptedOut(
- read:(key:string)=>string|null
-):boolean{
- return LEGACY_TUTORIAL_KEYS.some(key=>read(key)==='1');
-}
-
 export function LegacyGuestTutorial({active}:{active:boolean}){
  const [loaded,setLoaded]=useState(false);
  const [suppressed,setSuppressed]=useState(true);
