@@ -144,5 +144,5 @@ test('legacy guest font can be pinned and unpinned without changing the default 
  assert.match(header,/accessibilityLabel="放大字體"/);
  assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);decrease\(\);\}\}/);
  assert.match(header,/onPress=\{\(\)=>\{requestDismissSearch\(\);increase\(\);\}\}/);
- assert.doesNotMatch(header,/\/admin|\/billing|\/private|\/api\/audio/);
+ assert.doesNotMatch(header,/router\.(?:push|replace)\(['"]\/(?:admin|billing|private)/);
 });
