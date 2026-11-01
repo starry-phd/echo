@@ -5,10 +5,12 @@ export type QuickActionId=(typeof allowedQuickActions)[number];
 export type QuickDeviceKind='mobile'|'tablet'|'desktop';
 export type QuickActionChoices=Record<QuickDeviceKind,QuickActionId[]>;
 export const quickLimits:Record<QuickDeviceKind,number>={mobile:3,tablet:5,desktop:7};
+// Original guest Navbar starts with font A-/A+ and theme shortcuts.
+// Existing saved per-device choices always take priority over these defaults.
 const defaults:QuickActionChoices={
- mobile:['home','palette'],
- tablet:['home','palette','profile'],
- desktop:['home','palette','profile']
+ mobile:['font','theme'],
+ tablet:['font','theme'],
+ desktop:['font','theme']
 };
 /** The device viewport controls available quick-bar slots, not a member rank. */
 export function quickDeviceForWidth(width:number):QuickDeviceKind{
