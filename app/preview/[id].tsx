@@ -21,6 +21,7 @@ import {LegacyDetailEngagementSummary} from '../../src/ui/echo/LegacyDetailEngag
 import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
 import {LegacyBackToTop} from '../../src/ui/echo/LegacyBackToTop';
+import {LegacyTwinklingStars} from '../../src/ui/echo/LegacyTwinklingStars';
 
 /** Independent metadata-only detail route. No media source or audio player exists here. */
 export default function GuestPreviewDetails(){
@@ -61,6 +62,7 @@ export default function GuestPreviewDetails(){
       </Pressable>
      </View>:<>
       <View style={styles.hero}>
+       <LegacyTwinklingStars placement="detailHero"/>
        <LegacyDetailSpeakerPortrait track={track}/>
        <View style={styles.heroTags}>{track.categories.map(category=>{
         const selected=approvedExactCategoryLink(category);
