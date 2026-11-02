@@ -1,3 +1,5 @@
+> **2026-11-02 交接提醒：此檔最後內容為 2026-10-29 的舊快照，並非目前最新版。** Claude 接手時請優先讀 [2026-11-02 完整主交接](CLAUDE_DEV_HANDOFF_2026-11-02.md)、[全部路徑](CLAUDE_OLD_NEW_PATHS_2026-11-02.md)、[全部需求狀態](CLAUDE_REQUIREMENTS_STATUS_2026-11-02.md)、[實際發版 SOP](CLAUDE_RELEASE_OPERATIONS_2026-11-02.md) 和 [Issue #3](https://github.com/starry-phd/echo/issues/3) 最近留言；切勿沿用下方過時的手動部署敘述。
+
 # 繁星回聲｜AI 接手入口
 
 更新：2026-10-29（台灣）。**先讀 [Issue #3 頂端](https://github.com/starry-phd/echo/issues/3)，再查 main、PR、CI、Production run 和 Cloudflare。** 本檔是版本快照；Issue #3 持續記錄即時證據，不依聊天推定線上狀態。
