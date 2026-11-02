@@ -19,6 +19,7 @@ import {QuickDragHandle} from './QuickDragHandle';
 import {headerMenuMaxHeight} from './headerMenuPlacement';
 import {LegacyBrandWave} from './LegacyBrandWave';
 import {LegacyTwinklingStars} from './LegacyTwinklingStars';
+import {legacyThemeAction} from './legacyThemeAction';
 import {loadGuestNickname} from './guestNickname';
 import type {GuestNickname} from './guestNickname';
 import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
@@ -79,13 +80,14 @@ export function LegacyHeader(){
  const buttons:[string,()=>void][]=[
   ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];
+ const themeAction=legacyThemeAction(colors.dark);
  const quickActions:Record<QuickActionId,{label:string;glyph:string;run:()=>void}>={
   home:{label:'首頁',glyph:'⌂',run:()=>go('/')},
   palette:{label:'好心情',glyph:'✦',run:colors.cyclePalette},
   stats:{label:'排行榜',glyph:'▥',run:()=>go('/stats')},
   favorites:{label:'我的收藏',glyph:'♡',run:()=>go('/favorites')},
   profile:{label:'會員',glyph:'♙',run:()=>go('/profile')},
-  theme:{label:colors.dark?'淺色模式':'深色模式',glyph:'◐',run:colors.toggleDark},
+  theme:{label:colors.dark?'淺色模式':'深色模式',glyph:themeAction.glyph,run:colors.toggleDark},
   font:{label:'字體',glyph:'A±',run:()=>setOpen(true)}
  };
  const togglePin=(id:QuickActionId)=>{
@@ -138,7 +140,7 @@ export function LegacyHeader(){
       </Pressable>
      </View>:
      <Pressable key={id} accessibilityRole="button"
-     accessibilityLabel={'快捷功能：'+quickActions[id].label}
+     accessibilityLabel={id==='theme'?themeAction.accessibilityLabel:'快捷功能：'+quickActions[id].label}
      accessibilityState={{selected:isActiveQuickAction(id,pathname)}}
      onPress={()=>{requestDismissSearch();quickActions[id].run();}}
       style={[styles.quick,isActiveQuickAction(id,pathname)&&{backgroundColor:colors.lightPill,borderRadius:10}]}>
@@ -202,8 +204,8 @@ export function LegacyHeader(){
         </Pressable>)}
        </View>}
        <Pressable accessibilityRole="button" style={styles.menuItem}
-         onPress={()=>{colors.toggleDark();closeMenu();}}>
-         <Text style={[styles.itemLabel,{color:colors.ink}]}>☾　{colors.dark?'切換淺色模式':'切換深色模式'}</Text>
+         onPress={()=>{colors.toggleDark();closeMenu();}} accessibilityLabel={themeAction.menuLabel}>
+         <Text style={[styles.itemLabel,{color:colors.ink}]}>{themeAction.glyph}　{themeAction.menuLabel}</Text>
          <Text style={[styles.itemArrow,{color:colors.muted}]}>›</Text>
        </Pressable>
        <View style={[styles.fontMenuRow,{backgroundColor:colors.lightPill}]}>
