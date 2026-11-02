@@ -101,7 +101,7 @@ export function LegacyHeader(){
         <Text style={[styles.fontButtonText,{color:activeColor}]}>A＋</Text>
        </Pressable>
      </View>}
-     <Pressable accessibilityRole="button" accessibilityLabel={open?'關閉主選單':'開啟主選單'}
+     <Pressable nativeID="echo-tutorial-visitor-menu" accessibilityRole="button" accessibilityLabel={open?'關閉主選單':'開啟主選單'}
        accessibilityState={{expanded:open}} onPress={()=>{requestDismissSearch();setOpen(x=>!x);}}
        style={[styles.menuButton,{backgroundColor:colors.dark?'#253145':'#f1f5f9'}]}>
        <Text style={[styles.menuGlyph,{color:colors.ink}]}>{open?'✕':'☰'}</Text>
