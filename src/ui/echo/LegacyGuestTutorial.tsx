@@ -24,7 +24,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
  const [error,setError]=useState('');
  const [saving,setSaving]=useState(false);
  const preferenceWriteInFlight=useRef(false);
- const [step,setStep]=useState<0|1>(0);
+ const [step,setStep]=useState<0|1|2>(0);
  const [anchor,setAnchor]=useState<{rect:TutorialRect;viewport:TutorialViewport}|null>(null);
  const [geometryLoaded,setGeometryLoaded]=useState(false);
 
@@ -89,7 +89,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   const measure=()=>{
    window.cancelAnimationFrame(frame);
    frame=window.requestAnimationFrame(()=>{
-    const id=step===0?'echo-tutorial-home-logo':'echo-tutorial-first-public-photo';
+    const id=step===0?'echo-tutorial-home-logo':step===1?'echo-tutorial-visitor-menu':'echo-tutorial-first-public-photo';
     const element=document.getElementById(id);
     const viewport={width:window.innerWidth,height:window.innerHeight};
     const bounds=element?.getBoundingClientRect();
@@ -117,12 +117,15 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
  const spotlight=Platform.OS==='web'&&anchor;
  const callout=spotlight?tutorialCalloutPlacement(spotlight.rect,spotlight.viewport):null;
  const next=()=>{
-  if(step===0){
-   setStep(1);
+  if(step===0){setStep(1);return;}
+  if(step===1){
+   setStep(2);
    if(Platform.OS==='web'&&typeof document!=='undefined'){
     document.getElementById('echo-tutorial-first-public-photo')?.scrollIntoView({block:'center'});
    }
-  }else void dismiss();
+   return;
+  }
+  dismiss();
  };
  return <Modal visible={visible&&(Platform.OS!=='web'||geometryLoaded)}
   transparent animationType="fade" onRequestClose={()=>void dismiss()}>
@@ -142,9 +145,11 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
     }]}/>
     <View style={[styles.spotlightCallout,{left:callout.left,top:callout.top,width:callout.width,
      maxHeight:callout.height}]}>
-     <Text style={styles.spotlightTitle}>{step===0?'① 回首頁':'② 查看已核准作品'}</Text>
+     <Text style={styles.spotlightTitle}>{step===0?'① 回首頁':step===1?'② 訪客主選單':'③ 查看已核准作品'}</Text>
      <Text style={styles.spotlightDescription}>{step===0
       ?'點選「繁星回聲」標誌可返回公開作品清單。'
+      :step===1
+      ?'右上角 ☰ 是主選單，可前往排行榜、此裝置收藏及個人資料頁。中央會員登入目前尚未串接。'
       :'點封面會告知播放尚未開放；點作品標題可查閱已核准資訊。本裝置可收藏，不等於會員同步。'}</Text>
      <Text style={styles.spotlightWarning}>私人錄音、正式會員登入及付費功能尚未開放。</Text>
      <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
@@ -154,10 +159,10 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
       <Text style={styles.spotlightCheckboxText}>{neverAgain?'☑':'☐'} 打勾不再顯示新手教學</Text>
      </Pressable>
      {!!error&&<Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-     <Pressable accessibilityRole="button" accessibilityLabel={step===0?'下一步：查看作品資訊':'完成新手教學'}
+     <Pressable accessibilityRole="button" accessibilityLabel={step===0?'下一步：認識主選單':step===1?'下一步：查看作品資訊':'完成新手教學'}
       disabled={saving} accessibilityState={{disabled:saving}}
       onPress={next} style={styles.spotlightNext}>
-      <Text style={styles.spotlightNextText}>{step===0?'下一步':'知道了'}</Text>
+      <Text style={styles.spotlightNextText}>{step<2?'下一步':'知道了'}</Text>
      </Pressable>
     </View>
    </>:<>
@@ -168,6 +173,8 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
     <Text style={styles.lead}>這裡先介紹目前真正開放的訪客功能。</Text>
     <View style={styles.line}><Text style={styles.lineTitle}>⌂ 回首頁</Text>
      <Text style={styles.lineText}>點上方「繁星回聲」標誌，可回到公開作品清單。</Text></View>
+    <View style={styles.line}><Text style={styles.lineTitle}>☰ 訪客主選單</Text>
+     <Text style={styles.lineText}>右上角主選單可找到排行榜、此裝置收藏與個人資料頁；正式會員登入尚未串接。</Text></View>
     <View style={styles.line}><Text style={styles.lineTitle}>▣ 看作品資訊</Text>
      <Text style={styles.lineText}>點卡片查看已核准的公開資料；照片不代表錄音有播放授權。</Text></View>
     <View style={styles.line}><Text style={styles.lineTitle}>♡ 我的收藏</Text>
