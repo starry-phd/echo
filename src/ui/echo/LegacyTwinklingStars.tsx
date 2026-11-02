@@ -83,9 +83,9 @@ function LegacyStarShape({star}:{star:LegacyTwinkleStar}){
 }
 
 const styles=StyleSheet.create({
- field:{...StyleSheet.absoluteFillObject,overflow:'hidden',pointerEvents:'none'},
+ field:{position:'absolute',top:0,right:0,bottom:0,left:0,overflow:'hidden',pointerEvents:'none'},
  star:{position:'absolute'},
- fill:{...StyleSheet.absoluteFillObject},
+ fill:{position:'absolute',top:0,right:0,bottom:0,left:0},
  square:{position:'absolute',transform:[{rotate:'45deg'}]},
  sparkleGlow:{boxShadow:'0 0 3px rgba(255,255,255,0.7)'}
 });
