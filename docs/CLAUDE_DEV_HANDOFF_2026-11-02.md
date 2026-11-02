@@ -60,3 +60,11 @@
 - **本機偏好**：AsyncStorage `2.2.0`，僅本裝置收藏／隱藏／主題／字體／新手教學／訪客裝飾性暱稱。不要把這些鍵當成中央登入帳號、跨設備會員儲存、權限證明或永久裝置追蹤。
 - **品牌**：主題 `legacyTheme.tsx` 的 24 色好心情、深淺模式、字級 100–140%；原版最新 `Navbar.v124.css` 覆寫後品牌 Icon 真正來源是 `public/icon-192.png` 而非舊 Mic／ping；新增 `LegacyBrandWave` 的四條 1.15 秒錯開 0.14 秒音波，需尊重 reduced-motion。
 - **新舊拆分**：舊 `yukidu/Echo-Starry` 以 `src/App.tsx`、`src/components/*.tsx`、Vite/CSS 與舊 Worker 為主；新 `starry-phd/echo` 以 `app/*` Expo Router、`src/ui/echo/*`、`worker/index.ts`、`packages/*` 為主。**不能按同名檔案機械覆蓋**，也不能拿舊 Auth/會員 schema 當新版。
+
+## 5. 接手文件索引
+
+- [附件 B：舊版 607、新版 381 個全部受版控檔案路徑，及 52 組新舊功能對照](CLAUDE_OLD_NEW_PATHS_2026-11-02.md)
+- [附件 C：完整需求、功能完成狀態、Expo 路由、API、模組分工與阻擋事項](CLAUDE_REQUIREMENTS_STATUS_2026-11-02.md)
+- [附件 D：GitHub PR、CI、Cloudflare 部署及正式環境安全驗收 SOP](CLAUDE_RELEASE_OPERATIONS_2026-11-02.md)
+
+先讀本檔，再讀三份附件與 Issue #3 最新進度；不能只讀舊版資料夾或歷史快照便開始實作。移交完成後，本文件中的 main SHA 只是交接前基準，Claude 必須查詢當下 main 和新部署版本。所有需求、權限和里程碑的細節以附件及其實際程式碼、CI 日誌為準。
