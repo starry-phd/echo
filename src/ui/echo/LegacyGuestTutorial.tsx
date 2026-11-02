@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GUEST_TUTORIAL_KEY,isLegacyTutorialOptedOut,shouldShowGuestTutorial} from './legacyGuestTutorialPolicy';
 import {persistGuestTutorialOptOut} from './legacyTutorialPreferencePersistence';
-import {normalizeTutorialTarget,tutorialCalloutPlacement,tutorialSpotlightScrim} from './legacyTutorialSpotlightGeometry';
+import {normalizeTutorialTarget,tutorialBrandBounds,tutorialCalloutPlacement,tutorialSpotlightScrim} from './legacyTutorialSpotlightGeometry';
 import type {TutorialRect,TutorialViewport} from './legacyTutorialSpotlightGeometry';
 
 /**
@@ -86,20 +86,48 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
  useEffect(()=>{
   if(!visible||Platform.OS!=='web'||typeof document==='undefined')return;
   let frame=0;
+  let resizeObserver:ResizeObserver|null=null;
+  let observed:Element[]=[];
   const measure=()=>{
    window.cancelAnimationFrame(frame);
    frame=window.requestAnimationFrame(()=>{
     const id=step===0?'echo-tutorial-home-logo':step===1?'echo-tutorial-visitor-menu':'echo-tutorial-first-public-photo';
     const element=document.getElementById(id);
+    // The old brand button stretches across remaining header space. The
+    // original TutorialSpotlight highlights only icon + exact brand text.
+    const icon=step===0?element?.children.item(0):null;
+    const name=step===0?element?.children.item(1):null;
+    const parts=icon&&name?.textContent?.trim()==='繁星回聲'?[icon,name]:[];
     const viewport={width:window.innerWidth,height:window.innerHeight};
     const bounds=element?.getBoundingClientRect();
     const style=element?window.getComputedStyle(element):null;
+    const visiblePart=(node:Element)=>{
+     const partStyle=window.getComputedStyle(node);
+     return partStyle.display!=='none'&&partStyle.visibility!=='hidden';
+    };
+    const brandBounds=parts.length===2&&parts.every(visiblePart)
+     ?tutorialBrandBounds(parts[0].getBoundingClientRect(),parts[1].getBoundingClientRect())
+     :null;
     const rect=bounds&&style?.display!=='none'&&style?.visibility!=='hidden'
-     ?normalizeTutorialTarget(bounds,viewport):null;
+     ?(step===0
+      ?(brandBounds?normalizeTutorialTarget(brandBounds,viewport):null)
+      :normalizeTutorialTarget(bounds,viewport)):null;
     setAnchor(rect?{rect,viewport}:null);
     setGeometryLoaded(true);
+    // A font-zoom or changed label size does not necessarily emit window
+    // resize. Observe only actual targets, never the tutorial modal itself.
+    // Re-observe solely on identity change; repeated observe() would cause
+    // an endless initial ResizeObserver callback -> RAF loop.
+    const nextObserved=[element,...parts].filter((node):node is Element=>Boolean(node));
+    if(resizeObserver&&(nextObserved.length!==observed.length||
+     nextObserved.some((node,index)=>node!==observed[index]))){
+     resizeObserver.disconnect();
+     observed=nextObserved;
+     for(const node of observed)resizeObserver.observe(node);
+    }
    });
   };
+  if(typeof ResizeObserver!=='undefined')resizeObserver=new ResizeObserver(measure);
   measure();
   const delayed=window.setTimeout(measure,180);
   window.addEventListener('resize',measure);
@@ -108,6 +136,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   return ()=>{
    window.clearTimeout(delayed);
    window.cancelAnimationFrame(frame);
+   resizeObserver?.disconnect();
    window.removeEventListener('resize',measure);
    window.removeEventListener('orientationchange',measure);
    window.removeEventListener('scroll',measure,true);
