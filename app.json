@@ -56,8 +56,18 @@
     },
     "extra": {
       "appId": "echo-starry",
-      "brandId": "starry"
+      "brandId": "starry",
+      "eas": {
+        "projectId": "e124ab5b-1a32-4a5b-8553-327f11946909"
+      }
     },
-    "icon": "./assets/images/icon.png"
+    "icon": "./assets/images/icon.png",
+    "owner": "starryphd",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e124ab5b-1a32-4a5b-8553-327f11946909"
+    }
   }
 }
