@@ -16,6 +16,19 @@
         {
           "enableBackgroundPlayback": true
         }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#fdf8f9",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#0d0f17"
+          }
+        }
       ]
     ],
     "ios": {
