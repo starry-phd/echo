@@ -87,6 +87,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
   if(!visible||Platform.OS!=='web'||typeof document==='undefined')return;
   let frame=0;
   let resizeObserver:ResizeObserver|null=null;
+  let mutationObserver:MutationObserver|null=null;
   let observed:Element[]=[];
   const measure=()=>{
    window.cancelAnimationFrame(frame);
@@ -128,6 +129,20 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
    });
   };
   if(typeof ResizeObserver!=='undefined')resizeObserver=new ResizeObserver(measure);
+  // The original TutorialSpotlight detects DOM replacements. Limit that
+  // behavior to the APPROVED public card grid, never document.body: the
+  // teaching modal itself changes DOM and would trigger an observer loop.
+  // An 'id' change is enough to catch React retaining a card DOM node while
+  // moving the first-public-photo anchor to a different approved card.
+  if(step===2&&typeof MutationObserver!=='undefined'){
+   const grid=document.getElementById('echo-tutorial-public-card-grid');
+   if(grid){
+    mutationObserver=new MutationObserver(measure);
+    mutationObserver.observe(grid,{
+     childList:true,subtree:true,attributes:true,attributeFilter:['id']
+    });
+   }
+  }
   measure();
   const delayed=window.setTimeout(measure,180);
   window.addEventListener('resize',measure);
@@ -137,6 +152,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
    window.clearTimeout(delayed);
    window.cancelAnimationFrame(frame);
    resizeObserver?.disconnect();
+   mutationObserver?.disconnect();
    window.removeEventListener('resize',measure);
    window.removeEventListener('orientationchange',measure);
    window.removeEventListener('scroll',measure,true);
