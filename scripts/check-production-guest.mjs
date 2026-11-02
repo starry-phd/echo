@@ -57,4 +57,14 @@ await eventually('unknown cover denied',async()=>{
  const r=await fetchPublic('/api/v1/previews/not-a-whitelisted-track-20261030/cover?policy=2');
  validateRefusal(r.status,r.headers,'unlisted cover');
 },5);
+// Store-listing privacy policy URL must stay publicly reachable (App Store / Google Play).
+await eventually('public privacy policy page',async()=>{
+ const r=await fetchPublic('/privacy');
+ const type=r.headers.get('content-type')||'';
+ const html=await r.text();
+ if(r.status!==200||!type.includes('text/html'))throw Error('privacy page HTTP '+r.status+' '+type);
+ for(const must of ['隱私權政策','starry.phd@gmail.com','最後更新'])
+  if(!html.includes(must))throw Error('privacy page missing: '+must);
+},10);
+console.log('Validated public privacy policy page /privacy: 200 text/html with contact and last-updated date');
 console.log('Public-only Production smoke PASSED: private audio and unlisted cover both return 404/no-store');
