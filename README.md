@@ -1,3 +1,5 @@
+**Claude AI 接續開發（2026-11-02）**：先閱讀 [完整主交接](docs/CLAUDE_DEV_HANDOFF_2026-11-02.md)、[新舊 988 個 Git 檔案路徑與 52 組對照](docs/CLAUDE_OLD_NEW_PATHS_2026-11-02.md)、[需求與開發狀態](docs/CLAUDE_REQUIREMENTS_STATUS_2026-11-02.md)、[GitHub／Cloudflare 發版 SOP](docs/CLAUDE_RELEASE_OPERATIONS_2026-11-02.md)，再讀 [Issue #3](https://github.com/starry-phd/echo/issues/3) 最新留言與 GitHub/Cloudflare 即時狀態；本 README 的 2026-10-28/29 歷史片段不得視為今日權威。
+
 # 繁星回聲｜Echo Starry
 
 > **AI／跨對話唯一交接入口：[docs/AI_HANDOFF.md](docs/AI_HANDOFF.md)** — 每次開新對話先讀取此檔與 [Release Gate Issue #3](https://github.com/starry-phd/echo/issues/3)，再查最新 main／PR／CI。程式碼與已驗證狀態以 GitHub 為準，聊天紀錄不是工程權威。
