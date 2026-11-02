@@ -11,7 +11,7 @@
 ## 實作
 - `src/ui/echo/legacySafeArea.ts`（純函式）：`legacyHeaderPaddingTop`、`legacyHeaderMenuTop`（60＋44＋top）、`legacyBackToTopBottom`（原 24px＋bottom）；負值、NaN、undefined 一律視為 0。
 - `app/_layout.tsx`：最外層 `SafeAreaProvider initialMetrics={initialWindowMetrics}`。
-- `LegacyHeader.tsx`：外層 `paddingTop=insets.top`（標頭底色延伸到狀態列）；主選單 Modal 為全螢幕，面板 `top` 改用含 inset 的 `menuTop`，`maxHeight` 同步；加入 RN 核心 `StatusBar`，狀態列圖示顏色跟隨 App 自己的深／淺色切換（Web 上無作用）。
+- `LegacyHeader.tsx`：外層 `paddingTop=insets.top`（標頭底色延伸到狀態列）；主選單 Modal 為全螢幕，面板 `top` 改用含 inset 的 `menuTop`，`maxHeight` 同步；加入 RN 核心 `StatusBar`（RN 0.88 edge-to-edge 只保留 `barStyle`），狀態列圖示顏色跟隨 App 自己的深／淺色切換（Web 上無作用）。
 - `LegacyBackToTop.tsx`：`bottom = 24 + insets.bottom`。
 - 測試：`tests/native-safe-area-insets.test.mjs`（4 項）；`tests/header-menu-outside-dismiss.test.mjs` 更新 menuTop 斷言。
 

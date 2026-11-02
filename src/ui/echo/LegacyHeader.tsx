@@ -98,7 +98,7 @@ export function LegacyHeader(){
   setQuickNotice(ok?'已更新本裝置快捷列。':('目前最多可放 '+quickLimits[quickDevice]+' 個快捷功能，請先取消一個釘選。'));
  };
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border,paddingTop:legacyHeaderPaddingTop(insets.top)}]}>
-   <StatusBar barStyle={colors.dark?'light-content':'dark-content'} backgroundColor="transparent" translucent/>
+   <StatusBar barStyle={colors.dark?'light-content':'dark-content'}/>
    <LegacyTwinklingStars placement="header"/>
    <View style={styles.main}>
      <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
