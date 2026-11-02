@@ -2,7 +2,8 @@ import {useEffect,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
-import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import legacyAppIcon from '../../../public/icon-192.png';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
@@ -16,6 +17,7 @@ import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
 import {headerMenuMaxHeight} from './headerMenuPlacement';
+import {LegacyBrandWave} from './LegacyBrandWave';
 import {loadGuestNickname} from './guestNickname';
 import type {GuestNickname} from './guestNickname';
 import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
@@ -93,14 +95,13 @@ export function LegacyHeader(){
    <View style={styles.main}>
      <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
        onPress={()=>go('/')} style={styles.brand}>
-       <View style={[styles.brandIcon,{backgroundColor:activeColor,shadowColor:activeColor}]}>
-         <Text style={styles.mic}>🎙</Text>
+       <View style={[styles.brandIcon,{shadowColor:'#0f172a'}]}>
+         <Image source={legacyAppIcon}
+          style={styles.brandImage} resizeMode="cover" accessibilityIgnoresInvertColors/>
        </View>
        <Text numberOfLines={1} style={[styles.brandName,{color:activeColor,fontSize:fontSize(21)}]}>繁星回聲</Text>
-       {width>=550&&<View style={styles.wave}>
-         {[8,13,20,11].map((value,i)=><View key={i}
-          style={{height:value,width:3,borderRadius:4,backgroundColor:activeColor,opacity:0.55+i*0.13}}/>)}
-       </View>}
+       {width>=550&&<LegacyBrandWave color={activeColor}/>}
+       
      </Pressable>
      {!chosenQuickActions.includes('font')&&<View style={styles.fontActions} accessibilityLabel="調整字體大小">
        <Pressable accessibilityRole="button" accessibilityLabel="縮小字體" accessibilityHint="最低100%，每次調整10%"
@@ -285,10 +286,9 @@ const styles=StyleSheet.create({
  outer:{zIndex:100,borderBottomWidth:1,shadowColor:'#c13f6f',shadowOffset:{width:0,height:4},shadowOpacity:.08,shadowRadius:18,elevation:3},
  main:{height:visualMetrics.headerHeight,maxWidth:832,width:'100%',alignSelf:'center',paddingHorizontal:14,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  brand:{flexDirection:'row',alignItems:'center',gap:9,flex:1},
- brandIcon:{width:38,height:38,borderRadius:14,justifyContent:'center',alignItems:'center',shadowOpacity:.20,shadowRadius:12},
- mic:{fontSize:23,color:'#fff',lineHeight:27},
+ brandIcon:{width:38,height:38,borderRadius:14,justifyContent:'center',alignItems:'center',shadowOpacity:.20,shadowRadius:12,overflow:'hidden'},
+ brandImage:{width:'100%',height:'100%'},
  brandName:{fontSize:21,fontWeight:'900',letterSpacing:1},
- wave:{flexDirection:'row',alignItems:'center',gap:3,height:22,marginLeft:3},
  fontActions:{flexDirection:'row',alignItems:'center',gap:4,marginRight:5},
  pinnedFontQuick:{flexDirection:'row',alignItems:'center',gap:3,minHeight:44,flexShrink:0},
  pinnedFontButton:{minHeight:44,minWidth:42,borderRadius:11,alignItems:'center',justifyContent:'center'},
