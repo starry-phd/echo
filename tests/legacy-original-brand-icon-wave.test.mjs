@@ -48,7 +48,9 @@ test('restore exact original icon from already committed shared PWA asset withou
  assert.equal(logo.length,8915);
  assert.equal(gitBlobSha,'f3a703a8c0850062a396fd7025a09a6e8055a946');
  const header=read('src/ui/echo/LegacyHeader.tsx');
- assert.match(header,/source=\{require\('\.\.\/\.\.\/\.\.\/public\/icon-192\.png'\)\}/);
+ assert.match(header,/import legacyAppIcon from '\.\.\/\.\.\/\.\.\/public\/icon-192\.png';/);
+ assert.match(header,/source=\{legacyAppIcon\}/);
+ assert.match(read('src/types/static-image-assets.d.ts'),/declare module '\*\.png'/);
  assert.match(header,/style=\{styles\.brandImage\} resizeMode="cover"/);
  assert.doesNotMatch(header,/<Text style=\{styles\.mic\}>🎙<\/Text>/);
 });
