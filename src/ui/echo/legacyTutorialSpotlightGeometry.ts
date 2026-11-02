@@ -23,6 +23,19 @@ export function normalizeTutorialTarget(
  return {left,top,right,bottom};
 }
 
+/** The legacy logo highlighter surrounds the microphone and the four
+ * brand characters, not its full flex-growing header button. Invalid or
+ * disappearing pieces must not produce a misleading oversized outline. */
+export function tutorialBrandBounds(icon:TutorialRect,label:TutorialRect):TutorialRect|null{
+ const a=[icon.left,icon.top,icon.right,icon.bottom,label.left,label.top,label.right,label.bottom];
+ if(!a.every(Number.isFinite)||icon.right<=icon.left||icon.bottom<=icon.top||
+  label.right<=label.left||label.bottom<=label.top)return null;
+ return {
+  left:Math.min(icon.left,label.left),top:Math.min(icon.top,label.top),
+  right:Math.max(icon.right,label.right),bottom:Math.max(icon.bottom,label.bottom)
+ };
+}
+
 /** Four rectangles dim the viewport but never cover the actual highlighted box. */
 export function tutorialSpotlightScrim(
  target:TutorialRect,view:TutorialViewport
