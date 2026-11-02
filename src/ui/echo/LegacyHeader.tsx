@@ -1,4 +1,5 @@
 import {useEffect,useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
@@ -15,6 +16,8 @@ import {useQuickActions} from './QuickActions';
 import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
 import {headerMenuMaxHeight} from './headerMenuPlacement';
+import {loadGuestNickname} from './guestNickname';
+import type {GuestNickname} from './guestNickname';
 import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
 import type {QuickActionId} from './quickActionStore';
 
@@ -33,6 +36,16 @@ export function LegacyHeader(){
  const [open,setOpen]=useState(false);
  const [showColors,setShowColors]=useState(false);
  const [quickNotice,setQuickNotice]=useState('');
+ const [guestNickname,setGuestNickname]=useState<GuestNickname|null>(null);
+ // Like the original visitor menu, reroll the visual name once per app load.
+ // It is NOT an account, device identity or permission source.
+ useEffect(()=>{
+  let mounted=true;
+  void loadGuestNickname(AsyncStorage).then(value=>{
+   if(mounted)setGuestNickname(value);
+  });
+  return ()=>{mounted=false;};
+ },[]);
  const {earlyInstallPrompt,installedInThisTab,consumeEarlyPrompt}=useEarlyInstallPrompt();
  const [draggingQuickId,setDraggingQuickId]=useState<QuickActionId|null>(null);
  const quickEditorOrder=[...chosenQuickActions,
@@ -152,11 +165,14 @@ export function LegacyHeader(){
         onPress={closeMenu} style={styles.menuItem}>
         <Text style={[styles.itemLabel,{color:colors.muted}]}>✕　關閉主選單</Text>
        </Pressable>
-       <Pressable accessibilityRole="button" onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
-         <View style={[styles.avatar,{backgroundColor:activeColor}]}><Text style={styles.avatarText}>♙</Text></View>
+       <Pressable accessibilityRole="button" accessibilityLabel="訪客暱稱，查看個人資料入口，中央會員登入尚未開放"
+        onPress={()=>go('/profile')} style={[styles.identity,{backgroundColor:colors.lightPill}]}>
+         <View style={[styles.avatar,{backgroundColor:activeColor}]}>
+          <Text style={styles.avatarText}>{guestNickname?.emoji??'♙'}</Text>
+         </View>
          <View style={styles.identityBody}>
-           <Text style={[styles.identityName,{color:colors.ink}]}>訪客</Text>
-           <Text style={[styles.identitySub,{color:colors.muted}]}>登入繁星中央會員（待串接）</Text>
+           <Text style={[styles.identityName,{color:colors.ink}]}>{guestNickname?.fullName??'訪客'}</Text>
+           <Text style={[styles.identitySub,{color:colors.muted}]}>訪客 · 本機暱稱，中央會員登入尚未開放</Text>
          </View>
        </Pressable>
        <View style={styles.menuGrid}>
