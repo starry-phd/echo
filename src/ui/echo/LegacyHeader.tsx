@@ -60,7 +60,7 @@ export function LegacyHeader(){
  const closeMenu=()=>{setOpen(false);setDraggingQuickId(null);};
  // Window coordinates and the menu's scroll bounds change on resize/rotation.
  useEffect(()=>{setOpen(false);setDraggingQuickId(null);},[width,height]);
- const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications')=>{
+ const go=(path:'/'|'/profile'|'/favorites'|'/stats'|'/notifications'|'/privacy')=>{
   requestDismissSearch();
   closeMenu();
   if(path==='/'){
@@ -282,6 +282,9 @@ export function LegacyHeader(){
          <Text style={[styles.comingSoon,{color:colors.muted}]}>待移植</Text>
        </View>)}
        <Text style={[styles.note,{color:colors.muted}]}>會員與管理功能待中央 API 驗收，不沿用舊帳號權限。</Text>
+       <Pressable accessibilityRole="link" accessibilityLabel="隱私權政策" onPress={()=>go('/privacy')} style={styles.privacyLink}>
+        <Text style={[styles.note,{color:colors.muted,textDecorationLine:'underline'}]}>隱私權政策</Text>
+       </Pressable>
      </ScrollView>
      </View>
     </View>
@@ -326,5 +329,6 @@ const styles=StyleSheet.create({
  colorGrid:{flexDirection:'row',flexWrap:'wrap',gap:5,justifyContent:'space-around'},
  colorChoice:{width:'22%',alignItems:'center',marginVertical:5},
  swatch:{width:27,height:27,borderRadius:14},swatchLabel:{fontSize:9,marginTop:3},
- note:{fontSize:11,lineHeight:17,marginTop:5}
+ note:{fontSize:11,lineHeight:17,marginTop:5},
+ privacyLink:{minHeight:44,justifyContent:'center',alignSelf:'flex-start'}
 });
