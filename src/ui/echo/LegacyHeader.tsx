@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
 import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import legacyAppIcon from '../../../public/icon-192.png';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
 import type {LegacyPalette} from './legacyTheme';
@@ -95,7 +96,7 @@ export function LegacyHeader(){
      <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
        onPress={()=>go('/')} style={styles.brand}>
        <View style={[styles.brandIcon,{shadowColor:'#0f172a'}]}>
-         <Image source={require('../../../public/icon-192.png')}
+         <Image source={legacyAppIcon}
           style={styles.brandImage} resizeMode="cover" accessibilityIgnoresInvertColors/>
        </View>
        <Text numberOfLines={1} style={[styles.brandName,{color:activeColor,fontSize:fontSize(21)}]}>繁星回聲</Text>
