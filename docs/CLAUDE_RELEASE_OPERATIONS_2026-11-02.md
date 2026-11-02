@@ -92,6 +92,7 @@ CI `.github/workflows/ci.yml` 還會在只配置**公開** `EXPO_PUBLIC_ECHO_API
 - 再 GET `/accounts/{account_id}/workers/domains?hostname=echo.starry.phd`，必須看到其 service **仍是 `temp-starry-echo-bridge`**，除非使用者已另行正式核准切換且完成全部資料與商店 Gate。
 - **交接前的時間快照**：Deployment `b2d62747-ef1c-4c90-88f9-96a335bab811`、Version `1b3612f2-bee2-4970-9f18-2acc9f038977`、100%、UTC `2026-11-02T04:07:51.65564Z`，僅可作比較基準，不能當下一 PR 的最新證據。
 - 不用 Cloudflare API 直接 upload 跳過 GitHub Environment、CI 或 PR Gate；沒有連線／無法驗證時明示 BLOCKED。
+- **2026-11-02 起（docs/129）**：唯一自動 Production 會在 guest smoke 後以既有 Token 唯讀 GET latest＋exact deployment 與 `echo.starry.phd` 綁定，結果直接寫在 deploy job 原始 log（`Cloudflare latest == exact deployment ...`、`Cloudflare custom domain ...`）。接手者若沒有自己的 Cloudflare 權限，可引用該兩行作為本節證據；網域行若為 `UNVERIFIED` 必須如實記錄。
 
 ## 8. 失敗與衝突時的保護策略
 

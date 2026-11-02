@@ -127,7 +127,10 @@ jobs:
             exit 1
           fi
       - name: Deploy Worker and complete Expo Web assets together
-        run: npx --yes wrangler@4 deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 deploy 2>&1 | tee /tmp/echo-wrangler-deploy.log
       - name: "HTTP smoke test - homepage, API and private-media refusal"
         shell: bash
         run: |
@@ -144,6 +147,13 @@ jobs:
           test "$status" = "404"
       - name: "HTTP smoke test - 28 guest portraits are nonplayable"
         run: node scripts/check-production-guest.mjs
+      # Read-only Cloudflare API evidence (GET only): the latest AND exact
+      # deployment must serve this run's uploaded version at 100%, and the
+      # legacy echo.starry.phd custom domain must not have moved.
+      - name: Verify Cloudflare latest and exact deployment and legacy domain (read-only)
+        env:
+          WRANGLER_DEPLOY_LOG: /tmp/echo-wrangler-deploy.log
+        run: node scripts/verify-cloudflare-production.mjs
       - name: Clarify deploy scope in logs
         run: |
           echo "Web shell and public read-only APIs only; media migration, Starry Auth and native EAS remain separate gates."

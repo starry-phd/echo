@@ -47,7 +47,8 @@ for(const marker of [
  'environment: production',
  'CLOUDFLARE_API_TOKEN',
  'wrangler@4 deploy',
- 'node scripts/check-production-guest.mjs'
+ 'node scripts/check-production-guest.mjs',
+ 'node scripts/verify-cloudflare-production.mjs'
 ])assert.ok(release.includes(marker),'Missing production guard: '+marker);
 assert.equal(manifest.brandId,'starry');
 assert.equal(manifest.appId,'echo-starry');
@@ -66,6 +67,13 @@ assert.match(finalGate,/git ls-remote --exit-code origin refs\/heads\/main/);
 assert.match(finalGate,/remote_main.*RELEASE_COMMIT_SHA/);
 assert.match(finalGate,/\$GITHUB_EVENT_NAME.*workflow_dispatch/);
 assert.match(finalGate,/actual.*GITHUB_SHA/);
+// Cloudflare read-only evidence runs after upload against THIS run's wrangler
+// output; pipefail keeps a failed upload from being masked by tee.
+const cfVerify=release.indexOf('run: node scripts/verify-cloudflare-production.mjs');
+assert.ok(cfVerify>upload,'Cloudflare latest/exact deployment verification must run after upload');
+const uploadStep=release.slice(upload,release.indexOf('- name:',upload+1));
+assert.match(uploadStep,/set -euo pipefail\n\s+npx --yes wrangler@4 deploy 2>&1 \| tee \/tmp\/echo-wrangler-deploy\.log/,'Upload output must be captured with pipefail');
+assert.match(release.slice(release.lastIndexOf('- name:',cfVerify),cfVerify),/WRANGLER_DEPLOY_LOG: \/tmp\/echo-wrangler-deploy\.log/);
 assert.match(release,/\[ \"\$RELEASE_CI_EVENT\" != \"push\" \]/);
 assert.match(release,/\[ \"\$RELEASE_CI_CONCLUSION\" != \"success\" \]/);
 assert.match(release,/\[ \"\$RELEASE_CI_BRANCH\" != \"main\" \]/);
