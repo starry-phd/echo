@@ -34,6 +34,7 @@ import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
 import {LegacyBackToTop} from '../src/ui/echo/LegacyBackToTop';
 import {LegacyGuestTutorial} from '../src/ui/echo/LegacyGuestTutorial';
+import {LegacyPublicReleaseHistory} from '../src/ui/echo/LegacyPublicReleaseHistory';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -496,8 +497,12 @@ export default function CatalogScreen(){
        </Text>
      </Pressable>}
      <View style={styles.footer}>
+       <View style={styles.footerHistoryRow}>
+        <LegacyPublicReleaseHistory/>
+        <Text style={[styles.footerText,{color:theme.muted,fontSize:fontSize(12)}]}>繁星回聲</Text>
+       </View>
        <Text style={[styles.footerText,{color:theme.muted,fontSize:fontSize(12)}]}>
-         繁星回聲 · 訪客資訊卡（唯讀）　│　播放須另經授權　│　廣告關閉
+         訪客資訊卡（唯讀）　│　播放須另經授權　│　廣告關閉
        </Text>
      </View>
    </View>
@@ -563,5 +568,5 @@ const styles=StyleSheet.create({
  retryText:{fontSize:13,color:'#fff',fontWeight:'900'},
  restore:{marginTop:6,padding:10,borderWidth:1,borderRadius:12,alignItems:'center'},
  restoreText:{fontSize:12,fontWeight:'700'},
- footer:{paddingTop:18,alignItems:'center'},footerText:{fontSize:11}
+ footer:{paddingTop:18,alignItems:'center'},footerHistoryRow:{flexDirection:'row',alignItems:'center',gap:9,marginBottom:8},footerText:{fontSize:11}
 });
