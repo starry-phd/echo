@@ -2,8 +2,9 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ActivityIndicator,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {router,useLocalSearchParams} from 'expo-router';
-import {useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
-import {getPublicStreamUrl,getPublicTrack} from '../../src/api/client';
+import {setAudioModeAsync,useAudioPlayer,useAudioPlayerStatus} from 'expo-audio';
+import {getApiBaseUrl,getPublicStreamUrl,getPublicTrack} from '../../src/api/client';
+import {NATIVE_AUDIO_MODE,NATIVE_LOCK_SCREEN_OPTIONS,nativeLockScreenMetadata} from '../../src/media/nativeAudioSession';
 import {clampSeekTime,formatAudioTime} from '../../src/media/playback';
 import {LEGACY_PLAYBACK_RATES,LEGACY_SKIP_SECONDS} from '../../src/media/legacyPlaybackControls';
 import {LegacyPlaybackTimeline} from '../../src/ui/echo/LegacyPlaybackTimeline';
@@ -41,16 +42,30 @@ function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(tog
  const [speed,setSpeed]=useState(1);
  const source=getPublicStreamUrl(track.id);
  const available=track.playable&&Boolean(source);
+ const native=Platform.OS!=='web';
  useEffect(()=>{
   initialized.current=false;
   player.pause();
   setSpeed(1);
-  return()=>{player.pause();};
- },[player,track.id]);
+  return()=>{
+   player.pause();
+   if(native){try{player.setActiveForLockScreen(false);}catch{/* lock screen already cleared */}}
+  };
+ },[player,track.id,native]);
  const toggle=()=>{
   if(!available||!source)return;
   if(status.playing){player.pause();return;}
-  if(!initialized.current){player.replace({uri:source});initialized.current=true;}
+  if(!initialized.current){
+   player.replace({uri:source});
+   initialized.current=true;
+   if(native){
+    // Silent switch + background + lock screen, only after a user tap on a
+    // verified playable track (legacy Media Session parity).
+    void setAudioModeAsync(NATIVE_AUDIO_MODE).catch(()=>{});
+    try{player.setActiveForLockScreen(true,nativeLockScreenMetadata(track,getApiBaseUrl()),NATIVE_LOCK_SCREEN_OPTIONS);}
+    catch{/* lock-screen controls are optional */}
+   }
+  }
   player.play();
  };
  const toggleRef=useRef<()=>void>(()=>{});
