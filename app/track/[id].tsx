@@ -26,6 +26,7 @@ import {useFontZoom} from '../../src/ui/echo/FontZoom';
 import {useViewportDimensions} from '../../src/ui/useViewportDimensions';
 import {legacyDetailHeroSizing} from '../../src/ui/echo/legacyDetailHeroSizing';
 import {useDetailSectionJump} from '../../src/ui/echo/detailSectionScroll';
+import {LegacyTwinklingStars} from '../../src/ui/echo/LegacyTwinklingStars';
 
 /**
  * Original DetailView visual hierarchy, mobile first. Do NOT instantiate
@@ -162,6 +163,7 @@ export default function TrackDetails(){
       </View>:
       <>
        <View style={styles.hero}>
+        <LegacyTwinklingStars placement="detailHero"/>
         <LegacyDetailSpeakerPortrait track={track} onPress={portraitToggle??undefined}/>
         <View style={styles.tags}>{track.categories.map((category,i)=>{
          const selected=approvedExactCategoryLink(category);

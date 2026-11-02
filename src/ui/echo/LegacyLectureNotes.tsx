@@ -3,6 +3,7 @@ import type {EchoTrack} from '../../types';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 import {formatLegacyDetailChineseDate} from './legacyDetailDate';
+import {LegacyTwinklingStars} from './LegacyTwinklingStars';
 
 /** Original DetailView's 「演講資訊與備註」, strictly from public API fields.
  * No uploader, external links, private membership, or old D1 lookup. */
@@ -12,6 +13,7 @@ export function LegacyLectureNotes({track}:{track:EchoTrack}){
  const description=typeof track.description==='string'?track.description.trim():'';
  const uploadDate=formatLegacyDetailChineseDate(track.uploadDate);
  return <View style={[styles.card,{borderColor:t.border,backgroundColor:t.card}]}>
+   <LegacyTwinklingStars placement="detailNotes"/>
    <Text style={[styles.heading,{color:t.ink,fontSize:fontSize(17)}]}>演講資訊與備註</Text>
    <Text style={[styles.description,{color:t.ink,fontSize:fontSize(14)}]}>
     {description||'目前沒有經核准公開的演講介紹或備註。'}
@@ -26,7 +28,7 @@ export function LegacyLectureNotes({track}:{track:EchoTrack}){
   </View>;
 }
 const styles=StyleSheet.create({
- card:{borderRadius:17,borderWidth:1,padding:15,gap:10},
+ card:{borderRadius:17,borderWidth:1,padding:15,gap:10,overflow:'hidden'},
  heading:{fontWeight:'900'},
  description:{lineHeight:23},
  row:{flexDirection:'row',flexWrap:'wrap',gap:4,borderTopWidth:1,paddingTop:10},

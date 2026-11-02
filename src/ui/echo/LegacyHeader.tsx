@@ -18,6 +18,7 @@ import {useHomeResetSignal} from './HomeResetSignal';
 import {QuickDragHandle} from './QuickDragHandle';
 import {headerMenuMaxHeight} from './headerMenuPlacement';
 import {LegacyBrandWave} from './LegacyBrandWave';
+import {LegacyTwinklingStars} from './LegacyTwinklingStars';
 import {loadGuestNickname} from './guestNickname';
 import type {GuestNickname} from './guestNickname';
 import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
@@ -92,6 +93,7 @@ export function LegacyHeader(){
   setQuickNotice(ok?'已更新本裝置快捷列。':('目前最多可放 '+quickLimits[quickDevice]+' 個快捷功能，請先取消一個釘選。'));
  };
  return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
+   <LegacyTwinklingStars placement="header"/>
    <View style={styles.main}>
      <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
        onPress={()=>go('/')} style={styles.brand}>
