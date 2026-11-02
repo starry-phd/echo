@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {View} from 'react-native';
+import {SafeAreaProvider,initialWindowMetrics} from 'react-native-safe-area-context';
 import {LegacyThemeProvider,useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {LegacyHeader} from '../src/ui/echo/LegacyHeader';
 import {DevicePreferencesProvider} from '../src/ui/echo/DevicePreferences';
@@ -34,7 +35,7 @@ function AppShell(){
  </View>;
 }
 export default function RootLayout(){
- return <QueryClientProvider client={queryClient}>
+ return <SafeAreaProvider initialMetrics={initialWindowMetrics}><QueryClientProvider client={queryClient}>
    <LegacyThemeProvider><FontZoomProvider><QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></HomeResetProvider></QuickActionProvider></FontZoomProvider></LegacyThemeProvider>
- </QueryClientProvider>;
+ </QueryClientProvider></SafeAreaProvider>;
 }
