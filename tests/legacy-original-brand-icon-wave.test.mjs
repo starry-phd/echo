@@ -57,8 +57,12 @@ test('restore exact original icon from already committed shared PWA asset withou
 
 test('logo remains first DOM child and brand title second for current precise tutorial spotlight',()=>{
  const header=read('src/ui/echo/LegacyHeader.tsx');
- const brand=header.slice(header.indexOf('<Pressable nativeID="echo-tutorial-home-logo"'),
-  header.indexOf('!chosenQuickActions.includes'));
+ const brandStart=header.indexOf('<Pressable nativeID="echo-tutorial-home-logo"');
+ assert.ok(brandStart>=0,'brand button exists');
+ // Scope to THIS button, not a generic quick-actions expression used earlier.
+ const brandEnd=header.indexOf('</Pressable>',brandStart);
+ assert.ok(brandEnd>brandStart,'brand button closes');
+ const brand=header.slice(brandStart,brandEnd);
  assert.ok(brand.indexOf('<View style={[styles.brandIcon')<
   brand.indexOf('>繁星回聲</Text>'));
  assert.ok(brand.indexOf('>繁星回聲</Text>')<
