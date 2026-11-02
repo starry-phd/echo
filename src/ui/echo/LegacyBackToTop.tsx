@@ -1,5 +1,7 @@
 import {Pressable,StyleSheet,Text} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useLegacyTheme} from './legacyTheme';
+import {legacyBackToTopBottom} from './legacySafeArea';
 
 /**
  * Public metadata-only version of the original Echo floating back-to-top
@@ -8,6 +10,7 @@ import {useLegacyTheme} from './legacyTheme';
  */
 export function LegacyBackToTop({onPress}:{onPress:()=>void}){
  const theme=useLegacyTheme();
+ const insets=useSafeAreaInsets();
  return <Pressable
   accessibilityRole="button"
   accessibilityLabel="回到頁面最前面"
@@ -15,6 +18,7 @@ export function LegacyBackToTop({onPress}:{onPress:()=>void}){
   onPress={onPress}
   hitSlop={4}
   style={[styles.button,{
+   bottom:legacyBackToTopBottom(insets.bottom),
    backgroundColor:theme.dark?'rgba(15,23,42,0.84)':'rgba(255,255,255,0.84)',
    borderColor:theme.border
   }]}>

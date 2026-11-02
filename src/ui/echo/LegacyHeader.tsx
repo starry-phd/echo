@@ -2,7 +2,8 @@ import {useEffect,useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useQueryClient} from '@tanstack/react-query';
 import {router,usePathname} from 'expo-router';
-import {Image,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Modal,Pressable,ScrollView,StatusBar,StyleSheet,Text,View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import legacyAppIcon from '../../../public/icon-192.png';
 import {useViewportDimensions} from '../useViewportDimensions';
 import {legacyPalettes,useLegacyTheme} from './legacyTheme';
@@ -20,6 +21,7 @@ import {headerMenuMaxHeight} from './headerMenuPlacement';
 import {LegacyBrandWave} from './LegacyBrandWave';
 import {LegacyTwinklingStars} from './LegacyTwinklingStars';
 import {legacyThemeAction} from './legacyThemeAction';
+import {legacyHeaderMenuTop,legacyHeaderPaddingTop} from './legacySafeArea';
 import {loadGuestNickname} from './guestNickname';
 import type {GuestNickname} from './guestNickname';
 import {allowedQuickActions,isActiveQuickAction,quickDeviceForWidth,quickLimits} from './quickActionStore';
@@ -33,7 +35,8 @@ export function LegacyHeader(){
  const {requestReset,requestDismissSearch}=useHomeResetSignal();
  const {width,height}=useViewportDimensions();
  const layout=viewportLayout(width);
- const menuTop=visualMetrics.headerHeight+visualMetrics.headerActionsHeight;
+ const insets=useSafeAreaInsets();
+ const menuTop=legacyHeaderMenuTop(insets.top);
  const quickDevice=quickDeviceForWidth(width);
  const chosenQuickActions=quick.choices[quickDevice];
  const pathname=usePathname();
@@ -94,7 +97,8 @@ export function LegacyHeader(){
   const ok=quick.togglePinned(quickDevice,id);
   setQuickNotice(ok?'已更新本裝置快捷列。':('目前最多可放 '+quickLimits[quickDevice]+' 個快捷功能，請先取消一個釘選。'));
  };
- return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border}]}>
+ return <View style={[styles.outer,{backgroundColor:colors.card,borderBottomColor:colors.border,paddingTop:legacyHeaderPaddingTop(insets.top)}]}>
+   <StatusBar barStyle={colors.dark?'light-content':'dark-content'} backgroundColor="transparent" translucent/>
    <LegacyTwinklingStars placement="header"/>
    <View style={styles.main}>
      <Pressable nativeID="echo-tutorial-home-logo" accessibilityRole="button" accessibilityLabel="繁星回聲－返回首頁"
@@ -163,7 +167,7 @@ export function LegacyHeader(){
      <View style={[
        styles.menuPanel,
        {backgroundColor:colors.card,borderColor:colors.border,
-        maxHeight:headerMenuMaxHeight(height,menuTop),right:10,width:layout.menuWidth}
+        top:menuTop,maxHeight:headerMenuMaxHeight(height,menuTop),right:10,width:layout.menuWidth}
      ]}>
      <ScrollView scrollEnabled={draggingQuickId===null} contentContainerStyle={styles.menuContents}>
        <Pressable accessibilityRole="button" accessibilityLabel="關閉主選單"
