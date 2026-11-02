@@ -96,6 +96,14 @@ export function createQuickActionStore(storage:Storage){
    const ids=[...current];ids.splice(index,1);ids.splice(targetIndex,0,id);
    return update(device,ids);
   },
+  /** Restore original font/theme default for only the active viewport class.
+   * No server identity or member shortcuts are involved. A failed hydration
+   * must never overwrite possibly recoverable saved settings.
+   */
+  resetPinned:(device:QuickDeviceKind)=>{
+   if(!state.ready||!writable)return false;
+   return update(device,[...defaults[device]]);
+  },
   movePinned:(device:QuickDeviceKind,id:QuickActionId,direction:-1|1)=>{
    if(!state.ready)return false;
    const current=state.choices[device];
