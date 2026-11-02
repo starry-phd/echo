@@ -232,6 +232,18 @@ export function LegacyHeader(){
            style={styles.quickMove}><Text style={[styles.quickMoveText,{color:activeColor}]}>↓</Text></Pressable>
          </>}
         </View>)}
+        <Pressable accessibilityRole="button"
+         accessibilityLabel="恢復目前版型的預設置頂快捷功能"
+         accessibilityHint="只恢復目前手機、平板或桌面版型的字體與主題按鈕，不變動其他版型"
+         disabled={!quick.ready} accessibilityState={{disabled:!quick.ready}}
+         onPress={()=>{
+          const ok=quick.resetPinned(quickDevice);
+          setQuickNotice(ok?'已恢復目前版型的預設快捷功能：字體、主題。':
+           '本機快捷設定尚未就緒或讀取失敗，沒有覆蓋原本已存設定。');
+         }}
+         style={[styles.quickReset,{borderTopColor:colors.border}]}>
+         <Text style={[styles.quickResetText,{color:activeColor}]}>↺ 恢復預設置頂快捷功能</Text>
+        </Pressable>
        </View>
        {buttons.map(([label,fn])=><Pressable key={label} accessibilityRole="button"
         accessibilityState={{selected:isSelectedPublicMenu(label,pathname)}}
@@ -273,7 +285,9 @@ const styles=StyleSheet.create({
  quickRow:{height:visualMetrics.headerActionsHeight,width:'100%',maxWidth:832,alignSelf:'center',borderTopWidth:StyleSheet.hairlineWidth,flexDirection:'row',alignItems:'center',justifyContent:'space-around',paddingHorizontal:5},
  quick:{flexShrink:1,minWidth:0,minHeight:44,justifyContent:'center',paddingHorizontal:6},quickText:{fontSize:12,fontWeight:'800',textAlign:'center'},
  quickEditor:{borderWidth:1,borderRadius:12,padding:10,gap:5},
- quickHint:{fontSize:11,lineHeight:17},quickChoiceRow:{flexDirection:'row',alignItems:'center',minHeight:44,gap:4},
+ quickHint:{fontSize:11,lineHeight:17},
+ quickReset:{minHeight:44,borderTopWidth:1,marginTop:7,alignItems:'center',justifyContent:'center'},
+ quickResetText:{fontSize:13,fontWeight:'800'},quickChoiceRow:{flexDirection:'row',alignItems:'center',minHeight:44,gap:4},
  quickChoice:{flex:1,minWidth:0,minHeight:44,justifyContent:'center'},
  quickMove:{minWidth:43,minHeight:44,alignItems:'center',justifyContent:'center'},
  quickMoveText:{fontSize:19,fontWeight:'900'},

@@ -13,5 +13,5 @@ export function useQuickActions(){
  const store=useContext(Context);
  if(!store)throw new Error('QuickActionProvider missing');
  const state=useSyncExternalStore(store.subscribe,store.getSnapshot,store.getServerSnapshot);
- return {...state,togglePinned:store.togglePinned,movePinned:store.movePinned,reorderPinned:store.reorderPinned};
+ return {...state,togglePinned:store.togglePinned,movePinned:store.movePinned,reorderPinned:store.reorderPinned,resetPinned:store.resetPinned};
 }
