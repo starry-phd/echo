@@ -475,7 +475,7 @@ export default function CatalogScreen(){
        <Text style={[styles.emptyExplanation,{color:theme.muted,fontSize:fontSize(12)}]}>
          {emptyCopy.detail}
        </Text>
-     </View>:<View style={styles.cardGrid}>
+     </View>:<View nativeID="echo-tutorial-public-card-grid" style={styles.cardGrid}>
        {displayedTracks.map((track,index)=><View key={track.id} style={[styles.cardCell,
          {width:twoColumns?'49%':'100%'},
          focusedId===track.id&&{borderWidth:2,borderColor:theme.palette.primary,
