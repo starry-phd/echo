@@ -72,6 +72,15 @@ const cases = [
   ['reject removing mandatory public media 404 smoke test', () => ({
     release: source.release.replace('node scripts/check-production-guest.mjs', 'echo skipped'),
   })],
+  ['reject removing the read-only Cloudflare latest/exact deployment verification', () => ({
+    release: source.release.replace('run: node scripts/verify-cloudflare-production.mjs', 'run: echo skipped'),
+  })],
+  ['reject capturing wrangler output without pipefail', () => ({
+    release: source.release.replace('set -euo pipefail\n          npx --yes wrangler@4 deploy 2>&1', 'npx --yes wrangler@4 deploy 2>&1'),
+  })],
+  ['reject Cloudflare verification reading a log other than this run upload', () => ({
+    release: source.release.replace('WRANGLER_DEPLOY_LOG: /tmp/echo-wrangler-deploy.log', 'WRANGLER_DEPLOY_LOG: /tmp/old.log'),
+  })],
   ['reject automatic triggering of private R2 sampling', () => ({
     probe: source.probe.replace('  workflow_dispatch:\n', '  workflow_dispatch:\n  schedule:\n    - cron: "0 0 * * *"\n'),
   })],
