@@ -106,7 +106,7 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
      {coverUri&&!coverError
       ?<Image source={{uri:coverUri}} resizeMode="cover" onError={()=>setCoverError(true)}
          accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>
-      :<Text style={[styles.portraitIcon,{color:t.palette.primary}]}>🎙</Text>}
+      :<Text style={[styles.portraitIcon,{color:t.accentText}]}>🎙</Text>}
      <View style={[styles.rewardBar,{backgroundColor:track.playable?t.palette.primary:'#76455d'}]}>
       <Text style={styles.rewardText}>{track.playable?'已核准公開':'僅展示資訊'}</Text>
      </View>
@@ -136,7 +136,7 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
       accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
       onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
       style={styles.rankLink}>
-      <Text numberOfLines={1} style={[styles.speaker,{color:t.palette.primary,fontSize:fontSize(cardSizing.speakerFont)}]}> {speakerRank} ›</Text>
+      <Text numberOfLines={1} style={[styles.speaker,{color:t.accentText,fontSize:fontSize(cardSizing.speakerFont)}]}> {speakerRank} ›</Text>
      </Pressable>:<Text numberOfLines={1} style={[styles.speaker,{color:t.ink,fontSize:fontSize(cardSizing.speakerFont)}]}> {speakerRank}</Text>)}
     </View>
     <View style={styles.tags}>
@@ -148,7 +148,7 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
        style={[styles.tag,styles.clickableTag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
        {selected==='新人'
         ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
-        :<Text numberOfLines={1} style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(cardSizing.tagFont)}]}>{selected} ›</Text>}
+        :<Text numberOfLines={1} style={[styles.tagText,{color:t.accentText,fontSize:fontSize(cardSizing.tagFont)}]}>{selected} ›</Text>}
       </Pressable>:<View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
        <Text numberOfLines={1} style={[styles.tagText,{color:t.muted,fontSize:fontSize(cardSizing.tagFont)}]}>{c}</Text>
       </View>;
@@ -208,13 +208,13 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
    </Pressable>
    <Pressable accessibilityRole="button" style={styles.popupRow} onPress={noLike}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary,fontSize:fontSize(13)}]}>⊘　我不喜歡這張卡片</Text>
+    <Text style={[styles.popupText,{color:t.accentText,fontSize:fontSize(13)}]}>⊘　我不喜歡這張卡片</Text>
    </Pressable>
    {speakerNames.map(name=><Pressable key={name}
     accessibilityRole="button" accessibilityLabel={'隱藏演講者：'+name}
     style={styles.popupRow} onPress={()=>hideOneSpeaker(name)}
     disabled={!preferences.ready} accessibilityState={{disabled:!preferences.ready}}>
-    <Text style={[styles.popupText,{color:t.palette.primary,fontSize:fontSize(13)}]}>⊘　不喜歡講師：{name}（本裝置）</Text>
+    <Text style={[styles.popupText,{color:t.accentText,fontSize:fontSize(13)}]}>⊘　不喜歡講師：{name}（本裝置）</Text>
    </Pressable>)}
      </ScrollView>
     </View>

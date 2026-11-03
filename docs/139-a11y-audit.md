@@ -18,3 +18,13 @@
 - react-native-web 0.21 不再把 `accessibilityState.checked` 轉成 `aria-checked`：主選單「置頂快捷功能」與新手教學「不再顯示」勾選框加上 `aria-checked`（原生仍用 accessibilityState）。播放進度條補 `aria-valuemin/max/now`。
 - 隱私權政策捲動區 `focusable`，鍵盤可捲動。
 - 檢查報告對 `color-contrast` 印出文字、前景／背景色、對比值與所需值，供下一批精準修正對比度。
+
+## 對比度修正（#160）
+#159 部署後，40 處 `color-contrast` 全部屬於 4 類：主題主色當文字色（淺色 4.34、深色約 3.3）、灰色說明字 4.1、「進階篩選」琥珀字 3.48、「權限／貼紙」待開放按鈕 72% 透明度造成白字 3.11。
+- `src/ui/echo/contrast.ts`：WCAG 相對亮度與對比計算；`accessibleAccent(primary,dark)` 以最小幅度把主色往黑（淺色）或往白（深色）推，直到在背景、卡片、主色 10%／16% 淡底等所有表面都 ≥4.6。
+- 主題新增 `accentText`；全 App 69＋4 處「主色當文字色」改用 `accentText`（主選單 `activeColor` 亦同）。按鈕底色仍是品牌 `palette.primary`。
+- 淺色模式灰字 `#64748b` → `#525d6e`（24 種主題最差 4.96）；深色維持 `#94a3b8`。
+- 「進階篩選」使用 `accessibleAccent('#b47a08', dark)`。
+- 待開放篩選鈕改為淡底＋虛線框＋`accentText` 字，不再整顆半透明。
+- `tests/a11y-contrast.test.mjs`：24 種主題 × 淺／深色全部 ≥4.5。
+- 已知待辦：橘、琥珀、芥末、橄欖、萊姆 5 種主題的「白字在主色按鈕上」對比 3.6–4.3，下一批處理按鈕底色。

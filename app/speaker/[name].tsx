@@ -95,7 +95,7 @@ export default function PublicSpeakerTracks(){
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
      {photo&&origin?<Image source={{uri:origin+photo}} resizeMode="cover"
       style={styles.photo} accessibilityLabel={'原版講者封面：'+speaker}/>:
-      <Text style={[styles.initial,{color:t.palette.primary}]}>{Array.from(speaker??'♪')[0]??'♪'}</Text>}
+      <Text style={[styles.initial,{color:t.accentText}]}>{Array.from(speaker??'♪')[0]??'♪'}</Text>}
     </View>
     <View style={styles.bioText}>
      <Text style={[styles.title,{color:t.ink,fontSize:fontSize(22)}]}>{speaker??'無效的講師名稱'}</Text>
@@ -126,16 +126,16 @@ export default function PublicSpeakerTracks(){
    </View>}
    {section==='audio'&&<Text style={[styles.section,{color:t.ink,fontSize:fontSize(18)}]}>所有錄音</Text>}
    {speakerHidden&&<Pressable accessibilityRole="button" onPress={()=>router.push('/favorites')} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
+    <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>此演講者已在本裝置隱藏，前往收藏頁管理</Text>
    </Pressable>}
-   {notice.length>0&&<Text style={[styles.message,{color:t.palette.primary,fontSize:fontSize(13)}]}>{notice}</Text>}
+   {notice.length>0&&<Text style={[styles.message,{color:t.accentText,fontSize:fontSize(13)}]}>{notice}</Text>}
    {dislikedIds.length>0&&<Pressable accessibilityRole="button" onPress={()=>{
     restoreHidden();setNotice('已還原此裝置隱藏的卡片。');
-   }}><Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
+   }}><Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>還原隱藏（{dislikedIds.length} 張）</Text></Pressable>}
    {!!speaker&&partial&&display!=='failed'&&<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>部分講師作品暫時無法讀取，目前只顯示成功取得的資料。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
-      <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重新讀取</Text>
+      <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>重新讀取</Text>
      </Pressable>
     </View>}
    {section==='qa'&&showBio?null:!speaker?<Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>講師連結不正確。</Text>:
@@ -143,7 +143,7 @@ export default function PublicSpeakerTracks(){
     display==='failed'?<View style={[styles.warning,{borderColor:t.border,backgroundColor:t.card}]}>
      <Text style={[styles.message,{color:t.muted,fontSize:fontSize(13)}]}>講師作品資料暫時無法完整載入，並非沒有作品。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="重新載入講師作品" onPress={retry} style={styles.retry}>
-      <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>重試載入</Text>
+      <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>重試載入</Text>
      </Pressable>
     </View>:
     display==='ready'? visibleTracks.map(track=><LegacySpeakerRecordingRow key={track.id}
@@ -189,7 +189,7 @@ export default function PublicSpeakerTracks(){
     accessibilityRole="button" accessibilityLabel="載入更多公開講者錄音"
     disabled={q.isFetchingNextPage} onPress={()=>void q.fetchNextPage()}
     style={[styles.moreButton,{borderColor:t.border,backgroundColor:t.card}]}>
-    <Text style={[styles.moreButtonText,{color:t.palette.primary,fontSize:fontSize(13)}]}>
+    <Text style={[styles.moreButtonText,{color:t.accentText,fontSize:fontSize(13)}]}>
      {q.isFetchingNextPage?'載入中…':'載入更多錄音'}
     </Text>
    </Pressable>}

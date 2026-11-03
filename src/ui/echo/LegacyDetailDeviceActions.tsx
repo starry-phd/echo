@@ -29,7 +29,7 @@ export function LegacyDetailDeviceActions({track,routeId,source}:{
     accessibilityState={{disabled:!eligible}} disabled={!eligible}
     onPress={()=>{if(eligible)preferences.dislike(track.id);}}
     style={[styles.dislike,{borderColor:t.border},!eligible&&styles.disabled]}>
-    <Text style={[styles.dislikeText,{color:t.palette.primary,fontSize:fontSize(13)}]}>我不喜歡 · 隱藏</Text>
+    <Text style={[styles.dislikeText,{color:t.accentText,fontSize:fontSize(13)}]}>我不喜歡 · 隱藏</Text>
    </Pressable>
   </View>
   <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>

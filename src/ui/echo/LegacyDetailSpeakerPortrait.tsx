@@ -23,7 +23,7 @@ export function LegacyDetailSpeakerPortrait({track,onPress}:{track:EchoTrack;onP
   backgroundColor:t.dark?'#263244':t.lightPill}]}>
   {uri&&!failed?<Image source={{uri}} resizeMode="cover"
    accessibilityLabel={'封面：'+track.speaker} onError={()=>setFailed(true)} style={styles.photo}/>
-   :<Text style={[styles.fallback,{color:t.palette.primary}]}>🎙</Text>}
+   :<Text style={[styles.fallback,{color:t.accentText}]}>🎙</Text>}
  </View>;
  if(track.playable&&onPress)return <Pressable accessibilityRole="button"
   accessibilityLabel="點擊講者照片切換播放" onPress={onPress}

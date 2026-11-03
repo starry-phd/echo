@@ -52,7 +52,7 @@ export default function DeviceFavorites(){
    <Text style={[styles.title,{color:t.ink}]}>我的收藏</Text>
    <Text style={[styles.note,{color:t.muted}]}>僅保留在此裝置，尚未與會員同步。收藏會透過目前核准的公開 API 重新確認，不會開放私人錄音或分享。</Text>
    {preferences.storageError&&<Text style={[styles.note,{color:t.muted}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
-   {!!notice&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
+   {!!notice&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.accentText}]}>{notice}</Text>}
    {preferences.dislikedIds.length>0&&<View style={[styles.hiddenSection,{backgroundColor:t.card,borderColor:t.border}]}>
     <Text style={[styles.hiddenTitle,{color:t.ink}]}>不喜歡的音檔卡（本裝置）</Text>
     <Text style={[styles.note,{color:t.muted}]}>只顯示目前仍獲准瀏覽的卡片。還原不會解鎖錄音，也不會同步至會員。</Text>
@@ -65,7 +65,7 @@ export default function DeviceFavorites(){
        disabled={!preferences.ready} onPress={()=>{
         if(preferences.restoreHiddenTrack(track.id))setNotice('已恢復此裝置的一張音檔卡。');
        }} style={[styles.hiddenRestore,{borderColor:t.palette.primary}]}>
-      <Text style={[styles.hiddenRestoreText,{color:t.palette.primary}]}>個別還原</Text>
+      <Text style={[styles.hiddenRestoreText,{color:t.accentText}]}>個別還原</Text>
      </Pressable>
     </View>)}
     {!pending&&missingHiddenCount>0&&<Text style={[styles.note,{color:t.muted}]}>
@@ -75,7 +75,7 @@ export default function DeviceFavorites(){
      disabled={!preferences.ready} onPress={()=>{
       preferences.restoreHidden();setNotice('已還原此裝置全部隱藏的卡片。');
      }} style={[styles.restore,{borderColor:t.border}]}>
-     <Text style={{color:t.palette.primary}}>還原全部（{preferences.dislikedIds.length} 張）</Text>
+     <Text style={{color:t.accentText}}>還原全部（{preferences.dislikedIds.length} 張）</Text>
     </Pressable>
    </View>}
    {preferences.hiddenSpeakers.length>0&&<View style={[styles.hiddenSection,{backgroundColor:t.card,borderColor:t.border}]}>
@@ -87,7 +87,7 @@ export default function DeviceFavorites(){
       disabled={!preferences.ready} onPress={()=>{
        if(preferences.restoreHiddenSpeaker(name))setNotice('已取消隱藏此演講者。');
       }} style={[styles.hiddenRestore,{borderColor:t.palette.primary}]}>
-      <Text style={[styles.hiddenRestoreText,{color:t.palette.primary}]}>取消隱藏</Text>
+      <Text style={[styles.hiddenRestoreText,{color:t.accentText}]}>取消隱藏</Text>
      </Pressable>
     </View>)}
     {!pending&&missingSpeakerCount>0&&<Text style={[styles.note,{color:t.muted}]}>
@@ -96,19 +96,19 @@ export default function DeviceFavorites(){
     <Pressable accessibilityRole="button" accessibilityLabel="還原所有本裝置隱藏的演講者"
      disabled={!preferences.ready} onPress={()=>{preferences.restoreAllSpeakers();setNotice('已還原本裝置隱藏的演講者。');}}
      style={[styles.restore,{borderColor:t.border}]}>
-     <Text style={{color:t.palette.primary}}>還原全部演講者（{preferences.hiddenSpeakers.length} 項）</Text>
+     <Text style={{color:t.accentText}}>還原全部演講者（{preferences.hiddenSpeakers.length} 項）</Text>
     </Pressable>
    </View>}
    {partial&&<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
     <Text style={[styles.note,{color:t.muted}]}>部分收藏來源暫時讀取失敗，以下內容可能不完整。</Text>
     <Pressable accessibilityRole="button" onPress={retry} accessibilityLabel="重新讀取收藏"
-     style={styles.retry}><Text style={{color:t.palette.primary,fontWeight:'800'}}>重新讀取</Text></Pressable>
+     style={styles.retry}><Text style={{color:t.accentText,fontWeight:'800'}}>重新讀取</Text></Pressable>
    </View>}
    {pending?<ActivityIndicator color={t.palette.primary}/>:
     display==='failed'?<View style={[styles.warning,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.note,{color:t.muted}]}>收藏資訊暫時無法完整讀取，不能判斷是否有可顯示的作品；本機收藏紀錄仍保留。</Text>
      <Pressable accessibilityRole="button" onPress={retry} accessibilityLabel="重試載入收藏"
-      style={styles.retry}><Text style={{color:t.palette.primary,fontWeight:'800'}}>重試載入</Text></Pressable>
+      style={styles.retry}><Text style={{color:t.accentText,fontWeight:'800'}}>重試載入</Text></Pressable>
     </View>:
     display==='ready'?tracks.map(track=><LegacyTrackCard key={track.id} track={track} onNotice={setNotice}
      onDislike={id=>{preferences.dislike(id);setNotice('已在此裝置隱藏卡片。');}}/>):

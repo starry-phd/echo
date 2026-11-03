@@ -22,7 +22,7 @@ export function LegacyBackToTop({onPress}:{onPress:()=>void}){
    backgroundColor:theme.dark?'rgba(15,23,42,0.84)':'rgba(255,255,255,0.84)',
    borderColor:theme.border
   }]}>
-  <Text style={[styles.arrow,{color:theme.palette.primary}]}>↑</Text>
+  <Text style={[styles.arrow,{color:theme.accentText}]}>↑</Text>
  </Pressable>;
 }
 const styles=StyleSheet.create({

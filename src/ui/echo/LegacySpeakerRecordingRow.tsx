@@ -28,7 +28,7 @@ export function LegacySpeakerRecordingRow({track,favorite,onSelect,onFavorite,on
   <View style={styles.actions}>
    <Pressable accessibilityRole="button" accessibilityLabel={favorite?'取消本裝置收藏':'加入本裝置收藏'}
     onPress={onFavorite} style={styles.action}>
-    <Text style={[styles.actionText,{color:theme.palette.primary,fontSize:fontSize(12)}]}>
+    <Text style={[styles.actionText,{color:theme.accentText,fontSize:fontSize(12)}]}>
      {favorite?'取消收藏':'收藏'}
     </Text>
    </Pressable>
