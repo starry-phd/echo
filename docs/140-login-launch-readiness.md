@@ -8,15 +8,16 @@
    - `app/privacy.tsx` 以 `privacyPolicyFor(centralMemberApiState()!=='not-configured')` 選擇：**只有建置開啟 Starry ID 時才顯示登入版**，目前線上仍是訪客版。
 2. **依建置產生的安全標頭**：`npm run build:web` = `expo export` ＋ `node scripts/write-web-headers.mjs dist`。
    - 未設定 Starry ID → 產生與 `public/_headers` 完全相同的訪客版（測試保證一致）。
-   - 設定為白名單 Starry ID 網址 → CSP 只多放行 `script-src https://accounts.google.com/gsi/client https://appleid.cdn-apple.com`、`style-src https://accounts.google.com/gsi/style`、`connect-src https://accounts.google.com/gsi/ <Starry ID>`、`frame-src https://accounts.google.com/gsi/`、`img-src <Starry ID>`（會員頭像）；`frame-ancestors 'none'` 等其他規則不變。
+   - 設定為白名單 Starry ID 網址 → CSP 只多放行 `connect-src <Starry ID>`（API）與 `img-src <Starry ID>`（會員頭像）；不放行任何 Google／Apple 來源（#165 起）。
    - 非白名單網址 → 建置失敗。Production smoke 以同一函式、依同一變數驗證標頭。
 
-## 開放網頁登入的步驟（依序；每步都要業主核准）
-1. 業主：Google Cloud「Starry ID Web」Client → Authorized JavaScript origins 加 `https://echo-starry.starry-phd.workers.dev`。
-2. 業主：Apple Developer → Services ID `phd.starry.id.web` → 網域加 `echo-starry.starry-phd.workers.dev`、Return URL 加 `https://echo-starry.starry-phd.workers.dev/`。
-3. Claude：PR 在 `.github/workflows/deploy-worker.yml`（build 與 smoke 步驟）及 `ci.yml` 設定 `EXPO_PUBLIC_STARRY_ID_API_BASE_URL=https://starry-id-staging.starry-phd.workers.dev`（先 staging），把 `PRIVACY_POLICY_MEMBER_UPDATED` 改成實際上線日期，並把 Google／Apple 來源加入自動截圖的第三方白名單。
-4. 部署後檢查：smoke 驗登入版 CSP、自動截圖 CSP 違規 0、會員頁出現登入按鈕；業主實際用 Google／Apple 登入測試、同意條款、登出、刪除帳號流程。
-5. 都正常後，另一個 PR 改成 production `https://id.starry.phd`。
+## 開放網頁登入的步驟（2026-11-03 起改用 Starry 登入中繼，#165）
+網頁版改為整頁前往 Starry ID 的登入中繼（`starry-phd/id` 指南 §11.2 更新），**業主不必再到 Google Cloud 或 Apple Developer 登記本網站**，本網站也不載入 Google／Apple 的程式。
+1. 業主核准開放會員登入。
+2. Claude：PR 在 `.github/workflows/deploy-worker.yml`（build 與 smoke 步驟）及 `ci.yml` 設定 `EXPO_PUBLIC_STARRY_ID_API_BASE_URL=https://starry-id-staging.starry-phd.workers.dev`（先 staging），並把 `PRIVACY_POLICY_MEMBER_UPDATED` 改成實際上線日期。
+3. 部署後檢查：smoke 驗登入版 CSP（只多 Starry ID 網址）、自動截圖 CSP 違規 0、會員頁出現兩顆登入按鈕；業主實際用 Google／Apple 登入、同意條款、登出、刪除帳號。
+4. 都正常後，另一個 PR 改成 production `https://id.starry.phd`。
+5. 網頁版日後換網域（例如 `echo.starry.phd`）時，請 Starry ID 更新 `web_origins`，並同步修改 `src/auth/starryId/webRelay.ts` 的 `APP_WEB_ORIGIN`。
 
 ## 未包含
 手機 App 原生登入（需 `EXPO_TOKEN`、Android 簽章 SHA-1、iOS Google Client）。

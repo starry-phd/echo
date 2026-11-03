@@ -82,6 +82,7 @@ export const PRIVACY_POLICY_MEMBER_SECTIONS:PolicySection[]=[
  {heading:'二、繁星會員登入（Starry ID）',paragraphs:[
   '繁星會員帳號由繁星中央會員系統 Starry ID（https://id.starry.phd）統一管理，同一個帳號可用於繁星生態系的各款 App。你使用 Google 或 Apple 帳號登入時，Google 或 Apple 會把用來驗證身分的登入憑證交給 Starry ID 驗證；Starry ID 如何收集、使用與保存會員資料，請見其隱私權政策 '+STARRY_ID_PRIVACY_URL+' 與服務條款 '+STARRY_ID_TERMS_URL+'。',
   '本 App 只向 Starry ID 讀取並顯示：會員編號（不含個人資訊的識別碼）、顯示名稱、頭像、帳號狀態與條款同意狀態。本 App 不讀取、不保存你的 Email、電話、生日或地點等其他會員欄位（這些由你在繁星帳號中心自行管理），我們的伺服器也不另外儲存會員資料。',
+  '網頁版登入時會整頁前往 Starry ID 的登入頁，再回到本 App；本 App 的網頁不載入 Google 或 Apple 的程式。登入過程中，一次性的驗證資訊會暫存在瀏覽器的 sessionStorage，完成後立即刪除。',
   '登入憑證的保存：網頁版的短效存取憑證只存在記憶體，續期憑證存在瀏覽器的 sessionStorage，關閉分頁即清除；手機 App 推出會員登入後，憑證會存在系統提供的安全儲存區（iOS 鑰匙圈、Android Keystore）。登出時會一併清除。'
  ]},
  {heading:'三、只存在你裝置上的資料',paragraphs:[

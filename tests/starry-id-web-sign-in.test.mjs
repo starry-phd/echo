@@ -10,8 +10,10 @@ import {completeSignIn,loadMemberState} from '../src/auth/starryId/memberSession
 import {createStarryIdSession} from '../src/auth/starryId/session.ts';
 import {createMemoryRefreshTokenStore} from '../src/auth/starryId/storage.ts';
 import {parseStarryMe} from '../src/auth/starryId/member.ts';
-import {APPLE_JS_SRC,APPLE_WEB_REDIRECT_URI,GOOGLE_GIS_SRC,STARRY_APPLE_WEB_SERVICES_ID,STARRY_GOOGLE_WEB_CLIENT_ID,
- appleWebSignInSupported,loadScriptOnce} from '../src/auth/starryId/webSignIn.ts';
+import {createHash,randomBytes} from 'node:crypto';
+import {WEB_RELAY_PENDING_KEY,WEB_RELAY_RETURN_URL,consumeWebRelay,prepareWebRelay,sha256Hex,webRelaySupported} from '../src/auth/starryId/webRelay.ts';
+import {buildRelayStartUrl,parseRelayReturn,relayRedirectUri,relaySignInBody} from '../src/auth/starryId/starryRelay.ts';
+const APPLE_CALLBACK='https://id.starry.phd/auth/apple/callback';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const fixture=name=>JSON.parse(read('tests/fixtures/starry-id/'+name));
@@ -32,26 +34,72 @@ function fakeApi(routes){
 const deps=(api,store=createMemoryRefreshTokenStore())=>({env,fetch:api.fetch,appVersion:'0.1.0',
  session:createStarryIdSession({env,store,fetch:api.fetch})});
 
-test('web sign-in uses the Starry Web Client, Apple Services ID and exact registered redirect only',()=>{
- assert.equal(STARRY_GOOGLE_WEB_CLIENT_ID,'529568041037-j9gd4baq8k239qv7an2f53rh3srbgtnm.apps.googleusercontent.com');
- assert.equal(STARRY_APPLE_WEB_SERVICES_ID,'phd.starry.id.web');
- assert.equal(APPLE_WEB_REDIRECT_URI,'https://echo-starry.starry-phd.workers.dev/');
- assert.equal(appleWebSignInSupported('https://echo-starry.starry-phd.workers.dev'),true);
- for(const o of ['http://localhost:8081','https://echo.starry.phd',null])assert.equal(appleWebSignInSupported(o),false);
- assert.equal(GOOGLE_GIS_SRC,'https://accounts.google.com/gsi/client');
- assert.match(APPLE_JS_SRC,/^https:\/\/appleid\.cdn-apple\.com\/appleauth\/static\/jsapi\/appleid\/1\/[a-z]{2}_[A-Z]{2}\/appleid\.auth\.js$/);
+function memoryStorage(){const m=new Map();return {m,getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};}
+const subtle={digest:async(_alg,data)=>createHash('sha256').update(Buffer.from(data)).digest().buffer};
+
+test('web relay: only the registered origin, only the nonce hash in the redirect, result after # and single use',async()=>{
+ assert.equal(WEB_RELAY_RETURN_URL,'https://echo-starry.starry-phd.workers.dev/auth/done');
+ assert.equal(webRelaySupported('https://echo-starry.starry-phd.workers.dev'),true);
+ for(const o of ['http://localhost:8081','https://echo.starry.phd',null])assert.equal(webRelaySupported(o),false);
+ const raw=fixture('auth-nonce.200.json').nonce;
+ assert.equal(await sha256Hex(raw,subtle),createHash('sha256').update(raw).digest('hex'));
+ const storage=memoryStorage();let now=1_000_000;
+ const url=await prepareWebRelay(env,'google',raw,{storage,subtle,randomBytes:n=>new Uint8Array(randomBytes(n)),now:()=>now});
+ const hash=createHash('sha256').update(raw).digest('hex');
+ const pending=JSON.parse(storage.m.get(WEB_RELAY_PENDING_KEY));
+ assert.equal(url,'https://id.starry.phd/auth/google/start?app_id=echo&nonce='+hash
+  +'&return=https%3A%2F%2Fecho-starry.starry-phd.workers.dev%2Fauth%2Fdone&state='+pending.state);
+ assert.ok(!url.includes(raw),'raw nonce never leaves the browser');
+ assert.match(pending.state,/^[A-Za-z0-9_-]{32}$/);
+ now+=60_000;
+ const ok=consumeWebRelay(env,WEB_RELAY_RETURN_URL+'#id_token=h.p.s&state='+pending.state,{storage,now:()=>now});
+ assert.deepEqual(ok,{kind:'success',provider:'google',nonce:raw,idToken:'h.p.s',code:null,redirectUri:null});
+ assert.equal(storage.m.has(WEB_RELAY_PENDING_KEY),false,'pending entry is single use');
+ assert.equal(consumeWebRelay(env,WEB_RELAY_RETURN_URL+'#id_token=h.p.s&state='+pending.state,{storage,now:()=>now}).kind,'invalid','replay refused');
 });
 
-test('only the two login scripts can ever be injected, and never outside a browser',async()=>{
- await assert.rejects(loadScriptOnce('https://evil.example/x.js'),/allow-listed/);
- await assert.rejects(loadScriptOnce(GOOGLE_GIS_SRC),/browser/);
+test('web relay: Apple adds code + relay redirect_uri; wrong state, query form, stale or foreign returns are refused',async()=>{
+ const storage=memoryStorage();let now=5_000_000;
+ const dep={storage,subtle,randomBytes:n=>new Uint8Array(randomBytes(n)),now:()=>now};
+ await prepareWebRelay(env,'apple','n'.repeat(20),dep);
+ let st=JSON.parse(storage.m.get(WEB_RELAY_PENDING_KEY)).state;
+ assert.deepEqual(consumeWebRelay(env,WEB_RELAY_RETURN_URL+'#id_token=h.p.s&code=c1&state='+st,dep),
+  {kind:'success',provider:'apple',nonce:'n'.repeat(20),idToken:'h.p.s',code:'c1',redirectUri:APPLE_CALLBACK});
+ const cases=[[s=>WEB_RELAY_RETURN_URL+'#id_token=h.p.s&state=wrong_state_value_123456','invalid'],
+  [s=>WEB_RELAY_RETURN_URL+'?id_token=h.p.s&state='+s,'invalid'],
+  [s=>'https://evil.example/auth/done#id_token=h.p.s&state='+s,'invalid'],
+  [s=>WEB_RELAY_RETURN_URL+'#error=user_cancelled&state='+s,'cancelled']];
+ for(const [make,kind] of cases){
+  await prepareWebRelay(env,'apple','n'.repeat(20),dep);
+  st=JSON.parse(storage.m.get(WEB_RELAY_PENDING_KEY)).state;
+  assert.equal(consumeWebRelay(env,make(st),dep).kind,kind,make(st));
+ }
+ await prepareWebRelay(env,'google','n'.repeat(20),dep);
+ st=JSON.parse(storage.m.get(WEB_RELAY_PENDING_KEY)).state;
+ now+=11*60_000;
+ assert.equal(consumeWebRelay(env,WEB_RELAY_RETURN_URL+'#id_token=h.p.s&state='+st,dep).kind,'invalid','older than 10 minutes');
+ assert.equal(consumeWebRelay(env,WEB_RELAY_RETURN_URL+'#id_token=h.p.s&state='+st,{storage:memoryStorage(),now:()=>now}).kind,'invalid');
+});
+
+test('generic relay: deep links use ?, web pages use #; providers and returns are allow-listed',()=>{
+ const h='a'.repeat(64),st='s'.repeat(20);
+ assert.equal(buildRelayStartUrl(env,'apple',h,st,'echostarry://auth/apple'),
+  'https://id.starry.phd/auth/apple/start?app_id=echo&nonce='+h+'&return=echostarry%3A%2F%2Fauth%2Fapple&state='+st);
+ assert.throws(()=>buildRelayStartUrl(env,'facebook',h,st,'echostarry://auth/apple'));
+ assert.throws(()=>buildRelayStartUrl(env,'google',h,st,'http://insecure.example/x'));
+ assert.throws(()=>buildRelayStartUrl(env,'google',h,st,'javascript:alert(1)'));
+ assert.deepEqual(parseRelayReturn('echostarry://auth/apple?id_token=h.p.s&code=c&state='+st,'echostarry://auth/apple',st),
+  {kind:'success',idToken:'h.p.s',code:'c'});
+ assert.throws(()=>parseRelayReturn('echostarry://auth/apple#id_token=h.p.s&state='+st,'echostarry://auth/apple',st));
+ assert.equal(relayRedirectUri(env,'apple'),APPLE_CALLBACK);
+ assert.deepEqual(relaySignInBody(env,'google',{idToken:'h.p.s',code:'ignored'},'n'.repeat(20)),{app_id:'echo',id_token:'h.p.s',nonce:'n'.repeat(20)});
 });
 
 test('sign-in body: app_id echo, RAW nonce, Apple code + redirect_uri only for Apple',()=>{
  assert.deepEqual(signInRequestBody({provider:'google',idToken:'h.p.s',nonce:'n'.repeat(20),authorizationCode:'c',redirectUri:'r'}),
   {app_id:'echo',id_token:'h.p.s',nonce:'n'.repeat(20)});
- assert.deepEqual(signInRequestBody({provider:'apple',idToken:'h.p.s',nonce:'n'.repeat(20),authorizationCode:'c1',redirectUri:APPLE_WEB_REDIRECT_URI}),
-  {app_id:'echo',id_token:'h.p.s',nonce:'n'.repeat(20),authorization_code:'c1',redirect_uri:APPLE_WEB_REDIRECT_URI});
+ assert.deepEqual(signInRequestBody({provider:'apple',idToken:'h.p.s',nonce:'n'.repeat(20),authorizationCode:'c1',redirectUri:APPLE_CALLBACK}),
+  {app_id:'echo',id_token:'h.p.s',nonce:'n'.repeat(20),authorization_code:'c1',redirect_uri:APPLE_CALLBACK});
  assert.throws(()=>signInRequestBody({provider:'google',idToken:'',nonce:'n'.repeat(20)}));
 });
 
@@ -146,7 +194,14 @@ test('dark launch: production builds have no Starry ID URL, so the provider is d
  assert.match(provider,/ensureLoaded\(\)\{\n\s+if\(loaded\.current\)return;/);
  const panel=read('src/ui/echo/StarryMemberPanel.tsx');
  assert.match(panel,/case 'disabled':return null;/);
- assert.match(panel,/if\(!signedOut\|\|Platform\.OS!=='web'/);
+ assert.match(panel,/webRelaySupported\(window\.location\.origin\)/);
+ assert.match(panel,/window\.location\.assign\(url\)/);
+ assert.doesNotMatch(panel,/accounts\.google\.com|appleid\.cdn-apple\.com|renderGoogleButton/);
+ const done=read('app/auth/done.tsx');
+ assert.match(done,/window\.history\.replaceState\(null,'',window\.location\.pathname\)/);
+ assert.ok(done.indexOf('replaceState')<done.indexOf('consumeWebRelay(starry.env'),'the # result is wiped before use');
+ assert.match(done,/if\(!starry\.enabled\|\|!starry\.env\)/);
+ assert.match(read('app/_layout.tsx'),/<Stack\.Screen name="auth\/done" \/>/);
  const profile=read('app/profile.tsx');
  assert.match(profile,/state==='not-configured'\?<View[\s\S]*:<StarryMemberPanel\/>/);
  assert.match(read('app/_layout.tsx'),/<StarryIdProvider><LegacyThemeProvider>[\s\S]*<\/LegacyThemeProvider><\/StarryIdProvider>/);

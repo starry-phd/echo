@@ -59,21 +59,22 @@ test('public/_headers is exactly the generated guest file; build:web regenerates
  assert.equal(STARRY_ID_ORIGINS.length,2);
 });
 
-test('sign-in build adds only Google/Apple login and Starry ID sources; anything else fails the build',()=>{
+test('sign-in build adds only the Starry ID origin (relay redirect); anything else fails the build',()=>{
  assert.equal(resolveStarryOrigin(undefined),null);
  assert.equal(resolveStarryOrigin(''),null);
  assert.equal(resolveStarryOrigin('https://id.starry.phd/'),'https://id.starry.phd');
  for(const bad of ['https://evil.example','http://id.starry.phd','https://echo.starry.phd'])assert.throws(()=>resolveStarryOrigin(bad),/allow-listed/);
  const d=cspDirectivesFor('https://id.starry.phd');
- assert.deepEqual(d['script-src'],["'self'",...INLINE_SCRIPT_HASHES,'https://accounts.google.com/gsi/client','https://appleid.cdn-apple.com']);
- assert.deepEqual(d['frame-src'],['https://accounts.google.com/gsi/']);
- assert.deepEqual(d['connect-src'],["'self'",'https://accounts.google.com/gsi/','https://id.starry.phd']);
+ assert.deepEqual(d['script-src'],["'self'",...INLINE_SCRIPT_HASHES],'relay sign-in loads no Google/Apple script');
+ assert.deepEqual(d['frame-src'],["'none'"]);
+ assert.deepEqual(d['style-src'],["'self'","'unsafe-inline'"]);
+ assert.deepEqual(d['connect-src'],["'self'",'https://id.starry.phd']);
  assert.deepEqual(d['img-src'],["'self'",'data:','blob:','https://id.starry.phd']);
  assert.deepEqual(d['frame-ancestors'],["'none'"]);
  assert.deepEqual(cspDirectivesFor(null),CSP_DIRECTIVES,'guest build unchanged');
  const rules=headersFileRules(headersFileFor('https://id.starry.phd')).get('/*');
  assert.deepEqual(validateSecurityHeaders(n=>rules.get(n)??null,'enforce','https://id.starry.phd'),{mode:'enforce',directives:14});
- assert.throws(()=>validateSecurityHeaders(n=>rules.get(n)??null,'enforce',null),/script-src/,'guest validator rejects the login CSP');
+ assert.throws(()=>validateSecurityHeaders(n=>rules.get(n)??null,'enforce',null),/img-src|connect-src/,'guest validator rejects the login CSP');
  const smoke=read('scripts/check-production-guest.mjs');
  assert.match(smoke,/resolveStarryOrigin\(process\.env\.EXPO_PUBLIC_STARRY_ID_API_BASE_URL\)/);
 });
