@@ -10,3 +10,11 @@
 
 ## 界線
 自動檢查約能找出一部分 WCAG 問題；不取代 VoiceOver／TalkBack 真人測試、鍵盤實測與讀屏語意判斷。
+
+## 第一輪基準（#158 部署後）與修正（#159）
+基準：10 頁共 4 種問題 — `document-title` ×10、`aria-required-attr`（critical）×7、`color-contrast` ×40、`scrollable-region-focusable` ×1。
+#159 修正：
+- `app/+html.tsx` 加 `<title>繁星回聲｜演講資訊與知識收藏</title>`。
+- react-native-web 0.21 不再把 `accessibilityState.checked` 轉成 `aria-checked`：主選單「置頂快捷功能」與新手教學「不再顯示」勾選框加上 `aria-checked`（原生仍用 accessibilityState）。播放進度條補 `aria-valuemin/max/now`。
+- 隱私權政策捲動區 `focusable`，鍵盤可捲動。
+- 檢查報告對 `color-contrast` 印出文字、前景／背景色、對比值與所需值，供下一批精準修正對比度。

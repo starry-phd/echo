@@ -198,7 +198,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
       :'點封面會告知播放尚未開放；點作品標題可查閱已核准資訊。本裝置可收藏，不等於會員同步。'}</Text>
      <Text style={styles.spotlightWarning}>私人錄音、正式會員登入及付費功能尚未開放。</Text>
      <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
-      accessibilityState={{checked:neverAgain,disabled:saving}}
+      accessibilityState={{checked:neverAgain,disabled:saving}} aria-checked={neverAgain}
       disabled={saving} onPress={()=>void changeNeverAgain()}
       style={styles.spotlightCheckbox}>
       <Text style={styles.spotlightCheckboxText}>{neverAgain?'☑':'☐'} 打勾不再顯示新手教學</Text>
@@ -226,7 +226,7 @@ export function LegacyGuestTutorial({active}:{active:boolean}){
      <Text style={styles.lineText}>可在這個裝置收藏或隱藏資訊卡；目前不會同步到會員帳號。</Text></View>
     <Text style={styles.warning}>私人錄音、正式會員登入及付費功能尚未開放，教學不會解鎖這些權限。</Text>
     <Pressable accessibilityRole="checkbox" accessibilityLabel="不再顯示新手教學"
-     accessibilityState={{checked:neverAgain,disabled:saving}} disabled={saving} onPress={()=>void changeNeverAgain()}
+     accessibilityState={{checked:neverAgain,disabled:saving}} aria-checked={neverAgain} disabled={saving} onPress={()=>void changeNeverAgain()}
      style={styles.checkRow}>
      <Text style={styles.checkMark}>{neverAgain?'☑':'☐'}</Text>
      <Text style={styles.checkText}>打勾不再顯示新手教學</Text>

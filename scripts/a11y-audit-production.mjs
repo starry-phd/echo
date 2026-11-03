@@ -52,13 +52,20 @@ async function samplePaths(){
    await page.addScriptTag({content:axeSource});
    const raw=await page.evaluate(async()=>{
     const r=await window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']},resultTypes:['violations']});
-    return r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,nodes:v.nodes.map(n=>({target:n.target}))}));
+    return r.violations.map(v=>({id:v.id,impact:v.impact,help:v.help,nodes:v.nodes.map(n=>{
+     const d=(n.any??[]).concat(n.all??[],n.none??[]).map(c=>c.data).find(x=>x&&x.contrastRatio!==undefined);
+     return {target:n.target,html:String(n.html??'').replace(/<[^>]*>/g,'').trim().slice(0,30),
+      contrast:d?{fg:d.fgColor,bg:d.bgColor,ratio:d.contrastRatio,expected:d.expectedContrastRatio,size:d.fontSize,weight:d.fontWeight}:null};
+    })}));
    });
    const summary=summarizeViolations(raw);
    results.push({name,path,violations:summary});
    console.log('A11Y '+name+' '+path+': '+summary.length+' rule(s) violated'
     +(summary.length?' — '+IMPACTS.slice().reverse().map(i=>i+'='+summary.filter(v=>v.impact===i).length).join(' '):''));
-   for(const v of summary)console.log('  - ['+v.impact+'] '+v.id+' ×'+v.nodes+': '+v.help+' | '+v.targets.join(' ; '));
+   for(const v of summary){
+    console.log('  - ['+v.impact+'] '+v.id+' ×'+v.nodes+': '+v.help+' | '+v.targets.join(' ; '));
+    for(const c of v.contrast)console.log('      · '+c);
+   }
    if(failsThreshold(summary,FAIL_ON))failed=true;
   }catch(error){
    failed=true;

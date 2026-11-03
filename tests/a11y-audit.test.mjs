@@ -32,3 +32,27 @@ test('threshold logic',async()=>{
  assert.equal(failsThreshold(summarizeViolations([{id:'b',impact:'moderate',help:'',nodes:[]}]),'serious'),false);
  assert.throws(()=>failsThreshold(s,'loud'));
 });
+
+test('first a11y baseline fixes: page title, aria-checked checkboxes, slider values, focusable privacy scroll',()=>{
+ assert.match(read('app/+html.tsx'),/<title>繁星回聲｜演講資訊與知識收藏<\/title>/);
+ const header=read('src/ui/echo/LegacyHeader.tsx');
+ assert.match(header,/accessibilityRole="checkbox"[\s\S]{0,260}aria-checked=\{chosenQuickActions\.includes\(id\)\}/);
+ const tutorial=read('src/ui/echo/LegacyGuestTutorial.tsx');
+ assert.equal((tutorial.match(/aria-checked=\{neverAgain\}/g)||[]).length,2);
+ assert.equal((tutorial.match(/accessibilityRole="checkbox"/g)||[]).length,2);
+ const timeline=read('src/ui/echo/LegacyPlaybackTimeline.tsx');
+ assert.match(timeline,/aria-valuemin=\{0\} aria-valuemax=\{Math\.ceil\(safeDuration\)\} aria-valuenow=\{Math\.floor\(shown\)\}/);
+ assert.match(read('app/privacy.tsx'),/<ScrollView focusable accessibilityLabel="隱私權政策全文"/);
+ // Every checkbox in the app exposes aria-checked for react-native-web 0.21+.
+ for(const file of ['src/ui/echo/LegacyHeader.tsx','src/ui/echo/LegacyGuestTutorial.tsx']){
+  const src=read(file);
+  assert.equal((src.match(/accessibilityRole="checkbox"/g)||[]).length,(src.match(/aria-checked=/g)||[]).length,file);
+ }
+});
+
+test('contrast details are summarised for targeted colour fixes',async()=>{
+ const {summarizeViolations}=await import('../scripts/a11y-summary.mjs');
+ const [v]=summarizeViolations([{id:'color-contrast',impact:'serious',help:'',nodes:[{target:['#x'],html:'A＋',
+  contrast:{fg:'#c13f6f',bg:'#f9ebf0',ratio:4.35,expected:'4.5:1',size:'9.0pt (12px)',weight:'bold'}}]}]);
+ assert.deepEqual(v.contrast,['"A＋" #c13f6f on #f9ebf0 = 4.35 (needs 4.5:1, 9.0pt (12px) bold)']);
+});

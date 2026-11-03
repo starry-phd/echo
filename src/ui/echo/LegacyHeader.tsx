@@ -233,6 +233,7 @@ export function LegacyHeader(){
         ]}>
          <Pressable accessibilityRole="checkbox" accessibilityLabel={'置頂'+quickActions[id].label}
           accessibilityState={{checked:chosenQuickActions.includes(id),disabled:!quick.ready}}
+          aria-checked={chosenQuickActions.includes(id)}
           disabled={!quick.ready} onPress={()=>togglePin(id)}
           style={styles.quickChoice}>
           <Text style={[styles.itemLabel,{color:colors.ink,fontSize:fontSize(13)}]}>

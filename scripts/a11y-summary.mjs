@@ -3,7 +3,9 @@ export const IMPACTS=['minor','moderate','serious','critical'];
 
 export function summarizeViolations(violations){
  return violations.map(v=>({id:v.id,impact:v.impact??'minor',help:v.help,nodes:v.nodes.length,
-  targets:v.nodes.slice(0,3).map(n=>String(n.target?.[0]??'').slice(0,90))}))
+  targets:v.nodes.slice(0,3).map(n=>String(n.target?.[0]??'').slice(0,90)),
+  contrast:v.nodes.filter(n=>n.contrast).slice(0,12).map(n=>'"'+(n.html??'')+'" '+n.contrast.fg+' on '+n.contrast.bg
+   +' = '+n.contrast.ratio+' (needs '+n.contrast.expected+', '+n.contrast.size+' '+n.contrast.weight+')')}))
   .sort((a,b)=>IMPACTS.indexOf(b.impact)-IMPACTS.indexOf(a.impact)||a.id.localeCompare(b.id));
 }
 export function failsThreshold(summary,failOn){
