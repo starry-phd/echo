@@ -3,6 +3,7 @@ import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,View}
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {formatPurgeDate} from '../../auth/starryId/memberFlow';
 import {appleWebSignInSupported,cancelGooglePrompt,renderGoogleButton,signInWithAppleWeb} from '../../auth/starryId/webSignIn';
+import {NativeAppleSignInButton,nativeAppleAvailable,nativeAppleSignIn} from '../../auth/starryId/nativeSignIn';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -41,6 +42,23 @@ export function StarryMemberPanel(){
   return()=>{cancelled=true;clearInterval(timer);cancelGooglePrompt();};
  },[signedOut]);
 
+ const [nativeApple,setNativeApple]=useState(false);
+ useEffect(()=>{
+  if(Platform.OS==='web'||!signedOut)return;
+  let alive=true;
+  void nativeAppleAvailable().then(ok=>{if(alive)setNativeApple(ok);});
+  return()=>{alive=false;};
+ },[signedOut]);
+ const appleNative=async()=>{
+  if(!env)return;
+  try{
+   setError('');
+   const nonce=await starry.getNonce();
+   const result=await nativeAppleSignIn(env,nonce);
+   await starry.signIn({provider:'apple',idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
+  }catch{setError('Apple 登入未完成，請再試一次。');}
+ };
+
  const apple=async()=>{
   try{
    setError('');
@@ -75,7 +93,10 @@ export function StarryMemberPanel(){
        onPress={()=>{void apple();}} style={[styles.apple,starry.busy&&styles.disabled]}>
        <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
       </Pressable>}
-    </>:text('手機 App 的會員登入即將推出；目前可先使用網頁版登入。',true)}
+    </>:<>
+     {nativeApple&&<NativeAppleSignInButton dark={t.dark} disabled={starry.busy} onPress={()=>{void appleNative();}}/>}
+     {text('Google 帳號的手機版登入即將推出；也可以先使用網頁版登入。',true)}
+    </>}
     <View style={styles.row}>{link('服務條款','/terms')}{link('隱私權政策','/privacy')}</View>
    </>;break;
   case 'consent-required':
