@@ -28,6 +28,7 @@ function AppShell(){
        <Stack.Screen name="stats" />
        <Stack.Screen name="notifications" />
        <Stack.Screen name="privacy" />
+       <Stack.Screen name="auth/done" />
        <Stack.Screen name="preview/[id]" />
        <Stack.Screen name="speaker/index" />
        <Stack.Screen name="speaker/[name]" options={{presentation:'transparentModal',animation:'fade',contentStyle:{backgroundColor:'transparent'}}}/>

@@ -2,17 +2,16 @@ import {useEffect,useState} from 'react';
 import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {formatPurgeDate} from '../../auth/starryId/memberFlow';
-import {appleWebSignInSupported,cancelGooglePrompt,renderGoogleButton,signInWithAppleWeb} from '../../auth/starryId/webSignIn';
+import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
+import type {RelayProvider} from '../../auth/starryId/starryRelay';
 import {NativeAppleSignInButton,nativeAppleAvailable,nativeAppleSignIn} from '../../auth/starryId/nativeSignIn';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
-const GOOGLE_BUTTON_ID='starry-google-sign-in-button';
-const NONCE_REFRESH_MS=9*60_000; // Starry nonces expire after 10 minutes
-
 /**
- * Starry ID member panel (integration guide §2–4). Rendered only when Starry ID is
- * enabled; loads third-party login scripts only while the signed-out view is visible.
+ * Starry ID member panel (integration guide §2–4). Rendered only when Starry ID is enabled.
+ * Web sign-in is a full-page redirect to the Starry relay (§11.2): this site loads no
+ * Google or Apple scripts.
  */
 export function StarryMemberPanel(){
  const starry=useStarryId();
@@ -25,22 +24,6 @@ export function StarryMemberPanel(){
  useEffect(()=>{starry.ensureLoaded();},[starry]);
 
  const signedOut=state.kind==='signed-out';
- useEffect(()=>{
-  if(!signedOut||Platform.OS!=='web'||typeof document==='undefined')return;
-  let cancelled=false;
-  const mount=async()=>{
-   try{
-    const nonce=await starry.getNonce();
-    const container=document.getElementById(GOOGLE_BUTTON_ID);
-    if(cancelled||!container)return;
-    await renderGoogleButton(container,nonce,idToken=>{void starry.signIn({provider:'google',idToken,nonce});});
-    setError('');
-   }catch{if(!cancelled)setError('Google 登入暫時無法使用，請稍後再試。');}
-  };
-  void mount();
-  const timer=setInterval(()=>{void mount();},NONCE_REFRESH_MS);
-  return()=>{cancelled=true;clearInterval(timer);cancelGooglePrompt();};
- },[signedOut]);
 
  const [nativeApple,setNativeApple]=useState(false);
  useEffect(()=>{
@@ -59,13 +42,15 @@ export function StarryMemberPanel(){
   }catch{setError('Apple 登入未完成，請再試一次。');}
  };
 
- const apple=async()=>{
+ const webRelay=async(provider:RelayProvider)=>{
+  if(!env||typeof window==='undefined')return;
   try{
    setError('');
    const nonce=await starry.getNonce();
-   const result=await signInWithAppleWeb(nonce);
-   await starry.signIn({provider:'apple',idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
-  }catch{setError('Apple 登入未完成，請再試一次。');}
+   const url=await prepareWebRelay(env,provider,nonce,{storage:window.sessionStorage,subtle:window.crypto.subtle,
+    randomBytes:n=>window.crypto.getRandomValues(new Uint8Array(n)),now:()=>Date.now()});
+   window.location.assign(url);
+  }catch{setError('暫時無法前往繁星會員登入，請稍後再試。');}
  };
 
  const text=(value:string,muted=false)=><Text style={[styles.text,{color:muted?t.muted:t.ink,fontSize:fontSize(14)}]}>{value}</Text>;
@@ -87,12 +72,16 @@ export function StarryMemberPanel(){
     {state.notice&&text(state.notice)}
     {text('使用 Google 或 Apple 帳號登入繁星會員（Starry ID）。同一個帳號可用於繁星生態系的所有 App。',true)}
     {Platform.OS==='web'?<>
-     <View nativeID={GOOGLE_BUTTON_ID} style={styles.googleSlot}/>
-     {typeof window!=='undefined'&&appleWebSignInSupported(window.location.origin)
-      &&<Pressable accessibilityRole="button" accessibilityLabel="使用 Apple 帳號登入" disabled={starry.busy}
-       onPress={()=>{void apple();}} style={[styles.apple,starry.busy&&styles.disabled]}>
+     {typeof window!=='undefined'&&webRelaySupported(window.location.origin)?<View style={styles.row}>
+      <Pressable accessibilityRole="button" accessibilityLabel="使用 Google 帳號登入" disabled={starry.busy}
+       onPress={()=>{void webRelay('google');}} style={[styles.google,{borderColor:t.border},starry.busy&&styles.disabled]}>
+       <Text style={[styles.googleLabel,{fontSize:fontSize(15)}]}>使用 Google 帳號登入</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="使用 Apple 帳號登入" disabled={starry.busy}
+       onPress={()=>{void webRelay('apple');}} style={[styles.apple,starry.busy&&styles.disabled]}>
        <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
-      </Pressable>}
+      </Pressable>
+     </View>:text('此網址不支援繁星會員登入，請改用正式網站。',true)}
     </>:<>
      {nativeApple&&<NativeAppleSignInButton dark={t.dark} disabled={starry.busy} onPress={()=>{void appleNative();}}/>}
      {text('Google 帳號的手機版登入即將推出；也可以先使用網頁版登入。',true)}
@@ -150,7 +139,8 @@ const styles=StyleSheet.create({
  buttonLabel:{fontWeight:'800'},
  disabled:{opacity:.5},
  link:{fontWeight:'800',textDecorationLine:'underline',paddingVertical:8},
- googleSlot:{minHeight:44,alignSelf:'stretch'},
+ google:{minHeight:44,borderRadius:22,borderWidth:1,backgroundColor:'#fff',alignItems:'center',justifyContent:'center',paddingHorizontal:18},
+ googleLabel:{color:'#1f1f1f',fontWeight:'800'},
  apple:{minHeight:44,borderRadius:22,backgroundColor:'#000',alignItems:'center',justifyContent:'center',paddingHorizontal:18,alignSelf:'flex-start'},
  appleLabel:{color:'#fff',fontWeight:'800'},
  avatar:{width:56,height:56,borderRadius:28},
