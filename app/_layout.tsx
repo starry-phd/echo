@@ -8,6 +8,7 @@ import {DevicePreferencesProvider} from '../src/ui/echo/DevicePreferences';
 import {FontZoomProvider} from '../src/ui/echo/FontZoom';
 import {QuickActionProvider} from '../src/ui/echo/QuickActions';
 import {HomeResetProvider} from '../src/ui/echo/HomeResetSignal';
+import {StarryIdProvider} from '../src/auth/starryId/StarryIdProvider';
 
 const queryClient=new QueryClient({defaultOptions:{queries:{retry:1,refetchOnWindowFocus:false}}});
 
@@ -37,6 +38,6 @@ function AppShell(){
 }
 export default function RootLayout(){
  return <SafeAreaProvider initialMetrics={initialWindowMetrics}><QueryClientProvider client={queryClient}>
-   <LegacyThemeProvider><FontZoomProvider><QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></HomeResetProvider></QuickActionProvider></FontZoomProvider></LegacyThemeProvider>
+   <StarryIdProvider><LegacyThemeProvider><FontZoomProvider><QuickActionProvider><HomeResetProvider><DevicePreferencesProvider><AppShell/></DevicePreferencesProvider></HomeResetProvider></QuickActionProvider></FontZoomProvider></LegacyThemeProvider></StarryIdProvider>
  </QueryClientProvider></SafeAreaProvider>;
 }

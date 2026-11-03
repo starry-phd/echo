@@ -208,7 +208,7 @@ test('Android Apple relay: only the nonce hash leaves the app, state is verified
  assert.equal(JSON.parse(readFileSync(new URL('../app.json',import.meta.url),'utf8')).expo.scheme,'echostarry');
 });
 
-test('superseded five-field DTO is gone; member access stays closed until the sign-in UI ships',async()=>{
+test('superseded five-field DTO is gone; screens reach Starry ID only through the gated provider',async()=>{
  assert.equal(centralMemberApiState(),'not-configured');
  await assert.rejects(getCentralMemberProfile(),/尚未開放/);
  for(const dir of ['../app/','../src/ui/']){
@@ -216,7 +216,7 @@ test('superseded five-field DTO is gone; member access stays closed until the si
    e.isDirectory()?walk(d+e.name+'/'):[d+e.name]);
   for(const file of walk(dir)){
    const src=readFileSync(new URL(file,import.meta.url),'utf8');
-   assert.doesNotMatch(src,/starryId\/session|createStarryIdSession/,file+' must not open member sessions yet');
+   assert.doesNotMatch(src,/starryId\/session|createStarryIdSession/,file+' must use StarryIdProvider, not raw sessions');
   }
  }
  const ci=readFileSync(new URL('../.github/workflows/ci.yml',import.meta.url),'utf8');
