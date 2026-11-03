@@ -3,7 +3,9 @@
 # API responses (/api/*, /health) are produced by the Worker and set their own headers.
 # CSP is ENFORCED; the post-deploy visual check reports any blocked resource. See docs/138-web-security-headers.md.
 # Guest site: no third-party sources.
+# no-transform stops Cloudflare from auto-injecting its Web Analytics beacon on the custom domain (privacy policy: no analytics).
 /*
+  Cache-Control: public, max-age=0, must-revalidate, no-transform
   Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
