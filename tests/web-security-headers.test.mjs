@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {CSP_DIRECTIVES,FIXED_HEADERS,INLINE_SCRIPT_HASHES,WEB_CSP_MODE,headersFileRules,parseCsp,validateSecurityHeaders} from '../scripts/web-security-headers.mjs';
+import {CSP_DIRECTIVES,FIXED_HEADERS,INLINE_SCRIPT_HASHES,STARRY_ID_ORIGINS,WEB_CSP_MODE,cspDirectivesFor,headersFileFor,headersFileRules,parseCsp,resolveStarryOrigin,validateSecurityHeaders} from '../scripts/web-security-headers.mjs';
 import {cspScriptHash,extractInlineScripts} from '../scripts/check-inline-scripts.mjs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const rules=headersFileRules(read('public/_headers'));
@@ -45,27 +45,35 @@ test('shipping is verified: CI compares dist/_headers, Production smoke checks /
  assert.ok(ci.indexOf('run: cmp public/_headers dist/_headers')>ci.indexOf('run: npm run build:web'));
  const smoke=read('scripts/check-production-guest.mjs');
  assert.match(smoke,/for\(const path of \['\/','\/privacy'\]\)/);
- assert.match(smoke,/validateSecurityHeaders\(name=>r\.headers\.get\(name\),WEB_CSP_MODE\)/);
+ assert.match(smoke,/validateSecurityHeaders\(name=>r\.headers\.get\(name\),WEB_CSP_MODE,resolveStarryOrigin\(process\.env\.EXPO_PUBLIC_STARRY_ID_API_BASE_URL\)\)/);
  const visual=read('scripts/visual-check-production.mjs');
  assert.match(visual,/securitypolicyviolation/);
  assert.match(visual,/CSP violations='\+cspViolations/);
 });
 
-test('Starry ID sign-in cannot be switched on while the CSP would block Google/Apple login scripts',()=>{
- const configured=['.github/workflows/ci.yml','.github/workflows/deploy-worker.yml','eas.json']
-  .some(file=>read(file).includes('EXPO_PUBLIC_STARRY_ID_API_BASE_URL'));
- const script=parseCsp(all.get('content-security-policy-report-only')??all.get('content-security-policy')).get('script-src');
- if(configured)assert.ok(script.includes('https://accounts.google.com')&&script.includes('https://appleid.cdn-apple.com'),
-  'add the Google/Apple login origins to the CSP before enabling Starry ID');
- else assert.deepEqual(script,["'self'",...INLINE_SCRIPT_HASHES]);
+test('public/_headers is exactly the generated guest file; build:web regenerates dist/_headers for the build',()=>{
+ assert.equal(read('public/_headers'),headersFileFor(null));
+ assert.match(JSON.parse(read('package.json')).scripts['build:web'],/^expo export --platform web && node scripts\/write-web-headers\.mjs dist$/);
+ const env=read('src/auth/starryId/env.ts');
+ for(const origin of STARRY_ID_ORIGINS)assert.ok(env.includes("baseUrl:'"+origin+"'"),origin);
+ assert.equal(STARRY_ID_ORIGINS.length,2);
 });
 
-test('inline script scanner: only executable inline scripts count; Expo hydration flag hash is exact',()=>{
- const html='<script src="/_expo/a.js" defer></script><script type="application/json">{"x":1}</script>'
-  +'<script>globalThis.__EXPO_ROUTER_HYDRATE__=true;</script><script type="module">import "/b.js"</script>';
- assert.deepEqual(extractInlineScripts(html),['globalThis.__EXPO_ROUTER_HYDRATE__=true;','import "/b.js"']);
- assert.equal(cspScriptHash('globalThis.__EXPO_ROUTER_HYDRATE__=true;'),INLINE_SCRIPT_HASHES[0]);
- assert.equal(INLINE_SCRIPT_HASHES.length,1);
- const ci=read('.github/workflows/ci.yml');
- assert.ok(ci.indexOf('run: node scripts/check-inline-scripts.mjs dist')>ci.indexOf('run: npm run build:web'));
+test('sign-in build adds only Google/Apple login and Starry ID sources; anything else fails the build',()=>{
+ assert.equal(resolveStarryOrigin(undefined),null);
+ assert.equal(resolveStarryOrigin(''),null);
+ assert.equal(resolveStarryOrigin('https://id.starry.phd/'),'https://id.starry.phd');
+ for(const bad of ['https://evil.example','http://id.starry.phd','https://echo.starry.phd'])assert.throws(()=>resolveStarryOrigin(bad),/allow-listed/);
+ const d=cspDirectivesFor('https://id.starry.phd');
+ assert.deepEqual(d['script-src'],["'self'",...INLINE_SCRIPT_HASHES,'https://accounts.google.com/gsi/client','https://appleid.cdn-apple.com']);
+ assert.deepEqual(d['frame-src'],['https://accounts.google.com/gsi/']);
+ assert.deepEqual(d['connect-src'],["'self'",'https://accounts.google.com/gsi/','https://id.starry.phd']);
+ assert.deepEqual(d['img-src'],["'self'",'data:','blob:','https://id.starry.phd']);
+ assert.deepEqual(d['frame-ancestors'],["'none'"]);
+ assert.deepEqual(cspDirectivesFor(null),CSP_DIRECTIVES,'guest build unchanged');
+ const rules=headersFileRules(headersFileFor('https://id.starry.phd')).get('/*');
+ assert.deepEqual(validateSecurityHeaders(n=>rules.get(n)??null,'enforce','https://id.starry.phd'),{mode:'enforce',directives:14});
+ assert.throws(()=>validateSecurityHeaders(n=>rules.get(n)??null,'enforce',null),/script-src/,'guest validator rejects the login CSP');
+ const smoke=read('scripts/check-production-guest.mjs');
+ assert.match(smoke,/resolveStarryOrigin\(process\.env\.EXPO_PUBLIC_STARRY_ID_API_BASE_URL\)/);
 });

@@ -9,7 +9,7 @@ const pngSize=path=>{const b=readFileSync(new URL('../'+path,import.meta.url));
 
 test('privacy policy is served at /privacy and linked from the main menu',()=>{
  assert.equal(PRIVACY_POLICY_PATH,'/privacy');
- assert.match(read('app/privacy.tsx'),/PRIVACY_POLICY_SECTIONS\.map/);
+ assert.match(read('app/privacy.tsx'),/policy\.sections\.map/);
  assert.match(read('app/_layout.tsx'),/<Stack\.Screen name="privacy" \/>/);
  const header=read('src/ui/echo/LegacyHeader.tsx');
  assert.match(header,/accessibilityLabel="隱私權政策" onPress=\{\(\)=>go\('\/privacy'\)\}/);
