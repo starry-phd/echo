@@ -7,7 +7,7 @@ import {createEchoPublicClient} from '../packages/echo-api-sdk/src/index.ts';
 import {loadAuthorizedSavedPublicBatches} from '../src/ui/echo/authorizedSavedPublicBatches.ts';
 
 const worker=typeof workerModule.fetch==='function'?workerModule:workerModule.default;
-const base='https://echo-starry.starry-phd.workers.dev';
+const base='https://echo.starry.phd';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('verified-public batch lookup resolves favorites past 100 without revealing private or unverified IDs',async()=>{

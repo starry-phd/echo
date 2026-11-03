@@ -4,7 +4,7 @@ import workerModule from '../worker/index.ts';
 // Node 22 + tsx may interop with TypeScript modules as CJS depending on package type.
 const worker = typeof workerModule.fetch === 'function' ? workerModule : workerModule.default;
 
-const origin = 'https://echo-starry.starry-phd.workers.dev';
+const origin = 'https://echo.starry.phd';
 const headers = {'Origin': origin};
 
 function envWithDb(overrides = {}) {

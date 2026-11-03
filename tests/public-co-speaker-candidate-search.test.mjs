@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 import workerModule from '../worker/index.ts';
 import {authorizedSpeakerProfileTracks} from '../src/ui/echo/authorizedSpeakerProfile.ts';
 const worker=typeof workerModule.fetch==='function'?workerModule:workerModule.default;
-const origin='https://echo-starry.starry-phd.workers.dev';
+const origin='https://echo.starry.phd';
 
 test('public speaker page searches only verified public candidates and exact normalized co-speaker names',()=>{
  const page=readFileSync(new URL('../app/speaker/[name].tsx',import.meta.url),'utf8');

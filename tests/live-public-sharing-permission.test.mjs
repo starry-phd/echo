@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {approvedPublicTrackShareMessage} from '../src/ui/echo/publicTrackSharing.ts';
 import {buildApprovedPublicInfoCard} from '../src/ui/echo/publicInfoCardExport.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const origin='https://echo-starry.starry-phd.workers.dev';
+const origin='https://echo.starry.phd';
 const publicTrack={id:'published-1',playable:true,title:'合法公開演講',speaker:'公開講者',
  categories:['新人'],durationSeconds:600};
 test('guest preview remains nonshareable and nonexportable even if playable flag is inconsistent',()=>{

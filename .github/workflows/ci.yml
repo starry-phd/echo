@@ -35,13 +35,13 @@ jobs:
       # Each native bundle embeds the approved public workers.dev URL; Web keeps its own origin.
       - name: Verify iOS Hermes bundle export (no signing)
         env:
-          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo.starry.phd
         run: |
           npx expo export --platform ios --output-dir /tmp/echo-native-ios
           test -n "$(find /tmp/echo-native-ios -type f -print -quit)"
       - name: Verify Android Hermes bundle export (no signing)
         env:
-          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo-starry.starry-phd.workers.dev
+          EXPO_PUBLIC_ECHO_API_BASE_URL: https://echo.starry.phd
         run: |
           npx expo export --platform android --output-dir /tmp/echo-native-android
           test -n "$(find /tmp/echo-native-android -type f -print -quit)"

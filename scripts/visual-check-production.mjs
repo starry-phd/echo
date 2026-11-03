@@ -7,7 +7,7 @@
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
 
-const PRODUCTION='https://echo-starry.starry-phd.workers.dev';
+const PRODUCTION='https://echo.starry.phd';
 const base=(process.env.ECHO_VISUAL_BASE||PRODUCTION).replace(/\/$/,'');
 if(base!==PRODUCTION&&!/^http:\/\/127\.0\.0\.1:\d{2,5}$/.test(base))throw Error('Unexpected visual-check origin');
 const outDir=process.env.ECHO_VISUAL_OUT||'shots';

@@ -22,7 +22,7 @@ test('visual check runs only after a successful main Production deploy, read-onl
 });
 
 test('screenshot script: pinned production origin, GET page loads only, no stored member data',()=>{
- assert.match(script,/const PRODUCTION='https:\/\/echo-starry\.starry-phd\.workers\.dev';/);
+ assert.match(script,/const PRODUCTION='https:\/\/echo\.starry\.phd';/);
  assert.match(script,/throw Error\('Unexpected visual-check origin'\)/);
  assert.doesNotMatch(script,/method:\s*['"](POST|PUT|PATCH|DELETE)/i);
  assert.doesNotMatch(script,/\/stream|STARRY_ID|refresh|token/i);

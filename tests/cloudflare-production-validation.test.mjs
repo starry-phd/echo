@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {ECHO_ACCOUNT_ID,ECHO_WORKER,LEGACY_HOSTNAME,LEGACY_SERVICE,classifyLegacyDomain,
+import {ECHO_ACCOUNT_ID,ECHO_WORKER,CUSTOM_HOSTNAME,FORMER_SERVICE,classifyCustomDomain,
  latestDeployment,parseUploadedVersionId,validateLiveDeployment} from '../scripts/cloudflare-production-validation.mjs';
 
 const V1='4b874d81-d9ae-4a1f-b979-c4d49c5158bc';
@@ -12,15 +12,15 @@ const dep=(id,created,versions)=>({id,created_on:created,source:'wrangler',strat
  author_email:'someone@example.com',versions});
 const ok=result=>({success:true,errors:[],result});
 
-test('fixed production identity: Starry account, echo-starry Worker, legacy bridge domain',()=>{
+test('fixed production identity: Starry account, echo-starry Worker, custom domain',()=>{
  assert.equal(ECHO_ACCOUNT_ID,'9ff1b4c261141730ac2fe0683f730062');
  assert.equal(ECHO_WORKER,'echo-starry');
- assert.equal(LEGACY_HOSTNAME,'echo.starry.phd');
- assert.equal(LEGACY_SERVICE,'temp-starry-echo-bridge');
+ assert.equal(CUSTOM_HOSTNAME,'echo.starry.phd');
+ assert.equal(FORMER_SERVICE,'temp-starry-echo-bridge');
 });
 
 test('uploaded version is parsed once from the real wrangler 4 output format',()=>{
- const log='Uploaded echo-starry (5.08 sec)\nDeployed echo-starry triggers (0.31 sec)\n  https://echo-starry.starry-phd.workers.dev\nCurrent Version ID: '+V1+'\n';
+ const log='Uploaded echo-starry (5.08 sec)\nDeployed echo-starry triggers (0.31 sec)\n  https://echo.starry.phd\nCurrent Version ID: '+V1+'\n';
  assert.equal(parseUploadedVersionId(log),V1);
  assert.throws(()=>parseUploadedVersionId('no upload happened'),/found 0/);
  assert.throws(()=>parseUploadedVersionId(log+log),/found 2/);
@@ -49,18 +49,18 @@ test('stale, split, mismatched or failed Cloudflare responses fail closed',()=>{
  assert.throws(()=>latestDeployment(500,{success:false}),/deployment list failed/);
 });
 
-test('legacy domain: verified only when still on the bridge; moved to echo-starry or elsewhere fails',()=>{
+test('custom domain: verified only when bound to echo-starry; the former bridge or anything else fails',()=>{
  const domain=service=>ok([{id:'x',hostname:'echo.starry.phd',service,environment:'production',zone_name:'starry.phd'}]);
- assert.deepEqual(classifyLegacyDomain(200,domain('temp-starry-echo-bridge')),{state:'verified',service:'temp-starry-echo-bridge'});
- assert.throws(()=>classifyLegacyDomain(200,domain('echo-starry')),/without an approved cutover/);
- assert.throws(()=>classifyLegacyDomain(200,domain('something-else')),/unexpected service/);
- assert.throws(()=>classifyLegacyDomain(500,{success:false}),/custom domain lookup failed/);
+ assert.deepEqual(classifyCustomDomain(200,domain('echo-starry')),{state:'verified',service:'echo-starry'});
+ assert.throws(()=>classifyCustomDomain(200,domain('temp-starry-echo-bridge')),/expected echo-starry/);
+ assert.throws(()=>classifyCustomDomain(200,domain('something-else')),/expected echo-starry/);
+ assert.throws(()=>classifyCustomDomain(500,{success:false}),/custom domain lookup failed/);
 });
 
 test('missing domain scope or a domain outside this account is reported as UNVERIFIED, never as passed',()=>{
- assert.equal(classifyLegacyDomain(403,{success:false}).state,'unverified');
- assert.equal(classifyLegacyDomain(401,null).state,'unverified');
- const empty=classifyLegacyDomain(200,ok([]));
+ assert.equal(classifyCustomDomain(403,{success:false}).state,'unverified');
+ assert.equal(classifyCustomDomain(401,null).state,'unverified');
+ const empty=classifyCustomDomain(200,ok([]));
  assert.equal(empty.state,'unverified');
  assert.match(empty.reason,/not a Workers custom domain visible/);
 });
