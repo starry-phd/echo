@@ -12,6 +12,7 @@ import {completeSignIn,loadMemberState} from './memberSession';
 import {createStarryIdSession} from './session';
 import type {StarryIdSession} from './session';
 import {createMemoryRefreshTokenStore,createSessionStorageRefreshTokenStore} from './storage';
+import {nativeRefreshTokenStore} from './nativeSignIn';
 import type {RefreshTokenStore} from './storage';
 
 /**
@@ -44,8 +45,8 @@ const disabled:StarryIdContextValue={
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
 function refreshTokenStore():RefreshTokenStore{
- // Native secure storage (expo-secure-store) arrives with native sign-in; until then memory only.
- if(Platform.OS!=='web')return createMemoryRefreshTokenStore();
+ // Native: iOS Keychain / Android Keystore via expo-secure-store (nativeSignIn.native.tsx).
+ if(Platform.OS!=='web')return nativeRefreshTokenStore()??createMemoryRefreshTokenStore();
  let storage:Storage|null=null;
  try{storage=typeof window!=='undefined'?window.sessionStorage:null;}catch{storage=null;}
  return createSessionStorageRefreshTokenStore(storage);
