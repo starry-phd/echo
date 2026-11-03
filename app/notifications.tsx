@@ -28,11 +28,11 @@ export default function NotificationsScreen(){
      onPress={()=>setTab(item.id)}
      style={[styles.tab,{borderColor:tab===item.id?t.palette.primary:t.border,
       backgroundColor:tab===item.id?t.card:t.lightPill}]}>
-     <Text style={[styles.tabLabel,{color:tab===item.id?t.palette.primary:t.ink,fontSize:fontSize(14)}]}>{item.label}</Text>
+     <Text style={[styles.tabLabel,{color:tab===item.id?t.accentText:t.ink,fontSize:fontSize(14)}]}>{item.label}</Text>
     </Pressable>)}
    </View>
    <View accessibilityRole="summary" style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
-    <Text style={[styles.cardTitle,{color:t.palette.primary,fontSize:fontSize(18)}]}>
+    <Text style={[styles.cardTitle,{color:t.accentText,fontSize:fontSize(18)}]}>
      {tabs.find(item=>item.id===tab)?.label}
     </Text>
     <Text style={[styles.copy,{color:t.ink,fontSize:fontSize(14)}]}>{notificationGateCopy[tab]}</Text>

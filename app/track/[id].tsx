@@ -91,7 +91,7 @@ function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(tog
    accessibilityState={{disabled:!available||!status.isLoaded}}
    disabled={!available||!status.isLoaded} onPress={()=>seek(delta)}
    style={[styles.skip,{borderColor:t.border},(!available||!status.isLoaded)&&styles.disabled]}>
-   <Text style={[styles.skipText,{color:t.palette.primary}]}>{delta>0?'+':''}{delta}</Text>
+   <Text style={[styles.skipText,{color:t.accentText}]}>{delta>0?'+':''}{delta}</Text>
   </Pressable>;
  return <View style={[styles.player,{backgroundColor:t.card,borderColor:t.border}]}>
    <LegacyPlaybackTimeline currentTime={status.currentTime} duration={duration}
@@ -118,7 +118,7 @@ function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(tog
      disabled={!available||!status.isLoaded} onPress={()=>changeSpeed(rate)}
      style={[styles.speedButton,{borderColor:speed===rate?t.palette.primary:t.border,
       backgroundColor:speed===rate?t.lightPill:t.card},(!available||!status.isLoaded)&&styles.disabled]}>
-     <Text style={[styles.speedText,{color:speed===rate?t.palette.primary:t.muted}]}>{rate}×</Text>
+     <Text style={[styles.speedText,{color:speed===rate?t.accentText:t.muted}]}>{rate}×</Text>
     </Pressable>)}
    </View>
    {!available&&<Text style={[styles.status,{color:t.muted}]}>此音檔尚無已驗證公開播放權；操作不可用。</Text>}
@@ -149,7 +149,7 @@ export default function TrackDetails(){
    contentContainerStyle={styles.screen}>
    <View style={styles.shell} onLayout={sections.onShellLayout}>
     <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
-     <Text style={[styles.backText,{color:t.palette.primary}]}>‹ 返回音檔列表</Text>
+     <Text style={[styles.backText,{color:t.accentText}]}>‹ 返回音檔列表</Text>
     </Pressable>
     <View onLayout={sections.onCardLayout} style={[styles.mainCard,{backgroundColor:t.card,borderColor:t.border}]}>
      {!trackId?<Text style={[styles.notice,{color:t.muted}]}>無效的音檔連結。</Text>:
@@ -186,7 +186,7 @@ export default function TrackDetails(){
           accessibilityRole="link" accessibilityLabel={'瀏覽同分類已核准作品：'+selected}
           onPress={()=>router.push({pathname:'/',params:{category:selected}})}
           style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-          <Text style={[styles.tagText,{color:t.palette.primary,fontSize:fontSize(11)}]}>{selected} ›</Text>
+          <Text style={[styles.tagText,{color:t.accentText,fontSize:fontSize(11)}]}>{selected} ›</Text>
          </Pressable>:<View key={category+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
           <Text style={[styles.tagText,{color:t.muted,fontSize:fontSize(11)}]}>{category}</Text>
          </View>;
@@ -197,14 +197,14 @@ export default function TrackDetails(){
           {i>0&&<Text style={[styles.speakerSeparator,{color:t.muted}]}> & </Text>}
           <Pressable accessibilityRole="link" accessibilityLabel={'查看'+name+'的演講者資料'}
            onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})} style={styles.speakerLink}>
-           <Text style={[styles.speakerName,{color:t.palette.primary,fontSize:fontSize(14)}]}>{name} ›</Text>
+           <Text style={[styles.speakerName,{color:t.accentText,fontSize:fontSize(14)}]}>{name} ›</Text>
           </Pressable>
          </View>):<Text style={[styles.speakerName,{color:t.muted,fontSize:fontSize(14)}]}>講師資料待補</Text>}
          {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
           accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
           onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
           style={styles.rankLink}>
-          <Text style={[styles.speakerRank,{color:t.palette.primary,fontSize:fontSize(13)}]}>· {track.speakerRank} ›</Text>
+          <Text style={[styles.speakerRank,{color:t.accentText,fontSize:fontSize(13)}]}>· {track.speakerRank} ›</Text>
          </Pressable>:<Text style={[styles.speakerRank,{color:t.muted,fontSize:fontSize(13)}]}>· {track.speakerRank}</Text>)}
         </View>
         <Text style={[styles.speakerCaption,{color:t.muted,fontSize:fontSize(11)}]}>查看演講者資料</Text>

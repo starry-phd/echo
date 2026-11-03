@@ -2,6 +2,7 @@ import {createContext,useContext,useEffect,useMemo,useState,useSyncExternalStore
 import type {ReactNode} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createThemePreferenceStore} from './themePreferenceStore';
+import {MUTED_LIGHT,accessibleAccent} from './contrast';
 export type LegacyPalette={id:string;name:string;primary:string;primaryHover:string};
 const base:LegacyPalette[]=[
  ['rose','經典玫瑰','#c13f6f','#a8325e'],
@@ -33,6 +34,8 @@ export const legacyPalettes:readonly LegacyPalette[]=base;
 type ThemeState={
   palette:LegacyPalette;dark:boolean;
   bg:string;card:string;ink:string;muted:string;border:string;lightPill:string;
+  /** Primary-derived TEXT colour that meets WCAG AA on every themed surface; `palette.primary` stays the fill colour. */
+  accentText:string;
   setPalette:(id:string)=>void;cyclePalette:()=>void;toggleDark:()=>void;
 };
 const defaultPalette=base[0];
@@ -48,9 +51,10 @@ export function LegacyThemeProvider({children}:{children:ReactNode}){
      bg:dark?'#0d0f17':'#fdf8f9',
      card:dark?'#181c28':'#fff',
      ink:dark?'#f8fafc':'#0f172a',
-     muted:dark?'#94a3b8':'#64748b',
+     muted:dark?'#94a3b8':MUTED_LIGHT,
      border:dark?'#23293b':`${current.primary}28`,
-     lightPill:dark?'#1a1e2b':`${current.primary}1a`
+     lightPill:dark?'#1a1e2b':`${current.primary}1a`,
+     accentText:accessibleAccent(current.primary,dark)
    };
  },[id,dark,store]);
  return <LegacyContext.Provider value={value}>{children}</LegacyContext.Provider>;

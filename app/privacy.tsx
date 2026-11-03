@@ -14,7 +14,7 @@ export default function PrivacyScreen(){
    <Text style={[styles.meta,{color:t.muted,fontSize:fontSize(13)}]}>{PRIVACY_APP_NAME}｜最後更新：{PRIVACY_POLICY_UPDATED}</Text>
    <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
     {PRIVACY_POLICY_SECTIONS.map(section=><View key={section.heading} style={styles.section}>
-     <Text accessibilityRole="header" style={[styles.heading,{color:t.palette.primary,fontSize:fontSize(17)}]}>{section.heading}</Text>
+     <Text accessibilityRole="header" style={[styles.heading,{color:t.accentText,fontSize:fontSize(17)}]}>{section.heading}</Text>
      {section.paragraphs.map((paragraph,index)=><Text key={index} selectable
       style={[styles.copy,{color:t.ink,fontSize:fontSize(14)}]}>{paragraph}</Text>)}
     </View>)}

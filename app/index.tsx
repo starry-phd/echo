@@ -35,6 +35,7 @@ import {useHomeResetSignal} from '../src/ui/echo/HomeResetSignal';
 import {LegacyBackToTop} from '../src/ui/echo/LegacyBackToTop';
 import {LegacyGuestTutorial} from '../src/ui/echo/LegacyGuestTutorial';
 import {LegacyPublicReleaseHistory} from '../src/ui/echo/LegacyPublicReleaseHistory';
+import {accessibleAccent} from '../src/ui/echo/contrast';
 
 /**
  * Home preserves the original rose logo, lucky button + search and cards.
@@ -349,7 +350,7 @@ export default function CatalogScreen(){
          onPressOut={()=>searchSuggestionBlurGuard.pressEnd()}
          onPress={()=>selectSuggestedCategory(label)}
          style={[styles.suggestionChip,{backgroundColor:theme.lightPill,borderColor:theme.border}]}>
-         <Text style={[styles.suggestionChipText,{color:theme.palette.primary}]}>#{label}</Text>
+         <Text style={[styles.suggestionChipText,{color:theme.accentText}]}>#{label}</Text>
         </Pressable>)}
        </View>
       </View>}
@@ -357,7 +358,7 @@ export default function CatalogScreen(){
        accessibilityState={{expanded:advanced}}
        onPress={()=>{searchSuggestionBlurGuard.dismiss();setAdvanced(value=>!value);}}
        style={styles.advancedHint}>
-       <Text style={[styles.advancedHintText,{color:'#b47a08'}]}>
+       <Text style={[styles.advancedHintText,{color:accessibleAccent('#b47a08',theme.dark)}]}>
          按此 {advanced?'▲收起':'▼展開'} 進階篩選{speakerRank?'（已套用）':''}
        </Text>
      </Pressable>
@@ -369,11 +370,11 @@ export default function CatalogScreen(){
      <View style={[styles.teaser,{borderColor:theme.palette.primary,
        backgroundColor:theme.dark?'#292030':'#fbeaf0'}]}>
        <Text style={[styles.teaserText,{color:theme.ink,fontSize:fontSize(14)}]}>
-         訪客目前已載入 <Text style={[styles.teaserCount,{color:theme.palette.primary,fontSize:fontSize(19)}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡{tracksQuery.hasNextPage?'（仍有更多公開作品）':''}；其中可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
+         訪客目前已載入 <Text style={[styles.teaserCount,{color:theme.accentText,fontSize:fontSize(19)}]}>{currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.length:'—'}</Text> 張音檔資訊卡{tracksQuery.hasNextPage?'（仍有更多公開作品）':''}；其中可播放 {currentDisplay==='ready'||currentDisplay==='empty'?visibleTracks.filter(t=>t.playable).length:'—'} 部
        </Text>
        <Pressable accessibilityRole="button" onPress={()=>router.push('/profile')}
          style={styles.teaserButton}>
-         <Text style={[styles.teaserLink,{color:theme.palette.primary}]}>查看會員整合進度 →</Text>
+         <Text style={[styles.teaserLink,{color:theme.accentText}]}>查看會員整合進度 →</Text>
        </Pressable>
        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
          資訊卡不代表播放授權；私人音檔與會員功能仍受保護。
@@ -391,35 +392,35 @@ export default function CatalogScreen(){
      </View>
      {(query.trim()||category||speakerRank)&&<Pressable accessibilityRole="button" accessibilityLabel="清除全部篩選"
       onPress={clearAllHomeFilters} style={styles.restore}>
-      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>清除全部篩選</Text>
+      <Text style={[styles.restoreText,{color:theme.accentText}]}>清除全部篩選</Text>
      </Pressable>}
      {storageError&&<Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>部分本機偏好無法讀取或儲存，相關變更可能僅在目前使用期間保留。</Text>}
      {dislikedIds.length>0&&<Pressable
        accessibilityRole="button" accessibilityLabel="還原本裝置隱藏的音檔卡"
        disabled={!ready} onPress={restoreDisliked} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
-        <Text style={[styles.restoreText,{color:theme.palette.primary}]}>
+        <Text style={[styles.restoreText,{color:theme.accentText}]}>
          還原隱藏（本裝置 {dislikedIds.length} 張）
         </Text>
        </Pressable>}
      {dislikedIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="逐張管理本裝置隱藏的音檔卡"
       onPress={()=>router.push('/favorites')} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
-      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>管理不喜歡的音檔卡（可個別還原）</Text>
+      <Text style={[styles.restoreText,{color:theme.accentText}]}>管理不喜歡的音檔卡（可個別還原）</Text>
      </Pressable>}
      {hiddenSpeakers.length>0&&<Pressable accessibilityRole="button"
       accessibilityLabel="管理本裝置不喜歡的演講者"
       onPress={()=>router.push('/favorites')} style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
-      <Text style={[styles.restoreText,{color:theme.palette.primary}]}>管理隱藏的演講者（{hiddenSpeakers.length} 項）</Text>
+      <Text style={[styles.restoreText,{color:theme.accentText}]}>管理隱藏的演講者（{hiddenSpeakers.length} 項）</Text>
      </Pressable>}
      {notice.length>0&&<View style={[styles.notice,{borderColor:theme.palette.primary,borderWidth:1,
        backgroundColor:theme.card}]}>
        <Text style={[styles.noticeText,{color:theme.ink,fontSize:fontSize(13)}]}>{notice}</Text>
        <Pressable accessibilityRole="button" accessibilityLabel="關閉提醒"
-         onPress={()=>setNotice('')}><Text style={{color:theme.palette.primary,fontWeight:'900'}}>✕</Text></Pressable>
+         onPress={()=>setNotice('')}><Text style={{color:theme.accentText,fontWeight:'900'}}>✕</Text></Pressable>
      </View>}
      {luckyPhase==='spin'&&<View accessibilityRole="summary" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
        <ActivityIndicator color={theme.palette.primary}/>
-       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary,fontSize:fontSize(16)}]}>
+       <Text style={[styles.luckyResultTitle,{color:theme.accentText,fontSize:fontSize(16)}]}>
          正在從符合條件的訪客資訊卡中抽選…
        </Text>
        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
@@ -432,7 +433,7 @@ export default function CatalogScreen(){
      </View>}
       {!!luckyPreview&&luckyPhase==='win'&&currentDisplay==='ready'&&<View accessibilityRole="summary" accessibilityLiveRegion="polite" style={[styles.luckyResult,{
        backgroundColor:theme.card,borderColor:theme.palette.primary}]}>
-       <Text style={[styles.luckyResultTitle,{color:theme.palette.primary,fontSize:fontSize(16)}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
+       <Text style={[styles.luckyResultTitle,{color:theme.accentText,fontSize:fontSize(16)}]}>✨ 好手氣！本次抽中訪客資訊卡</Text>
        <Text style={[styles.luckyResultName,{color:theme.ink,fontSize:fontSize(17)}]} numberOfLines={2}>{luckyPreview.title}</Text>
        <Text style={[styles.luckyResultSpeaker,{color:theme.muted,fontSize:fontSize(13)}]} numberOfLines={1}>{luckyPreview.speaker}</Text>
        <Text style={[styles.teaserNote,{color:theme.muted,fontSize:fontSize(12)}]}>
@@ -456,7 +457,7 @@ export default function CatalogScreen(){
          部分音檔資訊暫時無法更新，畫面只顯示目前成功讀取的資料。
        </Text>
        <Pressable accessibilityRole="button" accessibilityLabel="重新讀取全部音檔資訊" onPress={retryCatalog}>
-         <Text style={{color:theme.palette.primary,fontWeight:'900'}}>重試</Text>
+         <Text style={{color:theme.accentText,fontWeight:'900'}}>重試</Text>
        </Pressable>
      </View>}
      {currentDisplay==='loading'?<View style={styles.loading}>
@@ -482,7 +483,7 @@ export default function CatalogScreen(){
          focusedId===track.id&&{borderWidth:2,borderColor:theme.palette.primary,
            borderRadius:23,padding:2}]}>
          {luckyPhase==='win'&&luckyPreview?.id===track.id&&
-          <Text style={[styles.luckyBadge,{color:theme.palette.primary}]}>✨ 好手氣！✨　僅資訊卡</Text>}
+          <Text style={[styles.luckyBadge,{color:theme.accentText}]}>✨ 好手氣！✨　僅資訊卡</Text>}
          <LegacyTrackCard track={track} tutorialTarget={index===0} onNotice={setNotice} onDislike={dislikeTrack}/>
        </View>)}
      </View>}
@@ -492,7 +493,7 @@ export default function CatalogScreen(){
        disabled={tracksQuery.isFetchingNextPage}
        onPress={()=>void tracksQuery.fetchNextPage()}
        style={[styles.restore,{borderColor:theme.border,backgroundColor:theme.card}]}>
-       <Text style={[styles.restoreText,{color:theme.palette.primary,fontSize:fontSize(14)}]}>
+       <Text style={[styles.restoreText,{color:theme.accentText,fontSize:fontSize(14)}]}>
         {tracksQuery.isFetchingNextPage?'載入中…':'載入更多公開音檔'}
        </Text>
      </Pressable>}

@@ -59,7 +59,7 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
    accessibilityState={{disabled:!message||busy}} disabled={!message||busy}
    onPress={()=>{void doShare();}}
    style={[styles.action,{borderColor:t.border,backgroundColor:t.card},(!message||busy)&&styles.disabled]}>
-   <Text style={[styles.label,{color:t.palette.primary,fontSize:fontSize(14)}]}>
+   <Text style={[styles.label,{color:t.accentText,fontSize:fontSize(14)}]}>
     {busy?'開啟分享中…':'↗ 分享錄音'}
    </Text>
   </Pressable>
@@ -67,7 +67,7 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
    accessibilityState={{disabled:!infoCard||exportBusy}} disabled={!infoCard||exportBusy}
    onPress={()=>{void doExport();}}
    style={[styles.action,{borderColor:t.palette.primary,backgroundColor:t.lightPill},(!infoCard||exportBusy)&&styles.disabled]}>
-   <Text style={[styles.label,{color:t.palette.primary,fontSize:fontSize(14)}]}>
+   <Text style={[styles.label,{color:t.accentText,fontSize:fontSize(14)}]}>
     {exportBusy?'產生圖卡中…':'▤ 匯出公開資訊圖卡 PNG'}
    </Text>
   </Pressable>
@@ -78,7 +78,7 @@ export function LegacyVerifiedTrackShare({track,routeId}:{
   {!message&&<Text style={[styles.hint,{color:t.muted,fontSize:fontSize(12)}]}>
    尚無已核准的公開音檔連結，不能分享私人音訊或訪客預覽卡。
   </Text>}
-  {!!error&&<Text accessibilityRole="alert" style={[styles.hint,{color:t.palette.primary,fontSize:fontSize(12)}]}>{error}</Text>}
+  {!!error&&<Text accessibilityRole="alert" style={[styles.hint,{color:t.accentText,fontSize:fontSize(12)}]}>{error}</Text>}
  </View>;
 }
 const styles=StyleSheet.create({

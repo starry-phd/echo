@@ -20,12 +20,12 @@ export default function ProfileScreen(){
   <View style={styles.shell}>
    <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
     <View style={[styles.avatar,{backgroundColor:t.lightPill}]}>
-     <Text style={[styles.avatarIcon,{color:t.palette.primary}]}>♙</Text>
+     <Text style={[styles.avatarIcon,{color:t.accentText}]}>♙</Text>
     </View>
     <Text style={[styles.title,{color:t.ink,fontSize:fontSize(22)}]}>繁星中央會員</Text>
     <Text style={[styles.body,{color:t.muted,fontSize:fontSize(14)}]}>會員基本資料由「繁星中央會員 API」統一管理，不另外儲存會員基本資料。</Text>
     {state==='not-configured'?<View style={[styles.statusBox,{backgroundColor:t.lightPill}]}>
-     <Text style={[styles.status,{color:t.palette.primary,fontSize:fontSize(14)}]}>API 尚未設定</Text>
+     <Text style={[styles.status,{color:t.accentText,fontSize:fontSize(14)}]}>API 尚未設定</Text>
     </View>:<StarryMemberPanel/>}
     <Text style={[styles.body,{color:t.muted,fontSize:fontSize(13)}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
     <Text style={[styles.warning,{fontSize:fontSize(13)}]}>登入、會員收藏同步及購買尚未開放。以下分頁只是原版介面入口，尚未讀取個人紀錄。</Text>
@@ -36,11 +36,11 @@ export default function ProfileScreen(){
      accessibilityState={{selected:tab===item.id}} onPress={()=>setTab(item.id)}
      style={[styles.tab,{borderColor:tab===item.id?t.palette.primary:t.border,
       backgroundColor:tab===item.id?t.card:t.lightPill}]}>
-     <Text style={[styles.tabLabel,{color:tab===item.id?t.palette.primary:t.ink,fontSize:fontSize(13)}]}>{item.label}</Text>
+     <Text style={[styles.tabLabel,{color:tab===item.id?t.accentText:t.ink,fontSize:fontSize(13)}]}>{item.label}</Text>
     </Pressable>)}
    </View>
    <View style={[styles.section,{backgroundColor:t.card,borderColor:t.border}]}>
-    <Text style={[styles.sectionTitle,{color:t.palette.primary,fontSize:fontSize(18)}]}>
+    <Text style={[styles.sectionTitle,{color:t.accentText,fontSize:fontSize(18)}]}>
      {legacyProfileTabs.find(item=>item.id===tab)?.label}
     </Text>
     <Text style={[styles.sectionText,{color:t.ink,fontSize:fontSize(14)}]}>{profileGateCopy[tab]}</Text>

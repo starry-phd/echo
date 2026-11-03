@@ -58,7 +58,7 @@ export function StarryMemberPanel(){
   <Text style={[styles.buttonLabel,{fontSize:fontSize(14),color:kind==='primary'?'#fff':kind==='danger'?'#b8324e':t.ink}]}>{label}</Text>
  </Pressable>;
  const link=(label:string,path:string)=>env&&<Text key={path} accessibilityRole="link" onPress={()=>{void Linking.openURL(env.baseUrl+path);}}
-  style={[styles.link,{color:t.palette.primary,fontSize:fontSize(14)}]}>{label}</Text>;
+  style={[styles.link,{color:t.accentText,fontSize:fontSize(14)}]}>{label}</Text>;
 
  let body;
  switch(state.kind){
@@ -91,7 +91,7 @@ export function StarryMemberPanel(){
      {member.avatarPath&&env
       ?<Image source={{uri:env.baseUrl+member.avatarPath}} accessibilityLabel={'頭像：'+member.displayName} style={styles.avatar}/>
       :<View style={[styles.avatar,styles.initial,{backgroundColor:t.lightPill}]}>
-        <Text style={{color:t.palette.primary,fontSize:fontSize(22),fontWeight:'900'}}>{Array.from(member.displayName)[0]}</Text></View>}
+        <Text style={{color:t.accentText,fontSize:fontSize(22),fontWeight:'900'}}>{Array.from(member.displayName)[0]}</Text></View>}
      <Text style={[styles.name,{color:t.ink,fontSize:fontSize(18)}]}>{member.displayName}</Text>
     </View>
     {text('已登入繁星會員。個人資料、頭像與登入方式請到繁星帳號中心管理。',true)}
@@ -114,7 +114,7 @@ export function StarryMemberPanel(){
   default:body=text('暫時無法連線到繁星會員服務，會員功能已暫停；其他頁面可正常瀏覽。',true);
  }
  return <View accessibilityLabel="繁星會員" style={[styles.panel,{borderColor:t.border}]}>
-  <Text style={[styles.title,{color:t.palette.primary,fontSize:fontSize(16)}]}>繁星會員（Starry ID）{env?.name==='staging'?'｜測試環境':''}</Text>
+  <Text style={[styles.title,{color:t.accentText,fontSize:fontSize(16)}]}>繁星會員（Starry ID）{env?.name==='staging'?'｜測試環境':''}</Text>
   {body}
   {error?<Text style={[styles.text,{color:'#b8324e',fontSize:fontSize(13)}]}>{error}</Text>:null}
  </View>;

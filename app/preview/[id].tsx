@@ -39,13 +39,13 @@ export default function GuestPreviewDetails(){
  return <View style={styles.screen}><ScrollView ref={sections.scrollRef} style={{flex:1,backgroundColor:t.bg}} contentContainerStyle={styles.page}>
   <View style={styles.shell} onLayout={sections.onShellLayout}>
    <Pressable accessibilityRole="button" onPress={()=>router.canGoBack()?router.back():router.replace('/')} style={styles.back}>
-    <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>‹ 返回音檔列表</Text>
+    <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>‹ 返回音檔列表</Text>
    </Pressable>
    <View onLayout={sections.onCardLayout} style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
     {!valid?<Text style={{color:t.muted}}>無效的音檔連結。</Text>:
      q.isPending?<ActivityIndicator color={t.palette.primary}/>:
      q.isError?<Pressable accessibilityRole="button" onPress={()=>void q.refetch()} style={styles.back}>
-      <Text style={{color:t.palette.primary}}>音檔資訊暫時無法載入，點此重試</Text>
+      <Text style={{color:t.accentText}}>音檔資訊暫時無法載入，點此重試</Text>
      </Pressable>:!track?<Text style={{color:t.muted}}>這張資訊卡目前未開放展示。</Text>:
      !preferences.ready?<ActivityIndicator color={t.palette.primary}/>:
      hidden?<View style={styles.hiddenNotice}>
@@ -54,11 +54,11 @@ export default function GuestPreviewDetails(){
        accessibilityLabel="還原此張音檔卡的本裝置隱藏"
        onPress={()=>preferences.restoreHiddenTrack(track.id)}
        style={[styles.hiddenAction,{borderColor:t.border}]}>
-       <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>還原此張卡片</Text>
+       <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>還原此張卡片</Text>
       </Pressable>}
       <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
        onPress={()=>router.push('/favorites')} style={[styles.hiddenAction,{borderColor:t.border}]}>
-       <Text style={[styles.backText,{color:t.palette.primary,fontSize:fontSize(14)}]}>前往我的收藏管理隱藏設定</Text>
+       <Text style={[styles.backText,{color:t.accentText,fontSize:fontSize(14)}]}>前往我的收藏管理隱藏設定</Text>
       </Pressable>
      </View>:<>
       <View style={styles.hero}>
@@ -72,7 +72,7 @@ export default function GuestPreviewDetails(){
          style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
          {selected==='新人'
           ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
-          :<Text style={{color:t.palette.primary,fontSize:fontSize(11)}}>{selected} ›</Text>}
+          :<Text style={{color:t.accentText,fontSize:fontSize(11)}}>{selected} ›</Text>}
         </Pressable>:<View key={category} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
          <Text style={{color:t.muted,fontSize:fontSize(11)}}>{category}</Text>
         </View>;
@@ -82,13 +82,13 @@ export default function GuestPreviewDetails(){
         {splitSpeakerNames(track.speaker).map(name=><Pressable key={name} accessibilityRole="link"
          accessibilityLabel={'查看'+name+'的演講者資料'}
          onPress={()=>router.push({pathname:'/speaker/[name]',params:{name}})} style={styles.speaker}>
-         <Text style={{color:t.palette.primary,fontSize:fontSize(14),fontWeight:'700'}}>{name} ›</Text>
+         <Text style={{color:t.accentText,fontSize:fontSize(14),fontWeight:'700'}}>{name} ›</Text>
         </Pressable>)}
         {!!track.speakerRank&&(approvedRankLink?<Pressable accessibilityRole="link"
          accessibilityLabel={'篩選所有'+approvedRankLink+'講師已核准作品'}
          onPress={()=>router.push({pathname:'/',params:{rank:approvedRankLink}})}
          style={styles.rankLink}>
-         <Text style={[styles.line,{color:t.palette.primary,fontSize:fontSize(14)}]}>· {track.speakerRank} ›</Text>
+         <Text style={[styles.line,{color:t.accentText,fontSize:fontSize(14)}]}>· {track.speakerRank} ›</Text>
         </Pressable>:<Text style={[styles.line,{color:t.muted,fontSize:fontSize(14)}]}>· {track.speakerRank}</Text>)}
        </View>
        <LegacyDetailEngagementSummary track={track} onViewEngagement={()=>sections.jumpTo('engagement')}/>

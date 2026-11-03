@@ -68,12 +68,14 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
       accessibilityHint={unavailable?'目前無可信授權資料，點擊會顯示說明':undefined}
       accessibilityState={{selected,expanded:field==='category'?categoryOpen:undefined}}
       onPress={()=>onField(field)}
-      style={[styles.button,{backgroundColor:t.palette.primary,borderColor:selected?'#fff':t.palette.primaryHover,
-       opacity:unavailable ? 0.72 : 1,paddingHorizontal:layout.phone?0:4}]}>
+      style={[styles.button,unavailable
+        ?{backgroundColor:t.lightPill,borderColor:t.accentText,borderStyle:'dashed'}
+        :{backgroundColor:t.palette.primary,borderColor:selected?'#fff':t.palette.primaryHover},
+       {paddingHorizontal:layout.phone?0:4}]}>
        <Text numberOfLines={1} adjustsFontSizeToFit
-         style={[styles.buttonText,{fontSize:layout.phone?10:12}]}>{label}</Text>
+         style={[styles.buttonText,{fontSize:layout.phone?10:12},unavailable&&{color:t.accentText}]}>{label}</Text>
        {selected&&field!=='category'&&
-         <View style={styles.direction}><Text style={[styles.arrow,{color:t.palette.primary}]}>
+         <View style={styles.direction}><Text style={[styles.arrow,{color:t.accentText}]}>
           {isAscendingOrder(order)?'↑':'↓'}
          </Text></View>}
        {field==='category'&&<Text style={styles.categoryArrow}>⌄</Text>}
@@ -82,7 +84,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
   </View>
   {Boolean(category)&&<Pressable accessibilityRole="button" accessibilityLabel={'目前分類：'+category+'；點擊清除'}
     onPress={()=>{onInteract?.();onCategory(null);}} style={[styles.selectedCategory,{borderColor:t.border,backgroundColor:t.lightPill}]}>
-     <Text numberOfLines={1} style={{color:t.palette.primary,fontSize:12,fontWeight:'800'}}>分類：{category}　✕</Text>
+     <Text numberOfLines={1} style={{color:t.accentText,fontSize:12,fontWeight:'800'}}>分類：{category}　✕</Text>
    </Pressable>}
   {categoryOpen&&placement&&<Modal visible transparent animationType="none"
    onRequestClose={dismissCategory}>

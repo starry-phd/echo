@@ -60,11 +60,11 @@ export default function LegacyRankings(){
      accessibilityLabel={item.label} onPress={()=>setTab(item.id)}
      style={[styles.tab,{backgroundColor:tab===item.id?t.card:t.lightPill,
       borderColor:tab===item.id?t.palette.primary:t.border,width:width<600?'48%':'19%'}]}>
-     <Text style={[styles.tabText,{color:tab===item.id?t.palette.primary:t.ink,fontSize:fontSize(11)}]}>{item.label}</Text>
+     <Text style={[styles.tabText,{color:tab===item.id?t.accentText:t.ink,fontSize:fontSize(11)}]}>{item.label}</Text>
     </Pressable>)}
    </View>
    {tab!=='hot-tracks'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
-    <Text style={[styles.gatedTitle,{color:t.palette.primary,fontSize:fontSize(17)}]}>{legacyRankingTabs.find(x=>x.id===tab)?.label}</Text>
+    <Text style={[styles.gatedTitle,{color:t.accentText,fontSize:fontSize(17)}]}>{legacyRankingTabs.find(x=>x.id===tab)?.label}</Text>
     <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>{gatedRankingCopy[tab]}</Text>
     <Text style={[styles.small,{color:t.muted,fontSize:fontSize(11)}]}>此頁目前為介面移植階段；沒有使用舊版會員資料或虛構名次。</Text>
    </View>:<>
@@ -77,21 +77,21 @@ export default function LegacyRankings(){
      </Pressable>)}
     </View>
     <Text style={[styles.note,{color:t.muted,fontSize:fontSize(12)}]}>以下只從目前已載入的 {visible.length} 張核准作品或訪客資訊卡排序{catalog.hasNextPage?'（尚有公開作品未載入，名次非全量）':''}。僅具有該項已公開歷史統計的作品會列入名次；沒有數字的作品不視為 0 分。評價／按讚／心得數字是舊版歷史唯讀紀錄，非即時會員排行或播放授權。</Text>
-    {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.palette.primary}]}>{notice}</Text>}
+    {Boolean(notice)&&<Text accessibilityLiveRegion="polite" style={[styles.notice,{color:t.accentText}]}>{notice}</Text>}
     {partial&&<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
      <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分公開作品資料暫時讀取失敗，排名可能不完整。</Text>
-     <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.palette.primary}}>重新讀取</Text></Pressable>
+     <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.accentText}}>重新讀取</Text></Pressable>
     </View>}
     {!preferences.ready||display==='loading'?<ActivityIndicator color={t.palette.primary} style={styles.loading}/>:
      display==='failed'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
       <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>部分合法作品無法讀取，現在不能判定排行榜是否有結果。</Text>
-      <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.palette.primary}}>重試載入</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={retry} style={styles.retry}><Text style={{color:t.accentText}}>重試載入</Text></Pressable>
      </View>:
      display==='empty'?<View style={[styles.gated,{backgroundColor:t.card,borderColor:t.border}]}>
        <Text style={[styles.gatedBody,{color:t.muted,fontSize:fontSize(13)}]}>{catalog.hasNextPage?'目前載入的作品沒有符合條件的結果，仍可載入更多核准公開作品。':'目前沒有符合公開條件的作品資料。'}</Text>
      </View>:
      ranked.map((track,index)=><View key={track.id} style={styles.trackRow}>
-      <Text style={[styles.rank,{color:t.palette.primary,fontSize:fontSize(14)}]} accessibilityLabel={'名次 '+(index+1)}>#{index+1}</Text>
+      <Text style={[styles.rank,{color:t.accentText,fontSize:fontSize(14)}]} accessibilityLabel={'名次 '+(index+1)}>#{index+1}</Text>
       <View style={styles.cardWrap}>
        <LegacyTrackCard track={track} onNotice={setNotice}
         onDislike={id=>{preferences.dislike(id);setNotice('已在本裝置隱藏這張卡，可到我的收藏還原。');}}/>
@@ -109,7 +109,7 @@ export default function LegacyRankings(){
      disabled={catalog.isFetchingNextPage}
      onPress={()=>void catalog.fetchNextPage()}
      style={[styles.more,{backgroundColor:t.card,borderColor:t.border}]}>
-      <Text style={[styles.moreText,{color:t.palette.primary,fontSize:fontSize(13)}]}>
+      <Text style={[styles.moreText,{color:t.accentText,fontSize:fontSize(13)}]}>
        {catalog.isFetchingNextPage?'載入中…':'載入更多公開作品以更新排名'}
       </Text>
     </Pressable>}

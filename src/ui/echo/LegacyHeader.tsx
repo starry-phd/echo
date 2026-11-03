@@ -79,7 +79,7 @@ export function LegacyHeader(){
    void queryClient.invalidateQueries({queryKey:['echo',name],refetchType:'active'});
   }
  };
- const activeColor=colors.palette.primary;
+ const activeColor=colors.accentText;
  const buttons:[string,()=>void][]=[
   ['首頁',()=>go('/')],['排行榜',()=>go('/stats')],['通知中心',()=>go('/notifications')],['我的收藏（本裝置）',()=>go('/favorites')],['個人資料／登入',()=>go('/profile')]
  ];

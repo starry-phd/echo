@@ -19,7 +19,7 @@ export function LegacyPublicReleaseHistory(){
    accessibilityHint="查看目前繁星回聲已推出的公開訪客功能節錄"
    onPress={()=>setOpen(true)} hitSlop={9}
    style={[styles.trigger,{backgroundColor:t.lightPill,borderColor:t.border}]}>
-   <Text style={[styles.triggerText,{color:t.palette.primary,fontSize:fontSize(12)}]}>!</Text>
+   <Text style={[styles.triggerText,{color:t.accentText,fontSize:fontSize(12)}]}>!</Text>
   </Pressable>
   <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
    <View style={styles.overlay} accessibilityViewIsModal onAccessibilityEscape={close}>
