@@ -48,6 +48,8 @@ jobs:
       - run: npm run build:web
       - name: Verify Web security headers file is shipped with the static assets
         run: cmp public/_headers dist/_headers
+      - name: Every inline script in the exported pages is allowed by an exact CSP hash
+        run: node scripts/check-inline-scripts.mjs dist
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
       - uses: actions/upload-artifact@v4

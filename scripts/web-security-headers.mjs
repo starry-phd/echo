@@ -1,9 +1,12 @@
 // Pure validation of the static Web shell security headers (public/_headers).
 // Switch to 'enforce' together with public/_headers once the visual check reports zero CSP violations.
 export const WEB_CSP_MODE='report-only';
+// Exact hashes of the inline <script> elements Expo's static export emits
+// (verified on every build by scripts/check-inline-scripts.mjs).
+export const INLINE_SCRIPT_HASHES=[];
 export const CSP_DIRECTIVES={
  'default-src':["'self'"],
- 'script-src':["'self'"],
+ 'script-src':["'self'",...INLINE_SCRIPT_HASHES],
  'style-src':["'self'","'unsafe-inline'"],
  'img-src':["'self'",'data:','blob:'],
  'font-src':["'self'",'data:'],
