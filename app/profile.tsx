@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {router} from 'expo-router';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {centralMemberApiState} from '../src/auth/centralMember';
+import {StarryMemberPanel} from '../src/ui/echo/StarryMemberPanel';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {legacyProfileTabs,profileGateCopy} from '../src/ui/echo/legacyProfileTabs';
@@ -23,11 +24,9 @@ export default function ProfileScreen(){
     </View>
     <Text style={[styles.title,{color:t.ink,fontSize:fontSize(22)}]}>繁星中央會員</Text>
     <Text style={[styles.body,{color:t.muted,fontSize:fontSize(14)}]}>會員基本資料由「繁星中央會員 API」統一管理，不另外儲存會員基本資料。</Text>
-    <View style={[styles.statusBox,{backgroundColor:t.lightPill}]}>
-     <Text style={[styles.status,{color:t.palette.primary,fontSize:fontSize(14)}]}>
-      {state==='not-configured'?'API 尚未設定':'會員 API 契約待驗證'}
-     </Text>
-    </View>
+    {state==='not-configured'?<View style={[styles.statusBox,{backgroundColor:t.lightPill}]}>
+     <Text style={[styles.status,{color:t.palette.primary,fontSize:fontSize(14)}]}>API 尚未設定</Text>
+    </View>:<StarryMemberPanel/>}
     <Text style={[styles.body,{color:t.muted,fontSize:fontSize(13)}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
     <Text style={[styles.warning,{fontSize:fontSize(13)}]}>登入、會員收藏同步及購買尚未開放。以下分頁只是原版介面入口，尚未讀取個人紀錄。</Text>
    </View>
