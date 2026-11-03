@@ -8,7 +8,7 @@ import {PRIVACY_APP_NAME,PRIVACY_POLICY_SECTIONS,PRIVACY_POLICY_UPDATED} from '.
 export default function PrivacyScreen(){
  const t=useLegacyTheme();
  const {fontSize}=useFontZoom();
- return <ScrollView style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.page}>
+ return <ScrollView focusable accessibilityLabel="隱私權政策全文" style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Text accessibilityRole="header" style={[styles.title,{color:t.ink,fontSize:fontSize(24)}]}>隱私權政策</Text>
    <Text style={[styles.meta,{color:t.muted,fontSize:fontSize(13)}]}>{PRIVACY_APP_NAME}｜最後更新：{PRIVACY_POLICY_UPDATED}</Text>

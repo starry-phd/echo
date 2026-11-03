@@ -42,6 +42,7 @@ export function LegacyPlaybackTimeline({currentTime,duration,enabled,color,track
    accessibilityLabel="播放進度，按住目前播放位置的圓點拖曳"
    accessibilityState={{disabled:!enabled}}
    accessibilityValue={{min:0,max:Math.ceil(safeDuration),now:Math.floor(shown)}}
+   aria-valuemin={0} aria-valuemax={Math.ceil(safeDuration)} aria-valuenow={Math.floor(shown)}
    accessibilityActions={[{name:'increment',label:'快進10秒'},{name:'decrement',label:'倒退10秒'}]}
    onAccessibilityAction={event=>{
     if(!enabled)return;
