@@ -24,14 +24,17 @@ export function webRelaySupported(origin:string|null|undefined):boolean{
  return origin===APP_WEB_ORIGIN;
 }
 
-export async function sha256Hex(text:string,subtle:{digest(alg:string,data:ArrayBuffer|Uint8Array):Promise<ArrayBuffer>}):Promise<string>{
+/** Structural subset of SubtleCrypto (window.crypto.subtle satisfies it). */
+export type Sha256Digest={digest(algorithm:string,data:Uint8Array<ArrayBuffer>):Promise<ArrayBuffer>};
+
+export async function sha256Hex(text:string,subtle:Sha256Digest):Promise<string>{
  const bytes=new Uint8Array(await subtle.digest('SHA-256',new TextEncoder().encode(text)));
  return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
 }
 
 /** Prepares the redirect; the caller navigates to the returned URL. */
 export async function prepareWebRelay(env:StarryIdEnvironment,provider:RelayProvider,rawNonce:string,deps:{
- storage:StorageLike;subtle:Parameters<typeof sha256Hex>[1];randomBytes:(n:number)=>Uint8Array;now:()=>number;
+ storage:StorageLike;subtle:Sha256Digest;randomBytes:(n:number)=>Uint8Array;now:()=>number;
 }):Promise<string>{
  const state=base64UrlEncode(deps.randomBytes(24));
  const pending:Pending={provider,nonce:rawNonce,state,startedAt:deps.now()};
