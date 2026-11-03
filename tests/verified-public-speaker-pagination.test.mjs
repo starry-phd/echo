@@ -5,7 +5,7 @@ import {DatabaseSync} from 'node:sqlite';
 import workerModule from '../worker/index.ts';
 import {createEchoPublicClient} from '../packages/echo-api-sdk/src/index.ts';
 const worker=typeof workerModule.fetch==='function'?workerModule:workerModule.default;
-const base='https://echo-starry.starry-phd.workers.dev';
+const base='https://echo.starry.phd';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('verified-public catalog uses stable and bound 100-row pages; private and near-names remain denied',async()=>{

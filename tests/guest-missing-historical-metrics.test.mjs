@@ -5,7 +5,7 @@ import workerModule from '../worker/index.ts';
 import {readHistoricalEngagement} from '../src/ui/echo/legacyEngagementSnapshot.ts';
 
 const worker=typeof workerModule.fetch==='function'?workerModule:workerModule.default;
-const origin='https://echo-starry.starry-phd.workers.dev';
+const origin='https://echo.starry.phd';
 const base={
  id:'approved-guest',title:'核准訪客資訊卡',speaker:'已核准講者',
  description:'PRIVATE_DESCRIPTION_SHOULD_NOT_LEAK',duration_seconds:90,

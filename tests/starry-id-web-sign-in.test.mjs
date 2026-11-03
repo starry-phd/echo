@@ -38,9 +38,9 @@ function memoryStorage(){const m=new Map();return {m,getItem:k=>m.get(k)??null,s
 const subtle={digest:async(_alg,data)=>createHash('sha256').update(Buffer.from(data)).digest().buffer};
 
 test('web relay: only the registered origin, only the nonce hash in the redirect, result after # and single use',async()=>{
- assert.equal(WEB_RELAY_RETURN_URL,'https://echo-starry.starry-phd.workers.dev/auth/done');
- assert.equal(webRelaySupported('https://echo-starry.starry-phd.workers.dev'),true);
- for(const o of ['http://localhost:8081','https://echo.starry.phd',null])assert.equal(webRelaySupported(o),false);
+ assert.equal(WEB_RELAY_RETURN_URL,'https://echo.starry.phd/auth/done');
+ assert.equal(webRelaySupported('https://echo.starry.phd'),true);
+ for(const o of ['http://localhost:8081','https://echo-starry.starry-phd.workers.dev',null])assert.equal(webRelaySupported(o),false);
  const raw=fixture('auth-nonce.200.json').nonce;
  assert.equal(await sha256Hex(raw,subtle),createHash('sha256').update(raw).digest('hex'));
  const storage=memoryStorage();let now=1_000_000;
@@ -48,7 +48,7 @@ test('web relay: only the registered origin, only the nonce hash in the redirect
  const hash=createHash('sha256').update(raw).digest('hex');
  const pending=JSON.parse(storage.m.get(WEB_RELAY_PENDING_KEY));
  assert.equal(url,'https://id.starry.phd/auth/google/start?app_id=echo&nonce='+hash
-  +'&return=https%3A%2F%2Fecho-starry.starry-phd.workers.dev%2Fauth%2Fdone&state='+pending.state);
+  +'&return=https%3A%2F%2Fecho.starry.phd%2Fauth%2Fdone&state='+pending.state);
  assert.ok(!url.includes(raw),'raw nonce never leaves the browser');
  assert.match(pending.state,/^[A-Za-z0-9_-]{32}$/);
  now+=60_000;

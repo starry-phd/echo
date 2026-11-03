@@ -5,9 +5,9 @@
 
 ## 流程
 1. 會員頁按「使用 Google／Apple 帳號登入」→ `POST /v1/auth/nonce`。
-2. `webRelay.prepareWebRelay`：原值 nonce 與 24 bytes 隨機 state 存 `sessionStorage`（單次、10 分鐘），以 WebCrypto 算 SHA-256；整頁前往 `https://<Starry ID>/auth/{google|apple}/start?app_id=echo&nonce=<雜湊>&return=https://echo-starry.starry-phd.workers.dev/auth/done&state=<state>`。
+2. `webRelay.prepareWebRelay`：原值 nonce 與 24 bytes 隨機 state 存 `sessionStorage`（單次、10 分鐘），以 WebCrypto 算 SHA-256；整頁前往 `https://<Starry ID>/auth/{google|apple}/start?app_id=echo&nonce=<雜湊>&return=https://echo.starry.phd/auth/done&state=<state>`。
 3. 回到 `/auth/done#id_token=…&state=…`（Apple 另有 `code`）。`app/auth/done.tsx` **先用 `history.replaceState` 清掉 `#`**，再取出並刪除暫存、核對 state 與時效，呼叫 `POST /v1/auth/{provider}`（原值 nonce；Apple 帶 `authorization_code` 與 `redirect_uri=<Starry ID>/auth/apple/callback`），完成後回會員頁。
-4. 只有 `https://echo-starry.starry-phd.workers.dev`（Starry ID `web_origins`）顯示登入按鈕；本機預覽顯示「此網址不支援」。
+4. 只有 `https://echo.starry.phd`（Starry ID `web_origins`，2026-11-04 起取代 workers.dev）顯示登入按鈕；本機預覽顯示「此網址不支援」。
 
 ## 程式
 - `src/auth/starryId/starryRelay.ts`：Google／Apple 通用中繼（深層連結用 `?`、網頁用 `#`）；`appleRelay.ts` 改為包裝（Android Apple 不變）。

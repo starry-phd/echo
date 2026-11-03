@@ -7,18 +7,18 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('curated guest information cards cannot obtain a public share page',()=>{
  const track={id:'guest-1',title:'原版核准資訊卡',speaker:'訪客講師',playable:false};
  assert.equal(approvedPublicTrackShareMessage(track,track.id,
-  'https://echo-starry.starry-phd.workers.dev'),null);
+  'https://echo.starry.phd'),null);
  assert.equal(approvedPublicTrackShareMessage({...track,playable:true,legacySnapshot:true},track.id,
-  'https://echo-starry.starry-phd.workers.dev'),null);
+  'https://echo.starry.phd'),null);
  assert.equal(approvedPublicTrackShareMessage({...track,playable:true},'different-id',
-  'https://echo-starry.starry-phd.workers.dev'),null);
+  'https://echo.starry.phd'),null);
 });
 
 test('share helper only emits a verified-public information page, never a stream URL',()=>{
  const approved={id:'public-1',title:'核准公開錄音',speaker:'公開講師',playable:true};
  const message=approvedPublicTrackShareMessage(approved,approved.id,
-  'https://echo-starry.starry-phd.workers.dev');
- assert.ok(message?.includes('https://echo-starry.starry-phd.workers.dev/track/public-1'));
+  'https://echo.starry.phd');
+ assert.ok(message?.includes('https://echo.starry.phd/track/public-1'));
  assert.doesNotMatch(message??'',/\/stream|\/api\/v1\/tracks\//);
 });
 

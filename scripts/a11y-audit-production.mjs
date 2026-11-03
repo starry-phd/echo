@@ -7,7 +7,7 @@ import {createRequire} from 'node:module';
 import {chromium} from 'playwright';
 import {IMPACTS,failsThreshold,summarizeViolations} from './a11y-summary.mjs';
 
-const PRODUCTION='https://echo-starry.starry-phd.workers.dev';
+const PRODUCTION='https://echo.starry.phd';
 const base=(process.env.ECHO_VISUAL_BASE||PRODUCTION).replace(/\/$/,'');
 if(base!==PRODUCTION&&!/^http:\/\/127\.0\.0\.1:\d{2,5}$/.test(base))throw Error('Unexpected a11y-audit origin');
 const axePath=process.env.ECHO_AXE_PATH||createRequire(import.meta.url).resolve('axe-core/axe.min.js');

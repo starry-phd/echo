@@ -11,7 +11,7 @@
 - 啟動畫面：需新增 `expo-splash-screen` 相依套件，留待下一批（本批不加新套件）。
 
 ## 隱私權政策
-- 網址：**https://echo-starry.starry-phd.workers.dev/privacy**（Expo Router 靜態輸出 `app/privacy.tsx`；主選單底部也有連結）。正式網域決定後網址需同步更新商店後台。
+- 網址：**https://echo.starry.phd/privacy**（Expo Router 靜態輸出 `app/privacy.tsx`；主選單底部也有連結）。2026-11-04 起正式網域為 echo.starry.phd（docs/144）。
 - 內容依 2026-11-02 實際資料行為撰寫（`src/legal/privacyPolicy.ts`）：不需登入、不收集可識別個資；偏好、隨機訪客暱稱、收藏／隱藏清單只存在裝置；伺服器只讀取公開資料，Cloudflare 短暫處理 IP 等技術資料；無廣告、無分析、無追蹤、不出售；未滿 13 歲；個資法權利；未來功能上線前更新；聯絡 starry.phd@gmail.com；附英文摘要。
 - `tests/privacy-policy-and-store-icons.test.mjs` 會在程式行為改變時失敗（加入分析／廣告／付費 SDK、Worker 開始寫入或記錄、新增定位權限等），提醒先更新政策。
 - Production smoke（`scripts/check-production-guest.mjs`）新增：`/privacy` 必須 200 text/html 且含政策標題、聯絡信箱、更新日期。

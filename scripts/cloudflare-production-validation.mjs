@@ -4,8 +4,9 @@
  */
 export const ECHO_ACCOUNT_ID='9ff1b4c261141730ac2fe0683f730062';
 export const ECHO_WORKER='echo-starry';
-export const LEGACY_HOSTNAME='echo.starry.phd';
-export const LEGACY_SERVICE='temp-starry-echo-bridge';
+export const CUSTOM_HOSTNAME='echo.starry.phd';
+/** Owner-approved cutover 2026-11-04: the former bridge Worker no longer serves this hostname. */
+export const FORMER_SERVICE='temp-starry-echo-bridge';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** Wrangler 4 prints exactly one `Current Version ID: <uuid>` after upload. */
@@ -52,18 +53,15 @@ export function validateLiveDeployment(latest,exactStatus,exactPayload,uploadedV
  return {deploymentId:exact.id,versionId:exactVersion,percentage:100,createdOn:String(exact.created_on)};
 }
 
-/** echo.starry.phd must never move to echo-starry and must stay on the legacy
- * bridge. A token without domain-read scope or a hostname managed outside this
- * account is reported as UNVERIFIED (never as passed). */
-export function classifyLegacyDomain(status,payload){
+/** echo.starry.phd (owner-approved cutover 2026-11-04) must be a custom domain of echo-starry. */
+export function classifyCustomDomain(status,payload){
  if(status===401||status===403)return {state:'unverified',reason:'token cannot read Workers custom domains (HTTP '+status+')'};
  const result=apiResult(status,payload,'custom domain lookup');
  if(!Array.isArray(result))throw Error('custom domain lookup returned no list');
- const matches=result.filter(d=>String(d?.hostname).toLowerCase()===LEGACY_HOSTNAME);
- if(!matches.length)return {state:'unverified',reason:LEGACY_HOSTNAME+' is not a Workers custom domain visible to this account'};
+ const matches=result.filter(d=>String(d?.hostname).toLowerCase()===CUSTOM_HOSTNAME);
+ if(!matches.length)return {state:'unverified',reason:CUSTOM_HOSTNAME+' is not a Workers custom domain visible to this account'};
  for(const d of matches){
-  if(d.service===ECHO_WORKER)throw Error(LEGACY_HOSTNAME+' is bound to '+ECHO_WORKER+' without an approved cutover');
-  if(d.service!==LEGACY_SERVICE)throw Error(LEGACY_HOSTNAME+' moved to unexpected service '+String(d.service));
+  if(d.service!==ECHO_WORKER)throw Error(CUSTOM_HOSTNAME+' is bound to '+String(d.service)+', expected '+ECHO_WORKER);
  }
- return {state:'verified',service:LEGACY_SERVICE};
+ return {state:'verified',service:ECHO_WORKER};
 }

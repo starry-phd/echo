@@ -6,7 +6,7 @@ const script=read('scripts/a11y-audit-production.mjs');
 const workflow=read('.github/workflows/visual-check.yml');
 
 test('a11y audit: pinned production origin, read-only, axe only in its own CSP-bypassing test context',()=>{
- assert.match(script,/const PRODUCTION='https:\/\/echo-starry\.starry-phd\.workers\.dev';/);
+ assert.match(script,/const PRODUCTION='https:\/\/echo\.starry\.phd';/);
  assert.match(script,/throw Error\('Unexpected a11y-audit origin'\)/);
  assert.match(script,/bypassCSP:true/);
  assert.match(script,/values:\['wcag2a','wcag2aa','wcag21a','wcag21aa'\]/);

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {ECHO_APP_TITLE,LEGACY_DEFAULT_ARTWORK_PATH,NATIVE_AUDIO_MODE,NATIVE_LOCK_SCREEN_OPTIONS,
  nativeLockScreenMetadata} from '../src/media/nativeAudioSession.ts';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const O='https://echo-starry.starry-phd.workers.dev';
+const O='https://echo.starry.phd';
 
 test('lecture audio plays with the silent switch on, keeps playing in background, pauses other apps',()=>{
  assert.deepEqual({...NATIVE_AUDIO_MODE},{playsInSilentMode:true,shouldPlayInBackground:true,interruptionMode:'doNotMix'});

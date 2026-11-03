@@ -10,7 +10,7 @@ import {base64UrlEncode} from './randomState';
  * sessionStorage only (single use, 10 minutes); the result comes back after `#`, which never
  * reaches any server, and is wiped from the address bar immediately.
  */
-export const APP_WEB_ORIGIN='https://echo-starry.starry-phd.workers.dev';
+export const APP_WEB_ORIGIN='https://echo.starry.phd';
 export const WEB_RELAY_RETURN_PATH='/auth/done';
 export const WEB_RELAY_RETURN_URL=APP_WEB_ORIGIN+WEB_RELAY_RETURN_PATH;
 export const WEB_RELAY_PENDING_KEY='starry-id-relay-pending-v1';

@@ -8,8 +8,8 @@ const manifest=JSON.parse(read('starry.app.json'));
 test('internal iOS and Android native profiles embed approved new public Worker URL only',()=>{
  for(const profile of ['development','preview']){
   assert.equal(eas.build[profile].distribution,'internal');
-  assert.equal(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo-starry.starry-phd.workers.dev');
-  assert.notEqual(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo.starry.phd');
+  assert.equal(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo.starry.phd');
+  assert.notEqual(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo-starry.starry-phd.workers.dev');
  }
  assert.equal(eas.build.production.env?.EXPO_PUBLIC_ECHO_API_BASE_URL,undefined);
  assert.equal(eas.build.production.channel,'production');
@@ -24,5 +24,5 @@ test('native client uses public build-time Expo variable and does not fall back 
  assert.match(client,/url\.protocol!=='https:'&&url\.hostname!=='localhost'/);
  assert.doesNotMatch(client,/echo\.starry\.phd|temp-starry-echo-bridge/);
  const ci=read('.github/workflows/ci.yml');
- assert.equal((ci.match(/EXPO_PUBLIC_ECHO_API_BASE_URL: https:\/\/echo-starry\.starry-phd\.workers\.dev/g)||[]).length,2);
+ assert.equal((ci.match(/EXPO_PUBLIC_ECHO_API_BASE_URL: https:\/\/echo\.starry\.phd/g)||[]).length,2);
 });

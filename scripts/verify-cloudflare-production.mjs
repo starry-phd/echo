@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {ECHO_ACCOUNT_ID,ECHO_WORKER,LEGACY_HOSTNAME,LEGACY_SERVICE,classifyLegacyDomain,
+import {ECHO_ACCOUNT_ID,ECHO_WORKER,CUSTOM_HOSTNAME,classifyCustomDomain,
  latestDeployment,parseUploadedVersionId,validateLiveDeployment} from './cloudflare-production-validation.mjs';
 
 // Read-only Cloudflare API evidence after `wrangler deploy`. Only GET requests;
@@ -42,9 +42,9 @@ const live=await eventually('Cloudflare latest+exact deployment',async()=>{
 console.log('Cloudflare latest == exact deployment '+live.deploymentId+': version '+live.versionId+
  ' at 100% traffic, created '+live.createdOn+' (account '+ECHO_ACCOUNT_ID+', Worker '+ECHO_WORKER+')');
 
-const legacy=await eventually('Cloudflare legacy custom domain',async()=>{
- const domain=await get('/workers/domains?hostname='+encodeURIComponent(LEGACY_HOSTNAME));
- return classifyLegacyDomain(domain.status,domain.payload);
+const custom=await eventually('Cloudflare custom domain',async()=>{
+ const domain=await get('/workers/domains?hostname='+encodeURIComponent(CUSTOM_HOSTNAME));
+ return classifyCustomDomain(domain.status,domain.payload);
 },3);
-if(legacy.state==='verified')console.log('Cloudflare custom domain '+LEGACY_HOSTNAME+' still bound to '+LEGACY_SERVICE+' (unchanged)');
-else console.log('::warning::Cloudflare custom domain '+LEGACY_HOSTNAME+' UNVERIFIED: '+legacy.reason);
+if(custom.state==='verified')console.log('Cloudflare custom domain '+CUSTOM_HOSTNAME+' bound to '+ECHO_WORKER);
+else console.log('::warning::Cloudflare custom domain '+CUSTOM_HOSTNAME+' UNVERIFIED: '+custom.reason);
