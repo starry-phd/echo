@@ -30,3 +30,6 @@ Starry ID 串接回覆（`starry-phd/id` 指南 §11.2c）建議網頁版設定�
 - `_headers` 改為 `Content-Security-Policy`，`WEB_CSP_MODE='enforce'`；Production smoke 改驗強制標頭且不得同時存在 Report-Only。
 - 自動截圖改為：任何 CSP 違規（現在代表資源被擋）都讓檢查失敗。
 - 回復方式：如有頁面異常，revert 本 PR 即回到 Report-Only。
+
+## 依建置產生（#162）
+`public/_headers` 改由 `scripts/web-security-headers.mjs` 的 `headersFileFor()` 產生；`npm run build:web` 會依 `EXPO_PUBLIC_STARRY_ID_API_BASE_URL` 重寫 `dist/_headers`。未開啟登入時內容不變。詳見 `docs/140-login-launch-readiness.md`。

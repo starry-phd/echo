@@ -1,5 +1,5 @@
 import {validateGuestList,validateCover,validateRefusal} from './production-guest-validation.mjs';
-import {WEB_CSP_MODE,validateSecurityHeaders} from './web-security-headers.mjs';
+import {WEB_CSP_MODE,resolveStarryOrigin,validateSecurityHeaders} from './web-security-headers.mjs';
 
 // After Wrangler publish, global Cloudflare edge propagation is not instantaneous.
 // Re-read the live public endpoints with bounded retries; never loosen security checks.
@@ -73,7 +73,7 @@ for(const path of ['/','/privacy']){
  await eventually('security headers '+path,async()=>{
   const r=await fetchPublic(path);
   await r.arrayBuffer();
-  validateSecurityHeaders(name=>r.headers.get(name),WEB_CSP_MODE);
+  validateSecurityHeaders(name=>r.headers.get(name),WEB_CSP_MODE,resolveStarryOrigin(process.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL));
  },10);
 }
 console.log('Validated Web security headers on / and /privacy: CSP '+WEB_CSP_MODE+', nosniff, DENY framing, strict referrer, permissions policy');

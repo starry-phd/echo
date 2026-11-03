@@ -152,10 +152,17 @@ test('dark launch: production builds have no Starry ID URL, so the provider is d
  assert.match(read('app/_layout.tsx'),/<StarryIdProvider><LegacyThemeProvider>[\s\S]*<\/LegacyThemeProvider><\/StarryIdProvider>/);
 });
 
-test('turning on sign-in in any build requires the app privacy policy to describe it first',()=>{
- const configured=['.github/workflows/ci.yml','.github/workflows/deploy-worker.yml','eas.json']
-  .some(file=>read(file).includes('EXPO_PUBLIC_STARRY_ID_API_BASE_URL'));
- const policy=read('src/legal/privacyPolicy.ts');
- if(configured)assert.doesNotMatch(policy,/目前版本不需要註冊或登入/,'update the privacy policy before enabling Starry ID');
- else assert.match(policy,/目前版本不需要註冊或登入/);
+test('turning on sign-in switches the privacy page to the member-login version automatically',async()=>{
+ const {privacyPolicyFor,PRIVACY_POLICY_SECTIONS,PRIVACY_POLICY_MEMBER_SECTIONS}=await import('../src/legal/privacyPolicy.ts');
+ assert.equal(privacyPolicyFor(false).sections,PRIVACY_POLICY_SECTIONS);
+ assert.equal(privacyPolicyFor(true).sections,PRIVACY_POLICY_MEMBER_SECTIONS);
+ const page=read('app/privacy.tsx');
+ assert.match(page,/const policy=privacyPolicyFor\(centralMemberApiState\(\)!=='not-configured'\);/);
+ const guest=PRIVACY_POLICY_SECTIONS.flatMap(s=>s.paragraphs).join('\n');
+ const member=PRIVACY_POLICY_MEMBER_SECTIONS.flatMap(s=>[s.heading,...s.paragraphs]).join('\n');
+ assert.match(guest,/目前版本不需要註冊或登入/);
+ assert.doesNotMatch(member,/目前版本不需要註冊或登入/);
+ for(const must of ['Starry ID','https://id.starry.phd/privacy','https://id.starry.phd/terms','https://id.starry.phd/account/delete',
+  'Google 或 Apple','sessionStorage','安全儲存區','7 天內重新登入即可撤回','不會自動取消','不讀取、不保存你的 Email','13 歲以下','English summary'])
+  assert.ok(member.includes(must),must);
 });

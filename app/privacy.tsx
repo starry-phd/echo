@@ -2,7 +2,11 @@ import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../src/ui/echo/FontZoom';
 import {visualMetrics} from '../packages/ui/src/tokens';
-import {PRIVACY_APP_NAME,PRIVACY_POLICY_SECTIONS,PRIVACY_POLICY_UPDATED} from '../src/legal/privacyPolicy';
+import {PRIVACY_APP_NAME,privacyPolicyFor} from '../src/legal/privacyPolicy';
+import {centralMemberApiState} from '../src/auth/centralMember';
+
+// Member-login wording only when this build enables Starry ID (build-time constant).
+const policy=privacyPolicyFor(centralMemberApiState()!=='not-configured');
 
 /** Public privacy policy, statically exported to /privacy for App Store / Google Play. */
 export default function PrivacyScreen(){
@@ -11,9 +15,9 @@ export default function PrivacyScreen(){
  return <ScrollView focusable accessibilityLabel="隱私權政策全文" style={[styles.root,{backgroundColor:t.bg}]} contentContainerStyle={styles.page}>
   <View style={styles.shell}>
    <Text accessibilityRole="header" style={[styles.title,{color:t.ink,fontSize:fontSize(24)}]}>隱私權政策</Text>
-   <Text style={[styles.meta,{color:t.muted,fontSize:fontSize(13)}]}>{PRIVACY_APP_NAME}｜最後更新：{PRIVACY_POLICY_UPDATED}</Text>
+   <Text style={[styles.meta,{color:t.muted,fontSize:fontSize(13)}]}>{PRIVACY_APP_NAME}｜最後更新：{policy.updated}</Text>
    <View style={[styles.card,{backgroundColor:t.card,borderColor:t.border}]}>
-    {PRIVACY_POLICY_SECTIONS.map(section=><View key={section.heading} style={styles.section}>
+    {policy.sections.map(section=><View key={section.heading} style={styles.section}>
      <Text accessibilityRole="header" style={[styles.heading,{color:t.accentText,fontSize:fontSize(17)}]}>{section.heading}</Text>
      {section.paragraphs.map((paragraph,index)=><Text key={index} selectable
       style={[styles.copy,{color:t.ink,fontSize:fontSize(14)}]}>{paragraph}</Text>)}
