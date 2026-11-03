@@ -2,7 +2,7 @@ import {createContext,useContext,useEffect,useMemo,useState,useSyncExternalStore
 import type {ReactNode} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createThemePreferenceStore} from './themePreferenceStore';
-import {MUTED_LIGHT,accessibleAccent} from './contrast';
+import {MUTED_LIGHT,accessibleAccent,accessibleFill} from './contrast';
 export type LegacyPalette={id:string;name:string;primary:string;primaryHover:string};
 const base:LegacyPalette[]=[
  ['rose','經典玫瑰','#c13f6f','#a8325e'],
@@ -34,8 +34,10 @@ export const legacyPalettes:readonly LegacyPalette[]=base;
 type ThemeState={
   palette:LegacyPalette;dark:boolean;
   bg:string;card:string;ink:string;muted:string;border:string;lightPill:string;
-  /** Primary-derived TEXT colour that meets WCAG AA on every themed surface; `palette.primary` stays the fill colour. */
+  /** Primary-derived TEXT colour that meets WCAG AA on every themed surface; `palette.primary` stays the brand reference (borders, tints). */
   accentText:string;
+  /** Fill for surfaces with white text (buttons, selected chips): white reaches WCAG AA. */
+  accentFill:string;
   setPalette:(id:string)=>void;cyclePalette:()=>void;toggleDark:()=>void;
 };
 const defaultPalette=base[0];
@@ -54,7 +56,8 @@ export function LegacyThemeProvider({children}:{children:ReactNode}){
      muted:dark?'#94a3b8':MUTED_LIGHT,
      border:dark?'#23293b':`${current.primary}28`,
      lightPill:dark?'#1a1e2b':`${current.primary}1a`,
-     accentText:accessibleAccent(current.primary,dark)
+     accentText:accessibleAccent(current.primary,dark),
+     accentFill:accessibleFill(current.primary)
    };
  },[id,dark,store]);
  return <LegacyContext.Provider value={value}>{children}</LegacyContext.Provider>;

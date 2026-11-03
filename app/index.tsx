@@ -301,10 +301,10 @@ export default function CatalogScreen(){
          accessibilityState={{disabled:!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')}}
          disabled={!canDrawFromCurrentCatalog(currentDisplay,luckyPhase==='spin')}
          onPress={()=>{searchSuggestionBlurGuard.dismiss();draw();}}
-         style={[styles.lucky,{backgroundColor:theme.palette.primary,width:layout.luckyWidth}]}>
+         style={[styles.lucky,{backgroundColor:theme.accentFill,width:layout.luckyWidth}]}>
          <Text numberOfLines={2} style={styles.luckyText}>{luckyPhase==='spin'?'💫抽選中…':'💫召喚繁星解答'}</Text>
        </Pressable>
-       <View style={[styles.search,{backgroundColor:theme.palette.primary}]}>
+       <View style={[styles.search,{backgroundColor:theme.accentFill}]}>
          <Text style={styles.searchIcon}>⌕</Text>
          <TextInput ref={searchInputRef}
            accessibilityLabel="搜尋演講者、主題、分類或獎銜"
@@ -442,7 +442,7 @@ export default function CatalogScreen(){
        <View style={styles.luckyActions}>
          <Pressable accessibilityRole="button" accessibilityLabel="查看抽中的資訊卡"
           onPress={()=>router.push({pathname:'/preview/[id]',params:{id:luckyPreview.id}})}
-          style={[styles.luckyDetailsButton,{backgroundColor:theme.palette.primary}]}>
+          style={[styles.luckyDetailsButton,{backgroundColor:theme.accentFill}]}>
           <Text style={styles.retryText}>查看資訊卡</Text>
          </Pressable>
          <Pressable accessibilityRole="button" accessibilityLabel="關閉抽選結果"
@@ -467,7 +467,7 @@ export default function CatalogScreen(){
        <Text style={[styles.emptyText,{color:theme.muted,fontSize:fontSize(15)}]}>
          音檔資訊暫時無法完整讀取，並非沒有音檔。請重試。
        </Text>
-       <Pressable accessibilityRole="button" onPress={retryCatalog} style={[styles.retry,{backgroundColor:theme.palette.primary}]}>
+       <Pressable accessibilityRole="button" onPress={retryCatalog} style={[styles.retry,{backgroundColor:theme.accentFill}]}>
          <Text style={styles.retryText}>重新載入</Text>
        </Pressable>
      </View>:currentDisplay==='empty'?<View style={[styles.empty,{borderColor:theme.border,backgroundColor:theme.card}]}>

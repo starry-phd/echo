@@ -34,16 +34,19 @@ async function samplePaths(){
   ['home-light','/',{}],['home-dark','/',{dark:true}],
   ['menu-open','/',{action:async p=>{await p.click('#echo-tutorial-visitor-menu');await p.waitForTimeout(700);}}],
   ...(samples.preview?[['preview',samples.preview,{}]]:[]),
+  // Palettes whose brand colour is lightest (worst case for white text and accent text).
+  ['home-amber','/',{palette:'amber'}],['home-tangerine-dark','/',{palette:'tangerine',dark:true}],
+  ['menu-lime','/',{palette:'lime',action:async p=>{await p.click('#echo-tutorial-visitor-menu');await p.waitForTimeout(700);}}],
   ['profile','/profile',{}],['privacy','/privacy',{}],['stats','/stats',{}],
   ['favorites','/favorites',{}],['notifications','/notifications',{}],
   ...(samples.speaker?[['speaker',samples.speaker,{}]]:[])
  ];
  const results=[];let failed=false;
- for(const [name,path,{dark=false,action}] of pages){
+ for(const [name,path,{dark=false,palette='rose',action}] of pages){
   const context=await browser.newContext({viewport:MOBILE,deviceScaleFactor:1,isMobile:true,hasTouch:true,
    locale:'zh-TW',reducedMotion:'reduce',colorScheme:dark?'dark':'light',bypassCSP:true});
-  await context.addInitScript(([keys,isDark])=>{try{localStorage.setItem(keys.tutorialOff,'1');
-   localStorage.setItem(keys.palette,'rose');localStorage.setItem(keys.dark,isDark?'1':'0');}catch{}},[PREFS,dark]);
+  await context.addInitScript(([keys,isDark,paletteId])=>{try{localStorage.setItem(keys.tutorialOff,'1');
+   localStorage.setItem(keys.palette,paletteId);localStorage.setItem(keys.dark,isDark?'1':'0');}catch{}},[PREFS,dark,palette]);
   try{
    const page=await context.newPage();
    await page.goto(base+path,{waitUntil:'networkidle',timeout:45000});

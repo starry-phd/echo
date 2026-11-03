@@ -46,7 +46,7 @@ jobs:
         working-directory: /tmp/echo-visual
         env:
           ECHO_A11Y_REPORT: /tmp/echo-visual/shots/a11y-report.json
-          ECHO_A11Y_FAIL_ON: none
+          ECHO_A11Y_FAIL_ON: serious
         run: node a11y-audit-production.mjs
       - uses: actions/upload-artifact@v4
         if: always()

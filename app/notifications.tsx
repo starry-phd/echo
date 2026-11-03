@@ -39,7 +39,7 @@ export default function NotificationsScreen(){
     <Text style={[styles.warning,{color:t.muted,fontSize:fontSize(12)}]}>尚未連接正式通知服務：此處不是「目前沒有通知」，也不提供模擬的已讀、審核或回覆操作。</Text>
     <Pressable accessibilityRole="button" accessibilityLabel="前往中央會員登入說明"
      onPress={()=>router.push('/profile')}
-     style={[styles.action,{backgroundColor:t.palette.primary}]}>
+     style={[styles.action,{backgroundColor:t.accentFill}]}>
      <Text style={[styles.actionLabel,{fontSize:fontSize(14)}]}>查看會員登入進度</Text>
     </Pressable>
    </View>

@@ -72,7 +72,7 @@ export default function LegacyRankings(){
      {metrics.map(x=><Pressable key={x.id} accessibilityRole="button"
       accessibilityLabel={'依'+x.label+'排序'} accessibilityState={{selected:metric===x.id}}
       onPress={()=>setMetric(x.id)} style={[styles.metric,{
-       backgroundColor:metric===x.id?t.palette.primary:t.card,borderColor:t.border}]}>
+       backgroundColor:metric===x.id?t.accentFill:t.card,borderColor:t.border}]}>
       <Text style={[styles.metricText,{color:metric===x.id?'#fff':t.ink,fontSize:fontSize(12)}]}>{x.label}</Text>
      </Pressable>)}
     </View>

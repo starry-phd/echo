@@ -70,7 +70,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
       onPress={()=>onField(field)}
       style={[styles.button,unavailable
         ?{backgroundColor:t.lightPill,borderColor:t.accentText,borderStyle:'dashed'}
-        :{backgroundColor:t.palette.primary,borderColor:selected?'#fff':t.palette.primaryHover},
+        :{backgroundColor:t.accentFill,borderColor:selected?'#fff':t.palette.primaryHover},
        {paddingHorizontal:layout.phone?0:4}]}>
        <Text numberOfLines={1} adjustsFontSizeToFit
          style={[styles.buttonText,{fontSize:layout.phone?10:12},unavailable&&{color:t.accentText}]}>{label}</Text>
@@ -93,7 +93,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
         the backdrop, so selecting an option is never intercepted by dismissal. */}
     <Pressable accessibilityRole="button" accessibilityLabel="點選分類選單外側以關閉"
      onPress={dismissCategory} style={styles.backdrop}/>
-    <View style={[styles.menu,{backgroundColor:t.palette.primary,borderColor:t.border,
+    <View style={[styles.menu,{backgroundColor:t.accentFill,borderColor:t.border,
       top:placement.top,left:placement.left,width:placement.width,maxHeight:placement.maxHeight}]}>
      <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="always"
       style={{maxHeight:placement.scrollMaxHeight}} contentContainerStyle={styles.options}>

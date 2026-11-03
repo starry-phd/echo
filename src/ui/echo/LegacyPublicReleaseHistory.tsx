@@ -44,7 +44,7 @@ export function LegacyPublicReleaseHistory(){
       公開封面及資訊卡不代表錄音有播放授權；中央會員登入、付費與私人媒體功能尚未開放。
      </Text>
      <Pressable accessibilityRole="button" accessibilityLabel="關閉版本改版紀錄"
-      onPress={close} style={[styles.close,{backgroundColor:t.palette.primary}]}>
+      onPress={close} style={[styles.close,{backgroundColor:t.accentFill}]}>
       <Text style={[styles.closeText,{fontSize:fontSize(14)}]}>關閉</Text>
      </Pressable>
     </View>

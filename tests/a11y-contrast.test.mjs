@@ -46,3 +46,17 @@ test('no text colour uses the raw brand fill; pending filter chips are outlined,
  assert.doesNotMatch(toolbar,/opacity:unavailable/);
  assert.match(toolbar,/backgroundColor:t\.lightPill,borderColor:t\.accentText,borderStyle:'dashed'/);
 });
+
+test('white text on brand fills reaches AA for all 24 palettes; fills and the a11y gate are wired',async()=>{
+ const {accessibleFill}=await import('../src/ui/echo/contrast.ts');
+ for(const {id,primary} of palettes)assert.ok(contrastRatio('#ffffff',accessibleFill(primary))>=AA_TEXT,id);
+ assert.equal(accessibleFill('#5552b5'),'#5552b5','compliant fills are unchanged');
+ assert.match(read('src/ui/echo/legacyTheme.tsx'),/accentFill:accessibleFill\(current\.primary\)/);
+ const walk=d=>readdirSync(new URL('../'+d,import.meta.url),{withFileTypes:true}).flatMap(e=>
+  e.isDirectory()?walk(d+e.name+'/'):e.name.endsWith('.tsx')?[d+e.name]:[]);
+ for(const file of [...walk('app/'),...walk('src/')])
+  assert.doesNotMatch(read(file),/backgroundColor:[^,}]*palette\.primary|textColor=\{t\.palette\.primary\}/,file);
+ const audit=read('scripts/a11y-audit-production.mjs');
+ for(const p of ["palette:'amber'","palette:'tangerine',dark:true","palette:'lime'"])assert.ok(audit.includes(p),p);
+ assert.match(read('.github/workflows/visual-check.yml'),/ECHO_A11Y_FAIL_ON: serious\n/);
+});

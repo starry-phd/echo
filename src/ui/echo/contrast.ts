@@ -59,6 +59,15 @@ export function accessibleAccent(primary:string,dark:boolean,target=TARGET):stri
  return dark?'#ffffff':'#000000';
 }
 
+/** Brand fill for buttons and chips that carry WHITE text: darken until white reaches the target. */
+export function accessibleFill(primary:string,target=TARGET):string{
+ for(let step=0;step<=100;step++){
+  const candidate=mix(primary,'#000000',step/100);
+  if(contrastRatio('#ffffff',candidate)>=target)return candidate;
+ }
+ return '#000000';
+}
+
 /** Muted (secondary) text colour that keeps AA on the same surfaces for every palette. */
 export const MUTED_LIGHT='#525d6e';
 export const MUTED_DARK='#a3b0c2';

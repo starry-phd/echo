@@ -71,7 +71,7 @@ export default function GuestPreviewDetails(){
          onPress={()=>router.push({pathname:'/',params:{category:selected}})}
          style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
          {selected==='新人'
-          ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
+          ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.accentText}/>
           :<Text style={{color:t.accentText,fontSize:fontSize(11)}}>{selected} ›</Text>}
         </Pressable>:<View key={category} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
          <Text style={{color:t.muted,fontSize:fontSize(11)}}>{category}</Text>
