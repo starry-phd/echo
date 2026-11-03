@@ -16,6 +16,9 @@
       "channel": "preview",
       "env": {
         "EXPO_PUBLIC_ECHO_API_BASE_URL": "https://echo-starry.starry-phd.workers.dev"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
