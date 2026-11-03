@@ -50,7 +50,9 @@ export function headersFileFor(starryOrigin=null){
   '# API responses (/api/*, /health) are produced by the Worker and set their own headers.',
   '# CSP is ENFORCED; the post-deploy visual check reports any blocked resource. See docs/138-web-security-headers.md.',
   starryOrigin?'# Starry ID sign-in ENABLED for '+starryOrigin+' (relay redirect; no Google/Apple scripts).':'# Guest site: no third-party sources.',
+  '# no-transform stops Cloudflare from auto-injecting its Web Analytics beacon on the custom domain (privacy policy: no analytics).',
   '/*',
+  '  Cache-Control: public, max-age=0, must-revalidate, no-transform',
   '  Content-Security-Policy: '+csp,
   ...Object.entries(FIXED_HEADER_NAMES).map(([lower,name])=>'  '+name+': '+FIXED_HEADERS[lower]),
   ''].join('\n');

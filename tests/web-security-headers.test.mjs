@@ -78,3 +78,9 @@ test('sign-in build adds only the Starry ID origin (relay redirect); anything el
  const smoke=read('scripts/check-production-guest.mjs');
  assert.match(smoke,/resolveStarryOrigin\(process\.env\.EXPO_PUBLIC_STARRY_ID_API_BASE_URL\)/);
 });
+
+test('static shell headers carry no-transform so Cloudflare does not inject its Web Analytics beacon',()=>{
+ const file=headersFileFor(null);
+ assert.match(file,/^  Cache-Control: public, max-age=0, must-revalidate, no-transform$/m);
+ assert.match(headersFileFor('https://id.starry.phd'),/^  Cache-Control: .*no-transform$/m);
+});
