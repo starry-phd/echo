@@ -30,7 +30,7 @@ test('screenshot script: pinned production origin, GET page loads only, no store
  assert.match(read('src/ui/echo/legacyGuestTutorialPolicy.ts'),/GUEST_TUTORIAL_KEY='echostars_guest_safe_tutorial_never_remind_v1'/);
  assert.match(read('src/ui/echo/themePreferenceStore.ts'),/THEME_PALETTE_KEY='sq_light_palette_v1'/);
  assert.match(read('src/ui/echo/LegacyHeader.tsx'),/nativeID="echo-tutorial-visitor-menu"/);
- assert.match(script,/if\(shotFailures>0\|\|uncaught>0\|\|thirdParty\.length>0\)process\.exitCode=1;/);
+ assert.match(script,/if\(shotFailures>0\|\|uncaught>0\|\|cspViolations>0\|\|thirdParty\.length>0\)process\.exitCode=1;/);
  assert.match(script,/if\(entry\.status<200\|\|entry\.status>=400\)throw Error/);
  for(const route of ["path:'/stats'","path:'/favorites'","path:'/notifications'","path:'/speaker/'+","path:'/privacy'","path:'/profile'","path:'/preview/'+"])
   assert.ok(script.includes(route),'visual check must cover '+route);

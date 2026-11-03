@@ -108,5 +108,5 @@ writeFileSync(outDir+'/report.json',JSON.stringify(report,null,1));
 const thirdParty=report.flatMap(r=>r.external);
 console.log('Visual check: '+report.length+' screenshots, '+shotFailures+' failed, uncaught page errors='+uncaught+', CSP violations='+cspViolations
  +', third-party origins='+(thirdParty.length?[...new Set(thirdParty)].join(','):'none'));
-// Failed pages, uncaught exceptions or any third-party request on public pages are regressions.
-if(shotFailures>0||uncaught>0||thirdParty.length>0)process.exitCode=1;
+// Failed pages, uncaught exceptions, CSP-blocked resources or any third-party request are regressions.
+if(shotFailures>0||uncaught>0||cspViolations>0||thirdParty.length>0)process.exitCode=1;
