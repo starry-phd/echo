@@ -1,0 +1,52 @@
+name: EAS Android internal preview build (manual)
+# Owner-triggered only. Builds an INTERNAL Android APK (EAS "preview" profile) for
+# testing on the owner's phone. Never submits to Google Play, never publishes OTA
+# updates, never runs automatically. The first run lets EAS create and host the
+# Android upload keystore (its SHA-1 is then visible on expo.dev → Credentials).
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type BUILD-ANDROID-INTERNAL-PREVIEW to start an internal (not store) Android build'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: echo-eas-android-preview
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Require the exact confirmation and the owner's EXPO_TOKEN
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ "$CONFIRMATION" != "BUILD-ANDROID-INTERNAL-PREVIEW" ]; then
+            echo "::error::Confirmation text does not match BUILD-ANDROID-INTERNAL-PREVIEW"; exit 1
+          fi
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Repository secret EXPO_TOKEN is not set (expo.dev → Account settings → Access tokens → create, then GitHub → Settings → Secrets and variables → Actions)"; exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package.json
+      - run: npm install --no-audit --no-fund
+      - name: Start the EAS internal preview build (Android APK, not for the store)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest build --platform android --profile preview --non-interactive --no-wait \
+            --message "Internal preview ${GITHUB_SHA::7}"
+          echo "Build queued. Open expo.dev → starryphd / echo-starry → Builds to install the APK on your phone."
