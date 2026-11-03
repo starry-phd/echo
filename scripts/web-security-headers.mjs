@@ -1,6 +1,6 @@
 // Pure validation of the static Web shell security headers (public/_headers).
-// Switch to 'enforce' together with public/_headers once the visual check reports zero CSP violations.
-export const WEB_CSP_MODE='report-only';
+// Enforced since #157 after report-only produced zero violations on 12 public routes (#154–#156).
+export const WEB_CSP_MODE='enforce';
 // Exact hashes of the inline <script> elements Expo's static export emits
 // (verified on every build by scripts/check-inline-scripts.mjs).
 // globalThis.__EXPO_ROUTER_HYDRATE__=true;  (Expo Router static hydration flag, identical on every page)

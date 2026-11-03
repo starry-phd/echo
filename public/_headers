@@ -1,9 +1,9 @@
 # Security headers for the static Web shell (Cloudflare Workers Static Assets).
 # API responses (/api/*, /health) are produced by the Worker and set their own headers.
-# CSP is REPORT-ONLY first: the post-deploy visual check collects any violation
-# before it is switched to enforcing. See docs/138-web-security-headers.md.
+# CSP is ENFORCED (after 12 public routes reported zero violations in report-only mode).
+# The post-deploy visual check keeps reporting any blocked resource. See docs/138-web-security-headers.md.
 /*
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self'; manifest-src 'self'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
