@@ -19,3 +19,8 @@
 
 ## 界線
 這是 Headless Chromium 的自動檢查，**不等於** Safari、iOS／Android 真機、PWA 安裝或 VoiceOver／TalkBack 驗收。
+
+## 擴充（#156）
+- 加入 9 排行榜 `/stats`、10 收藏 `/favorites`、11 通知 `/notifications`、12 講師頁 `/speaker/<第一位單一講師>`，共 12 個畫面，作為 CSP 改為強制前的完整 Report-Only 覆蓋。
+- 頁面本身回應 4xx／5xx 也算失敗。
+- 每頁監聽 `securitypolicyviolation`，Log 印出 `cspViolations=`（#154 起）。

@@ -23,13 +23,15 @@ const report=[];
 let uncaught=0;
 let cspViolations=0;
 
-async function firstPreviewId(){
+async function publicPreviewSample(){
  try{
   const r=await fetch(base+'/api/v1/previews',{headers:{accept:'application/json'}});
-  const body=await r.json();
-  const id=body?.tracks?.[0]?.id;
-  return typeof id==='string'&&/^[A-Za-z0-9_-]{1,120}$/.test(id)?id:null;
- }catch{return null;}
+  const tracks=(await r.json())?.tracks;
+  if(!Array.isArray(tracks))return {id:null,speaker:null};
+  const id=tracks[0]?.id;
+  const single=tracks.map(t=>t?.speaker).find(s=>typeof s==='string'&&s.length>0&&s.length<=40&&!/[&、,，/]/.test(s));
+  return {id:typeof id==='string'&&/^[A-Za-z0-9_-]{1,120}$/.test(id)?id:null,speaker:single??null};
+ }catch{return {id:null,speaker:null};}
 }
 
 let shotFailures=0;
@@ -78,12 +80,14 @@ async function capture(name,context,{path,action}){
  for(let i=0;i<parts;i++)console.log('VISUALSHOT|'+name+'|'+(i+1)+'|'+parts+'|'+b64.slice(i*CHUNK,(i+1)*CHUNK));
  const entry={name,path,status:res?.status()??0,ms:Date.now()-started,bytes:jpg.length,errors,failed,csp,external:[...external]};
  report.push(entry);
+ if(entry.status<200||entry.status>=400)throw Error(name+' page returned HTTP '+entry.status);
  console.log('VISUAL '+name+' '+path+' HTTP '+entry.status+' in '+entry.ms+'ms; errors='+errors.length
   +' failedRequests='+failed.length+' cspViolations='+csp.length+' thirdPartyOrigins='+(entry.external.join(',')||'none'));
  for(const line of [...errors,...failed,...csp.map(v=>'csp: '+v)])console.log('  - '+line);
 }
 
-const previewId=await firstPreviewId();
+const sample=await publicPreviewSample();
+const previewId=sample.id;
 await shot('01-home-mobile-first-visit',{firstVisit:true});
 await shot('02-home-mobile-light');
 await shot('03-home-mobile-dark',{dark:true});
@@ -93,6 +97,11 @@ else console.log('VISUAL 05-preview-mobile-light skipped: no public preview id')
 await shot('06-profile-mobile-light',{path:'/profile'});
 await shot('07-privacy-mobile-light',{path:'/privacy'});
 await shot('08-home-desktop-light',{viewport:DESKTOP,mobile:false});
+await shot('09-stats-mobile-light',{path:'/stats'});
+await shot('10-favorites-mobile-light',{path:'/favorites'});
+await shot('11-notifications-mobile-light',{path:'/notifications'});
+if(sample.speaker)await shot('12-speaker-mobile-light',{path:'/speaker/'+encodeURIComponent(sample.speaker)});
+else console.log('VISUAL 12-speaker-mobile-light skipped: no single public speaker name');
 await browser.close();
 
 writeFileSync(outDir+'/report.json',JSON.stringify(report,null,1));
