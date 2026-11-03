@@ -1,20 +1,22 @@
 /**
- * Echo consumer adapter for the ONE Starry central profile authority.
- * The official central API is DRAFT / health-only, so authenticated member
- * access must fail closed until actual signed/verified integration is ready.
- * Do not populate a fake profile from legacy Echo users, Echo D1 or local state.
+ * Consumer adapter for the ONE member authority: Starry ID (starry-phd/id).
+ * The v1.0 five-field DTO is superseded by `GET /v1/me` (integration guide §8);
+ * see src/auth/starryId/. Never populate a member from legacy users, the app's
+ * D1 or local state. Sign-in UI is not released yet, so member access stays closed.
  */
-import type {CentralMemberMe} from './centralMemberContract';
-export {parseCentralMemberMe} from './centralMemberContract';
+import {resolveStarryIdEnvironment} from './starryId/env';
+import type {StarryMember} from './starryId/member';
+export {parseStarryMe} from './starryId/member';
 
-export type CentralMemberProfile=CentralMemberMe;
+export type CentralMemberProfile=StarryMember;
 export type CentralMemberApiState='not-configured'|'contract-pending';
 
+/** Only an allow-listed Starry ID origin counts as configured (fail closed otherwise). */
 export function centralMemberApiState():CentralMemberApiState{
- return process.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL?.trim()
+ return resolveStarryIdEnvironment(process.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL)
   ?'contract-pending':'not-configured';
 }
 
 export async function getCentralMemberProfile():Promise<CentralMemberProfile>{
- throw new Error('繁星中央會員尚未正式發布可信登入與本人資料 API；不可由舊會員資料或本地狀態假冒登入成功。');
+ throw new Error('本 App 的會員登入尚未開放（繁星中央會員 Starry ID 已上線，App 登入畫面尚未發布）；不可由舊會員資料或本地狀態假冒登入成功。');
 }
