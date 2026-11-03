@@ -22,7 +22,7 @@ export function LegacyEngagementDetail({track}:{track:EchoTrack}){
     .map(item=><Pressable key={item.id} accessibilityRole="tab"
      accessibilityLabel={item.label} accessibilityState={{selected:tab===item.id}}
      onPress={()=>setTab(item.id)}
-     style={[styles.tab,{backgroundColor:tab===item.id?t.palette.primary:t.card,
+     style={[styles.tab,{backgroundColor:tab===item.id?t.accentFill:t.card,
       borderColor:tab===item.id?t.palette.primary:t.border}]}>
      <Text style={[styles.tabText,{color:tab===item.id?'#fff':t.ink,fontSize:fontSize(13)}]}>
       {item.label}</Text>

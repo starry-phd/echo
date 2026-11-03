@@ -111,7 +111,7 @@ export default function PublicSpeakerTracks(){
      accessibilityLabel={item.label} accessibilityState={{selected:section===item.id}}
      onPress={()=>setSection(item.id)}
      style={[styles.tab,{borderColor:section===item.id?t.palette.primary:t.border,
-      backgroundColor:section===item.id?t.palette.primary:t.card}]}>
+      backgroundColor:section===item.id?t.accentFill:t.card}]}>
      <Text style={[styles.tabText,{color:section===item.id?'#fff':t.ink,fontSize:fontSize(13)}]}>
       {item.id==='audio'?`所有錄音（${visibleTracks.length}${q.hasNextPage?'+':''}）`:'歷史問答'}
      </Text>
@@ -176,7 +176,7 @@ export default function PublicSpeakerTracks(){
        <Pressable accessibilityRole="button" accessibilityLabel={confirmTrack.playable?'查看公開錄音':'查看作品資訊'}
         onPress={()=>{const selected=confirmTrack;setConfirmTrack(null);
          if(selected)router.push({pathname:selected.playable?'/track/[id]':'/preview/[id]',params:{id:selected.id}});
-        }} style={[styles.confirmAction,{backgroundColor:t.palette.primary}]}>
+        }} style={[styles.confirmAction,{backgroundColor:t.accentFill}]}>
         <Text style={[styles.confirmActionText,{color:'#fff',fontSize:fontSize(14)}]}>
          {confirmTrack.playable?'查看公開錄音':'查看作品資訊'}
         </Text>

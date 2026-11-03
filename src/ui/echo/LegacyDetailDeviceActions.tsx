@@ -22,7 +22,7 @@ export function LegacyDetailDeviceActions({track,routeId,source}:{
    <Pressable accessibilityRole="button" accessibilityLabel={favorite?'取消本裝置收藏':'加入本裝置收藏'}
     accessibilityState={{disabled:!eligible,selected:favorite}} disabled={!eligible}
     onPress={()=>{if(eligible)preferences.toggleFavorite(track.id);}}
-    style={[styles.favorite,{backgroundColor:t.palette.primary},!eligible&&styles.disabled]}>
+    style={[styles.favorite,{backgroundColor:t.accentFill},!eligible&&styles.disabled]}>
     <Text style={[styles.favoriteText,{fontSize:fontSize(13)}]}>{favorite?'♥ 取消本裝置收藏':'♡ 加入本裝置收藏'}</Text>
    </Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel="我不喜歡，於本裝置隱藏此音檔卡"

@@ -53,7 +53,7 @@ export function StarryMemberPanel(){
  const text=(value:string,muted=false)=><Text style={[styles.text,{color:muted?t.muted:t.ink,fontSize:fontSize(14)}]}>{value}</Text>;
  const button=(label:string,onPress:()=>void,kind:'primary'|'plain'|'danger'='plain')=><Pressable
   key={label} accessibilityRole="button" accessibilityLabel={label} disabled={starry.busy} onPress={onPress}
-  style={[styles.button,kind==='primary'&&{backgroundColor:t.palette.primary,borderColor:t.palette.primary},
+  style={[styles.button,kind==='primary'&&{backgroundColor:t.accentFill,borderColor:t.palette.primary},
    kind!=='primary'&&{borderColor:kind==='danger'?'#b8324e':t.border},starry.busy&&styles.disabled]}>
   <Text style={[styles.buttonLabel,{fontSize:fontSize(14),color:kind==='primary'?'#fff':kind==='danger'?'#b8324e':t.ink}]}>{label}</Text>
  </Pressable>;

@@ -7,7 +7,7 @@ export function AdvancedCardFilters({ranks,selectedRank,onRank}:{ranks:string[];
   <View style={styles.choices}>
    {[null,...ranks].map(rank=><Pressable key={rank??'all'} accessibilityRole="button"
     accessibilityLabel={'講師獎銜：'+(rank??'全部')} accessibilityState={{selected:selectedRank===rank}}
-    onPress={()=>onRank(rank)} style={[styles.choice,{backgroundColor:selectedRank===rank?t.palette.primary:t.card,borderColor:t.border}]}>
+    onPress={()=>onRank(rank)} style={[styles.choice,{backgroundColor:selectedRank===rank?t.accentFill:t.card,borderColor:t.border}]}>
     <Text style={[styles.label,{color:selectedRank===rank?'#fff':t.ink}]}>{rank??'全部獎銜'}</Text>
    </Pressable>)}
   </View>

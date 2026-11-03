@@ -53,7 +53,7 @@ export default function ProfileScreen(){
     {(tab==='profile'||tab==='listening')&&<Pressable
      accessibilityRole="button" accessibilityLabel="查看我的收藏（僅本裝置）"
      onPress={()=>router.push('/favorites')}
-     style={[styles.action,{backgroundColor:t.palette.primary}]}>
+     style={[styles.action,{backgroundColor:t.accentFill}]}>
      <Text style={[styles.actionLabel,{fontSize:fontSize(13)}]}>查看我的收藏（本裝置）</Text>
     </Pressable>}
     <Text style={[styles.sectionText,{color:t.muted,fontSize:fontSize(12)}]}>

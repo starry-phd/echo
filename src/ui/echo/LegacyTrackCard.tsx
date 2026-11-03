@@ -107,7 +107,7 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
       ?<Image source={{uri:coverUri}} resizeMode="cover" onError={()=>setCoverError(true)}
          accessibilityLabel={'封面：'+track.speaker} style={styles.photo}/>
       :<Text style={[styles.portraitIcon,{color:t.accentText}]}>🎙</Text>}
-     <View style={[styles.rewardBar,{backgroundColor:track.playable?t.palette.primary:'#76455d'}]}>
+     <View style={[styles.rewardBar,{backgroundColor:track.playable?t.accentFill:'#76455d'}]}>
       <Text style={styles.rewardText}>{track.playable?'已核准公開':'僅展示資訊'}</Text>
      </View>
      <View style={styles.permissionBar}>
@@ -147,7 +147,7 @@ export function LegacyTrackCard({track,onNotice,onDislike,tutorialTarget=false}:
        onPress={()=>router.push({pathname:'/',params:{category:selected}})}
        style={[styles.tag,styles.clickableTag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
        {selected==='新人'
-        ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.palette.primary}/>
+        ?<AnimatedNewcomerTag fill={t.lightPill} textColor={t.accentText}/>
         :<Text numberOfLines={1} style={[styles.tagText,{color:t.accentText,fontSize:fontSize(cardSizing.tagFont)}]}>{selected} ›</Text>}
       </Pressable>:<View key={c+i} style={[styles.tag,{backgroundColor:t.lightPill,borderColor:t.border}]}>
        <Text numberOfLines={1} style={[styles.tagText,{color:t.muted,fontSize:fontSize(cardSizing.tagFont)}]}>{c}</Text>

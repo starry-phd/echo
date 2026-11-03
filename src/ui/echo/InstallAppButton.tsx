@@ -91,7 +91,7 @@ export function InstallAppButton({earlyPrompt=null,onPromptConsumed=()=>{},insta
      <Text style={[styles.body,{color:theme.muted}]}>{manualInstallHelp[device]}</Text>
      <Text style={[styles.note,{color:theme.muted}]}>安裝到主畫面不會開放尚未授權的音檔；目前仍需連線才能讀取最新核准內容。</Text>
      <Pressable accessibilityRole="button" accessibilityLabel="關閉安裝說明" onPress={()=>setGuideOpen(false)}
-      style={[styles.close,{backgroundColor:theme.palette.primary}]}>
+      style={[styles.close,{backgroundColor:theme.accentFill}]}>
       <Text style={styles.closeText}>我知道了</Text>
      </Pressable>
     </View>

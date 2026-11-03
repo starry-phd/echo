@@ -106,7 +106,7 @@ function AudioPlayback({track,onToggleReady}:{track:EchoTrack;onToggleReady:(tog
     {LEGACY_SKIP_SECONDS.slice(0,2).map(skipButton)}
     <Pressable accessibilityRole="button" accessibilityLabel={status.playing?'暫停播放':'開始播放'}
       accessibilityState={{disabled:!available}} disabled={!available}
-      onPress={toggle} style={[styles.play,{backgroundColor:t.palette.primary},!available&&styles.disabled]}>
+      onPress={toggle} style={[styles.play,{backgroundColor:t.accentFill},!available&&styles.disabled]}>
      <Text style={styles.playLabel}>{!available?'待驗證':status.playing?'Ⅱ':'▶'}</Text>
     </Pressable>
     {LEGACY_SKIP_SECONDS.slice(2).map(skipButton)}
@@ -158,7 +158,7 @@ export default function TrackDetails(){
       </View>:q.isError?<View style={styles.loading}>
        <Text style={[styles.notice,{color:t.muted}]}>連線或資料讀取暫時失敗。</Text>
        <Pressable accessibilityRole="button" onPress={()=>void q.refetch()}
-        style={[styles.retry,{backgroundColor:t.palette.primary}]}><Text style={styles.retryText}>重新載入</Text></Pressable>
+        style={[styles.retry,{backgroundColor:t.accentFill}]}><Text style={styles.retryText}>重新載入</Text></Pressable>
       </View>:!track?<Text style={[styles.notice,{color:t.muted}]}>音檔尚未完成驗證或未獲公開授權。</Text>:
       !preferences.ready?<View style={styles.loading}>
        <ActivityIndicator color={t.palette.primary}/>
@@ -168,11 +168,11 @@ export default function TrackDetails(){
        {preferences.dislikedIds.includes(track.id)&&<Pressable accessibilityRole="button"
         accessibilityLabel="還原此張音檔卡的本裝置隱藏"
         onPress={()=>preferences.restoreHiddenTrack(track.id)}
-        style={[styles.retry,{backgroundColor:t.palette.primary}]}>
+        style={[styles.retry,{backgroundColor:t.accentFill}]}>
         <Text style={styles.retryText}>還原此張卡片</Text>
        </Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel="前往我的收藏管理隱藏設定"
-        onPress={()=>router.push('/favorites')} style={[styles.retry,{backgroundColor:t.palette.primary}]}>
+        onPress={()=>router.push('/favorites')} style={[styles.retry,{backgroundColor:t.accentFill}]}>
         <Text style={styles.retryText}>前往我的收藏管理隱藏設定</Text>
        </Pressable>
       </View>:
