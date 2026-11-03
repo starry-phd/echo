@@ -31,16 +31,23 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/echo-visual
-          cp scripts/visual-check-production.mjs /tmp/echo-visual/
+          cp scripts/visual-check-production.mjs scripts/a11y-audit-production.mjs scripts/a11y-summary.mjs /tmp/echo-visual/
           cd /tmp/echo-visual
           npm init -y >/dev/null
-          npm install --no-audit --no-fund playwright@1.63.0
+          npm install --no-audit --no-fund playwright@1.63.0 axe-core@4.10.2
           npx playwright install --with-deps chromium
       - name: Screenshot the live public site (read-only)
         working-directory: /tmp/echo-visual
         env:
           ECHO_VISUAL_OUT: /tmp/echo-visual/shots
         run: node visual-check-production.mjs
+      - name: Accessibility audit with axe-core (WCAG 2.1 A/AA, read-only)
+        if: always()
+        working-directory: /tmp/echo-visual
+        env:
+          ECHO_A11Y_REPORT: /tmp/echo-visual/shots/a11y-report.json
+          ECHO_A11Y_FAIL_ON: none
+        run: node a11y-audit-production.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
