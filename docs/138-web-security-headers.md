@@ -18,3 +18,9 @@ Starry ID 串接回覆（`starry-phd/id` 指南 §11.2c）建議網頁版設定�
 
 ## 與 Starry ID 登入的關係
 測試守門：任何建置開啟 Starry ID 時，CSP 的 `script-src` 必須已加入 `https://accounts.google.com`、`https://appleid.cdn-apple.com`（屆時也要加 `connect-src` 的 Starry ID 網址與 `frame-src` 的 Google／Apple），否則 CI 失敗。
+
+## 第一階段結果與內嵌腳本 hash（#154 → #155）
+- #154 上線後自動截圖每頁回報 1 筆 `script-src-elem inline (report-only)`。
+- #155 在 CI 加入 `node scripts/check-inline-scripts.mjs dist`：掃描匯出的所有 HTML，只計算會執行的內嵌 `<script>`，以 SHA-256 比對 `INLINE_SCRIPT_HASHES`；出現未登記的內嵌腳本或已失效的 hash 就無法合併。
+- 掃描結果：12 個頁面只有 1 種內嵌腳本 `globalThis.__EXPO_ROUTER_HYDRATE__=true;`（Expo Router 靜態水合旗標，內容固定），hash `'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='`（本機 openssl 驗算一致），已精確加入 `script-src`。
+- 仍為 Report-Only；自動截圖確認 0 筆違規後才改為強制。Expo 升級若改變內嵌腳本，CI 會先失敗並印出新內容與 hash。

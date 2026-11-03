@@ -1,9 +1,13 @@
 // Pure validation of the static Web shell security headers (public/_headers).
 // Switch to 'enforce' together with public/_headers once the visual check reports zero CSP violations.
 export const WEB_CSP_MODE='report-only';
+// Exact hashes of the inline <script> elements Expo's static export emits
+// (verified on every build by scripts/check-inline-scripts.mjs).
+// globalThis.__EXPO_ROUTER_HYDRATE__=true;  (Expo Router static hydration flag, identical on every page)
+export const INLINE_SCRIPT_HASHES=["'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='"];
 export const CSP_DIRECTIVES={
  'default-src':["'self'"],
- 'script-src':["'self'"],
+ 'script-src':["'self'",...INLINE_SCRIPT_HASHES],
  'style-src':["'self'","'unsafe-inline'"],
  'img-src':["'self'",'data:','blob:'],
  'font-src':["'self'",'data:'],
