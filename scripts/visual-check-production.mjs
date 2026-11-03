@@ -21,6 +21,7 @@ mkdirSync(outDir,{recursive:true});
 const browser=await chromium.launch();
 const report=[];
 let uncaught=0;
+let cspViolations=0;
 
 async function firstPreviewId(){
  try{
@@ -43,6 +44,9 @@ async function shot(name,options={}){
 async function takeShot(name,{path='/',viewport=MOBILE,mobile=true,dark=false,firstVisit=false,action}={}){
  const context=await browser.newContext({viewport,deviceScaleFactor:mobile?2:1,isMobile:mobile,hasTouch:mobile,
   colorScheme:dark?'dark':'light',locale:'zh-TW',timezoneId:'Asia/Taipei',reducedMotion:'reduce'});
+ // Report every CSP violation (report-only or enforced) as a console line.
+ await context.addInitScript(()=>{document.addEventListener('securitypolicyviolation',e=>{
+  console.log('CSPVIOLATION '+e.effectiveDirective+' '+String(e.blockedURI).slice(0,120)+(e.disposition==='report'?' (report-only)':''));});});
  if(!firstVisit)await context.addInitScript(([keys,isDark])=>{
   try{localStorage.setItem(keys.tutorialOff,'1');localStorage.setItem(keys.palette,'rose');localStorage.setItem(keys.dark,isDark?'1':'0');}catch{}
  },[PREFS,dark]);
@@ -54,7 +58,11 @@ async function capture(name,context,{path,action}){
  const page=await context.newPage();
  const errors=[],failed=[],external=new Set();
  page.on('pageerror',e=>{uncaught++;errors.push('uncaught: '+String(e.message).slice(0,200));});
- page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text().slice(0,200));});
+ const csp=[];
+ page.on('console',m=>{
+  if(m.text().startsWith('CSPVIOLATION ')){csp.push(m.text().slice(13));cspViolations++;return;}
+  if(m.type()==='error'&&!/Content Security Policy/.test(m.text()))errors.push('console: '+m.text().slice(0,200));
+ });
  page.on('requestfailed',r=>failed.push('failed '+r.url().slice(0,140)));
  page.on('response',r=>{if(r.status()>=400)failed.push(r.status()+' '+r.url().slice(0,140));});
  page.on('request',r=>{const u=new URL(r.url());if(u.origin!==new URL(base).origin&&!u.protocol.startsWith('data'))external.add(u.origin);});
@@ -68,11 +76,11 @@ async function capture(name,context,{path,action}){
  const b64=jpg.toString('base64');
  const parts=Math.ceil(b64.length/CHUNK);
  for(let i=0;i<parts;i++)console.log('VISUALSHOT|'+name+'|'+(i+1)+'|'+parts+'|'+b64.slice(i*CHUNK,(i+1)*CHUNK));
- const entry={name,path,status:res?.status()??0,ms:Date.now()-started,bytes:jpg.length,errors,failed,external:[...external]};
+ const entry={name,path,status:res?.status()??0,ms:Date.now()-started,bytes:jpg.length,errors,failed,csp,external:[...external]};
  report.push(entry);
  console.log('VISUAL '+name+' '+path+' HTTP '+entry.status+' in '+entry.ms+'ms; errors='+errors.length
-  +' failedRequests='+failed.length+' thirdPartyOrigins='+(entry.external.join(',')||'none'));
- for(const line of [...errors,...failed])console.log('  - '+line);
+  +' failedRequests='+failed.length+' cspViolations='+csp.length+' thirdPartyOrigins='+(entry.external.join(',')||'none'));
+ for(const line of [...errors,...failed,...csp.map(v=>'csp: '+v)])console.log('  - '+line);
 }
 
 const previewId=await firstPreviewId();
@@ -89,7 +97,7 @@ await browser.close();
 
 writeFileSync(outDir+'/report.json',JSON.stringify(report,null,1));
 const thirdParty=report.flatMap(r=>r.external);
-console.log('Visual check: '+report.length+' screenshots, '+shotFailures+' failed, uncaught page errors='+uncaught
+console.log('Visual check: '+report.length+' screenshots, '+shotFailures+' failed, uncaught page errors='+uncaught+', CSP violations='+cspViolations
  +', third-party origins='+(thirdParty.length?[...new Set(thirdParty)].join(','):'none'));
 // Failed pages, uncaught exceptions or any third-party request on public pages are regressions.
 if(shotFailures>0||uncaught>0||thirdParty.length>0)process.exitCode=1;

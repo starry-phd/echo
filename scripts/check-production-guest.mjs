@@ -1,4 +1,5 @@
 import {validateGuestList,validateCover,validateRefusal} from './production-guest-validation.mjs';
+import {WEB_CSP_MODE,validateSecurityHeaders} from './web-security-headers.mjs';
 
 // After Wrangler publish, global Cloudflare edge propagation is not instantaneous.
 // Re-read the live public endpoints with bounded retries; never loosen security checks.
@@ -67,4 +68,13 @@ await eventually('public privacy policy page',async()=>{
   if(!html.includes(must))throw Error('privacy page missing: '+must);
 },10);
 console.log('Validated public privacy policy page /privacy: 200 text/html with contact and last-updated date');
+// Static Web shell security headers (public/_headers) on the home page and a deep route.
+for(const path of ['/','/privacy']){
+ await eventually('security headers '+path,async()=>{
+  const r=await fetchPublic(path);
+  await r.arrayBuffer();
+  validateSecurityHeaders(name=>r.headers.get(name),WEB_CSP_MODE);
+ },10);
+}
+console.log('Validated Web security headers on / and /privacy: CSP '+WEB_CSP_MODE+', nosniff, DENY framing, strict referrer, permissions policy');
 console.log('Public-only Production smoke PASSED: private audio and unlisted cover both return 404/no-store');
