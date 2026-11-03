@@ -46,6 +46,8 @@ jobs:
           npx expo export --platform android --output-dir /tmp/echo-native-android
           test -n "$(find /tmp/echo-native-android -type f -print -quit)"
       - run: npm run build:web
+      - name: Verify Web security headers file is shipped with the static assets
+        run: cmp public/_headers dist/_headers
       - name: Verify Wrangler bundle and Workers Static Assets without deploying
         run: npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run
       - uses: actions/upload-artifact@v4
