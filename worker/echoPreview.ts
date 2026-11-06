@@ -121,8 +121,8 @@ export function isPreviewPublicRoute(pathname:string,method:string):boolean{
  return pathname==='/api/v1/health'||pathname==='/api/health'||
   pathname==='/api/v1/catalog'||pathname==='/api/v1/categories'||
   pathname==='/api/v1/speakers'||pathname==='/api/v1/previews'||
-  /^\\/api\\/v1\\/previews\\/[^/]{1,200}\\/cover$/.test(pathname)||
-  /^\\/api\\/v1\\/tracks\\/[^/]{1,200}$/.test(pathname);
+  new RegExp('^/api/v1/previews/[^/]{1,200}/cover$').test(pathname)||
+  new RegExp('^/api/v1/tracks/[^/]{1,200}$').test(pathname);
 }
 
 async function previewPublicApi(request:Request,env:Env):Promise<Response>{
