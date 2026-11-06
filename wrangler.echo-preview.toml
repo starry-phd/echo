@@ -6,3 +6,9 @@ workers_dev = true
 # Independent staging diagnostic Worker. NO custom domain, D1 or R2 binding.
 # Production is a separate future approval; not included in this preview.
 # Optional secret only: STARRY_BATTERY_KEY (never stored in Git).
+
+# Read-only service access to the EXISTING Starry ID Worker in this account.
+# Does not modify or redeploy Starry ID.
+[[services]]
+binding = "STARRY_ID_SERVICE"
+service = "starry-id"
