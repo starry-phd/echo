@@ -51,14 +51,16 @@ async function upstream(path:string,env:Env,init?:RequestInit):Promise<Response>
 async function status(env:Env):Promise<Response>{
  let appStatus:string|null=null,health=false;
  let appHttpStatus=0,healthHttpStatus=0;
+ let appError='',healthError='';
  try{const r=await upstream('/v1/apps/echo/config',env);appHttpStatus=r.status;
   if(r.ok){const o=await r.json() as {status?:unknown};appStatus=typeof o?.status==='string'?o.status:null;}
- }catch{/* no assumptions */}
+ }catch(error){appError=error instanceof Error?(error.name+': '+error.message).slice(0,180):'unknown';}
  try{const r=await upstream('/v1/health',env);healthHttpStatus=r.status;
   if(r.ok){const o=await r.json() as {status?:unknown};health=o?.status==='ok';}
- }catch{/* no assumptions */}
+ }catch(error){healthError=error instanceof Error?(error.name+': '+error.message).slice(0,180):'unknown';}
  return json({environment:'echo-api-staging',app_id:'echo',app_status:appStatus,id_health:health,
-  upstream_http:{app:appHttpStatus,health:healthHttpStatus},callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
+  upstream_http:{app:appHttpStatus,health:healthHttpStatus},upstream_errors:{app:appError,health:healthError},
+  callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
 }
 
 async function memberToken(request:Request,env:Env):Promise<string|null>{
