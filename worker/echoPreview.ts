@@ -1,4 +1,4 @@
-import {createRemoteJWKSet,jwtVerify} from 'jose';
+import {createRemoteJWKSet,customFetch,jwtVerify} from 'jose';
 
 /**
  * Isolated Echo/Starry ID integration preview.
@@ -6,7 +6,7 @@ import {createRemoteJWKSet,jwtVerify} from 'jose';
  * A web login cannot complete on this workers.dev hostname: Starry ID only
  * registered https://echo.starry.phd as its web callback origin.
  */
-type Env={STARRY_BATTERY_KEY?:string};
+type Env={STARRY_BATTERY_KEY?:string;STARRY_ID_SERVICE?:{fetch(request:Request):Promise<Response>}};
 const ID_BASE='https://id.starry.phd';
 const JWKS=createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{timeoutDuration:6500});
 const HEADERS={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY'} as const;
@@ -43,23 +43,34 @@ document.getElementById('detail').textContent='Starry ID 健康檢查：'+(d.id_
  return new Response(html,{headers:{...HEADERS,'content-type':'text/html; charset=utf-8','content-security-policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"}});
 }
 
-async function upstream(path:string,init?:RequestInit):Promise<Response>{
+async function upstream(path:string,env:Env,init?:RequestInit):Promise<Response>{
  const signal=AbortSignal.timeout(8500);
- return fetch(ID_BASE+path,{...init,redirect:'error',signal,headers:{accept:'application/json',...(init?.headers||{})}});
+ const request=new Request(ID_BASE+path,{...init,redirect:'error',signal,headers:{accept:'application/json',...(init?.headers||{})}});
+ return env.STARRY_ID_SERVICE?env.STARRY_ID_SERVICE.fetch(request):fetch(request);
 }
-async function status():Promise<Response>{
+async function status(env:Env):Promise<Response>{
  let appStatus:string|null=null,health=false;
- try{const r=await upstream('/v1/apps/echo/config');if(r.ok){const o=await r.json() as {status?:unknown};appStatus=typeof o?.status==='string'?o.status:null;}}catch{/* no assumptions */}
- try{const r=await upstream('/v1/health');if(r.ok){const o=await r.json() as {status?:unknown};health=o?.status==='ok';}}catch{/* no assumptions */}
- return json({environment:'echo-api-staging',app_id:'echo',app_status:appStatus,id_health:health,callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
+ let appHttpStatus=0,healthHttpStatus=0;
+ try{const r=await upstream('/v1/apps/echo/config',env);appHttpStatus=r.status;
+  if(r.ok){const o=await r.json() as {status?:unknown};appStatus=typeof o?.status==='string'?o.status:null;}
+ }catch{/* no assumptions */}
+ try{const r=await upstream('/v1/health',env);healthHttpStatus=r.status;
+  if(r.ok){const o=await r.json() as {status?:unknown};health=o?.status==='ok';}
+ }catch{/* no assumptions */}
+ return json({environment:'echo-api-staging',app_id:'echo',app_status:appStatus,id_health:health,
+  upstream_http:{app:appHttpStatus,health:healthHttpStatus},callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
 }
 
-async function memberToken(request:Request):Promise<string|null>{
+async function memberToken(request:Request,env:Env):Promise<string|null>{
  const raw=request.headers.get('Authorization')||'';
  const match=/^Bearer ([A-Za-z0-9_.-]+)$/.exec(raw);
  if(!match||match[1].length>8192)return null;
  try{
-  const {payload,protectedHeader}=await jwtVerify(match[1],JWKS,{
+  const keys=env.STARRY_ID_SERVICE?createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{
+   timeoutDuration:6500,
+   [customFetch]:(url,options)=>env.STARRY_ID_SERVICE!.fetch(new Request(url,options))
+  }):JWKS;
+  const {payload,protectedHeader}=await jwtVerify(match[1],keys,{
    issuer:'starry-id:production',audience:'starry',algorithms:['ES256'],clockTolerance:'5s'
   });
   if(protectedHeader.alg!=='ES256'||payload.app_id!=='echo'||typeof payload.sub!=='string'||!payload.sub)return null;
@@ -67,11 +78,11 @@ async function memberToken(request:Request):Promise<string|null>{
  }catch{return null;}
 }
 async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):Promise<Response>{
- const token=await memberToken(request);
+ const token=await memberToken(request,env);
  if(!token)return json({error:'A valid Starry ID Echo access token is required'},401);
  if(mode==='balance'){
   try{
-   const r=await upstream('/v1/me/battery',{headers:{Authorization:'Bearer '+token}});
+   const r=await upstream('/v1/me/battery',env,{headers:{Authorization:'Bearer '+token}});
    return json(await r.json(),r.status);
   }catch{return json({error:'Starry ID is not reachable'},503);}
  }
@@ -81,13 +92,13 @@ async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):P
  const body={task_type:'echo.ai',units:1,idempotency_key:crypto.randomUUID()};
  let id='';
  try{
-  const reserved=await upstream('/v1/battery/reservations',{
+  const reserved=await upstream('/v1/battery/reservations',env,{
    method:'POST',headers:{Authorization:'Bearer '+token,'x-starry-app-key':key,'content-type':'application/json'},body:JSON.stringify(body)});
   const data=await reserved.json().catch(()=>({})) as {reservation_id?:unknown;error?:{code?:string}};
   if(!reserved.ok)return json({ok:false,step:'reserve',status:reserved.status,error:data?.error?.code||'RESERVATION_FAILED'},reserved.status);
   id=typeof data.reservation_id==='string'?data.reservation_id:'';
   if(!id||!/^[-A-Za-z0-9_]{8,128}$/.test(id))return json({ok:false,step:'reserve',error:'Invalid reservation response'},502);
-  const released=await upstream('/v1/battery/reservations/'+encodeURIComponent(id)+'/release',{
+  const released=await upstream('/v1/battery/reservations/'+encodeURIComponent(id)+'/release',env,{
    method:'POST',headers:{'x-starry-app-key':key,'content-type':'application/json'},body:'{}'});
   if(!released.ok)return json({ok:false,step:'release',status:released.status,error:'Release not confirmed; reservation expires automatically'},502);
   return json({ok:true,reserved_units:1,released:true,charged_units:0});
@@ -96,7 +107,7 @@ async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):P
 export async function handlePreviewRequest(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url);
   if(request.method==='GET'&&url.pathname==='/')return page();
-  if(request.method==='GET'&&url.pathname==='/api/status')return status();
+  if(request.method==='GET'&&url.pathname==='/api/status')return status(env);
   if(request.method==='GET'&&url.pathname==='/api/battery/balance')return batteryResponse(request,env,'balance');
   if(request.method==='POST'&&url.pathname==='/api/battery/smoke')return batteryResponse(request,env,'smoke');
   return json({error:'Not found'},404);
