@@ -8,9 +8,11 @@ const manifest=JSON.parse(read('starry.app.json'));
 test('internal iOS and Android native profiles embed approved new public Worker URL only',()=>{
  for(const profile of ['development','preview']){
   assert.equal(eas.build[profile].distribution,'internal');
-  assert.equal(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo.starry.phd');
   assert.notEqual(eas.build[profile].env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo-starry.starry-phd.workers.dev');
  }
+ assert.equal(eas.build.development.env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo.starry.phd');
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo-api-staging.starry-phd.workers.dev');
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL,'https://id.starry.phd');
  assert.equal(eas.build.production.env?.EXPO_PUBLIC_ECHO_API_BASE_URL,undefined);
  assert.equal(eas.build.production.channel,'production');
  assert.equal(manifest.lifecycle.storeSubmissionAuthorized,false);
