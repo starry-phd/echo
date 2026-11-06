@@ -1,0 +1,8 @@
+name = "echo-api-staging"
+main = "worker/echoPreview.ts"
+compatibility_date = "2026-11-07"
+workers_dev = true
+
+# Independent staging diagnostic Worker. NO custom domain, D1 or R2 binding.
+# Production is a separate future approval; not included in this preview.
+# Optional secret only: STARRY_BATTERY_KEY (never stored in Git).
