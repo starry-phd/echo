@@ -30,7 +30,7 @@ test('status endpoint checks live Starry ID app configuration without changing i
  const saved=globalThis.fetch;const hits=[];
  try{
   globalThis.fetch=async(input)=>{
-   const url=String(input);
+   const url=input instanceof Request?input.url:String(input);
    hits.push(url);
    if(url.endsWith('/v1/apps/echo/config'))return Response.json({app_id:'echo',status:'active'});
    if(url.endsWith('/v1/health'))return Response.json({status:'ok'});
