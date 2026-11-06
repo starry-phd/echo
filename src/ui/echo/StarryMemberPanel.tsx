@@ -4,7 +4,7 @@ import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {formatPurgeDate} from '../../auth/starryId/memberFlow';
 import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
-import {NativeAppleSignInButton,nativeAppleAvailable,nativeAppleSignIn} from '../../auth/starryId/nativeSignIn';
+import {nativeRelaySignIn} from '../../auth/starryId/nativeSignIn';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -23,23 +23,14 @@ export function StarryMemberPanel(){
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
 
- const signedOut=state.kind==='signed-out';
-
- const [nativeApple,setNativeApple]=useState(false);
- useEffect(()=>{
-  if(Platform.OS==='web'||!signedOut)return;
-  let alive=true;
-  void nativeAppleAvailable().then(ok=>{if(alive)setNativeApple(ok);});
-  return()=>{alive=false;};
- },[signedOut]);
- const appleNative=async()=>{
+ const nativeRelay=async(provider:RelayProvider)=>{
   if(!env)return;
   try{
    setError('');
    const nonce=await starry.getNonce();
-   const result=await nativeAppleSignIn(env,nonce);
-   await starry.signIn({provider:'apple',idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
-  }catch{setError('Apple 登入未完成，請再試一次。');}
+   const result=await nativeRelaySignIn(env,provider,nonce);
+   await starry.signIn({provider:result.provider,idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
+  }catch{setError('繁星會員登入未完成，請再試一次。');}
  };
 
  const webRelay=async(provider:RelayProvider)=>{
@@ -82,10 +73,16 @@ export function StarryMemberPanel(){
        <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
       </Pressable>
      </View>:text('此網址不支援繁星會員登入，請改用正式網站。',true)}
-    </>:<>
-     {nativeApple&&<NativeAppleSignInButton dark={t.dark} disabled={starry.busy} onPress={()=>{void appleNative();}}/>}
-     {text('Google 帳號的手機版登入即將推出；也可以先使用網頁版登入。',true)}
-    </>}
+    </>:<View style={styles.row}>
+     <Pressable accessibilityRole="button" accessibilityLabel="透過繁星使用 Google 登入" disabled={starry.busy}
+      onPress={()=>{void nativeRelay('google');}} style={[styles.google,{borderColor:t.border},starry.busy&&styles.disabled]}>
+      <Text style={[styles.googleLabel,{fontSize:fontSize(15)}]}>使用 Google 帳號登入</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="透過繁星使用 Apple 登入" disabled={starry.busy}
+      onPress={()=>{void nativeRelay('apple');}} style={[styles.apple,starry.busy&&styles.disabled]}>
+      <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
+     </Pressable>
+    </View>}
     <View style={styles.row}>{link('服務條款','/terms')}{link('隱私權政策','/privacy')}</View>
    </>;break;
   case 'consent-required':
