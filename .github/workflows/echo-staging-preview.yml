@@ -62,6 +62,6 @@ jobs:
           curl -fsS --retry 4 --retry-delay 3 --retry-all-errors --max-time 15 https://echo-api-staging.starry-phd.workers.dev/api/status -o /tmp/echo-preview-status.json
           node - <<'NODE'
           const r=require('/tmp/echo-preview-status.json');
-          console.log('Echo registration:',r.app_status,'Starry ID health:',r.id_health);
+          console.log('Echo registration:',r.app_status,'Starry ID health:',r.id_health,'upstream HTTP:',r.upstream_http);
           if(r.environment!=='echo-api-staging'||r.app_id!=='echo'||r.app_status!=='active'||!r.id_health||r.can_login_from_preview!==false)process.exit(1);
           NODE
