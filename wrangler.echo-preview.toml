@@ -1,6 +1,6 @@
 name = "echo-api-staging"
 main = "worker/echoPreview.ts"
-compatibility_date = "2026-11-07"
+compatibility_date = "2026-11-03"
 workers_dev = true
 
 # Independent staging diagnostic Worker. NO custom domain, D1 or R2 binding.
