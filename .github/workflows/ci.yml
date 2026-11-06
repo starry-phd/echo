@@ -28,8 +28,24 @@ jobs:
           mkdir -p /tmp/echo-gitleaks
           tar -xf "/tmp/gitleaks_${version}_linux_x64.tar.gz" -C /tmp/echo-gitleaks gitleaks
           /tmp/echo-gitleaks/gitleaks version
-      - name: Reject secrets including Starry Battery sbk_ service keys
-        run: /tmp/echo-gitleaks/gitleaks git --config .gitleaks.toml --redact --no-banner --exit-code 1
+      - name: Reject secrets in this PR or push (including Starry Battery sbk_ keys)
+        shell: bash
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PR_BASE:-}" ] && [ -n "${PR_HEAD:-}" ]; then
+            git fetch --no-tags origin "${PR_HEAD}"
+            range="${PR_BASE}..${PR_HEAD}"
+          elif [ -n "${PUSH_BEFORE:-}" ] && [[ ! "${PUSH_BEFORE}" =~ ^0+$ ]]; then
+            range="${PUSH_BEFORE}..${PUSH_HEAD}"
+          else
+            range="HEAD~1..HEAD"
+          fi
+          /tmp/echo-gitleaks/gitleaks git --config .gitleaks.toml --redact --no-banner --exit-code 1 --log-opts "${range}"
   check:
     runs-on: ubuntu-latest
     steps:
