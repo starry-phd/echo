@@ -19,6 +19,7 @@ export function StarryMemberPanel(){
  const {fontSize}=useFontZoom();
  const [error,setError]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
+ const [batterySummary,setBatterySummary]=useState('');
  const {state,env}=starry;
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
@@ -103,6 +104,13 @@ export function StarryMemberPanel(){
     </View>
     {text('已登入繁星會員。個人資料、頭像與登入方式請到繁星帳號中心管理。',true)}
     <View style={styles.row}>{link('前往繁星帳號中心','/account')}</View>
+    <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
+      setBatterySummary('正在取得本月餘額…');
+      void starry.getBatteryBalance().then(b=>setBatterySummary(
+       b.period+' 本月額度 '+b.allowance+'、已用 '+b.used+'、預留中 '+b.reserved+'、剩餘 '+b.remaining
+      )).catch(()=>setBatterySummary('電池艙暫時無法查詢，不會扣除額度。'));
+     })}</View>
+    {batterySummary?text(batterySummary,true):null}
     <View style={styles.row}>{button('登出',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
     {!confirmDelete?button('刪除帳號',()=>setConfirmDelete(true),'danger'):<View style={[styles.confirm,{borderColor:'#b8324e'}]}>
      {text('刪除後有 7 天可以撤回（期間重新登入即可撤回），期滿後繁星會員資料會永久刪除，所有繁星 App 都無法再使用這個帳號。刪除帳號不會自動取消已在 App Store／Google Play 訂閱的項目，請另外到商店取消。')}
