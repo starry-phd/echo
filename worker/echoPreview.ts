@@ -93,13 +93,13 @@ async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):P
   return json({ok:true,reserved_units:1,released:true,charged_units:0});
  }catch{return json({ok:false,step:id?'release':'reserve',error:'Network failure; outstanding reservations expire automatically'},503);}
 }
-export default{
- async fetch(request:Request,env:Env):Promise<Response>{
+export async function handlePreviewRequest(request:Request,env:Env):Promise<Response>{
   const url=new URL(request.url);
   if(request.method==='GET'&&url.pathname==='/')return page();
   if(request.method==='GET'&&url.pathname==='/api/status')return status();
   if(request.method==='GET'&&url.pathname==='/api/battery/balance')return batteryResponse(request,env,'balance');
   if(request.method==='POST'&&url.pathname==='/api/battery/smoke')return batteryResponse(request,env,'smoke');
   return json({error:'Not found'},404);
- }
-};
+}
+
+export default {fetch:handlePreviewRequest};
