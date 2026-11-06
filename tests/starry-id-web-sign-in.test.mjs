@@ -184,9 +184,12 @@ test('member view helpers and Taiwan-date deletion notice',()=>{
  assert.deepEqual(stateFromError(new Error('x')),{kind:'unavailable'});
 });
 
-test('dark launch: production builds have no Starry ID URL, so the provider is disabled and the site unchanged',()=>{
- for(const file of ['.github/workflows/ci.yml','.github/workflows/deploy-worker.yml','eas.json'])
+test('dark launch: public production remains disabled while isolated internal preview can test login',()=>{
+ for(const file of ['.github/workflows/ci.yml','.github/workflows/deploy-worker.yml'])
   assert.doesNotMatch(read(file),/EXPO_PUBLIC_STARRY_ID_API_BASE_URL/,file);
+ const eas=JSON.parse(read('eas.json'));
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL,'https://id.starry.phd');
+ assert.equal(eas.build.production.env?.EXPO_PUBLIC_STARRY_ID_API_BASE_URL,undefined);
  const provider=read('src/auth/starryId/StarryIdProvider.tsx');
  assert.match(provider,/resolveStarryIdEnvironment\(process\.env\.EXPO_PUBLIC_STARRY_ID_API_BASE_URL\)/);
  assert.match(provider,/if\(!STARRY_ENV\)return <StarryIdContext\.Provider value=\{disabled\}>/);
