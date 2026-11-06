@@ -45,8 +45,12 @@ document.getElementById('detail').textContent='Starry ID 健康檢查：'+(d.id_
 
 async function upstream(path:string,env:Env,init?:RequestInit):Promise<Response>{
  const signal=AbortSignal.timeout(8500);
- const request=new Request(ID_BASE+path,{...init,redirect:'error',signal,headers:{accept:'application/json',...(init?.headers||{})}});
- return env.STARRY_ID_SERVICE?env.STARRY_ID_SERVICE.fetch(request):fetch(request);
+ // Cloudflare Workers supports manual redirect handling; the browser's
+ // redirect:'error' value is intentionally unsupported in the edge runtime.
+ const request=new Request(ID_BASE+path,{...init,redirect:'manual',signal,headers:{accept:'application/json',...(init?.headers||{})}});
+ const response=await (env.STARRY_ID_SERVICE?env.STARRY_ID_SERVICE.fetch(request):fetch(request));
+ if(response.status>=300&&response.status<400)throw new Error('Unexpected Starry ID redirect');
+ return response;
 }
 async function status(env:Env):Promise<Response>{
  let appStatus:string|null=null,health=false;
