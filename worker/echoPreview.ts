@@ -49,8 +49,8 @@ async function upstream(path:string,init?:RequestInit):Promise<Response>{
 }
 async function status():Promise<Response>{
  let appStatus:string|null=null,health=false;
- try{const r=await upstream('/v1/apps/echo/config');if(r.ok){const o:any=await r.json();appStatus=typeof o?.status==='string'?o.status:null;}}catch{/* no assumptions */}
- try{const r=await upstream('/v1/health');if(r.ok){const o:any=await r.json();health=o?.status==='ok';}}catch{/* no assumptions */}
+ try{const r=await upstream('/v1/apps/echo/config');if(r.ok){const o=await r.json() as {status?:unknown};appStatus=typeof o?.status==='string'?o.status:null;}}catch{/* no assumptions */}
+ try{const r=await upstream('/v1/health');if(r.ok){const o=await r.json() as {status?:unknown};health=o?.status==='ok';}}catch{/* no assumptions */}
  return json({environment:'echo-api-staging',app_id:'echo',app_status:appStatus,id_health:health,callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
 }
 
@@ -83,9 +83,9 @@ async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):P
  try{
   const reserved=await upstream('/v1/battery/reservations',{
    method:'POST',headers:{Authorization:'Bearer '+token,'x-starry-app-key':key,'content-type':'application/json'},body:JSON.stringify(body)});
-  const data:any=await reserved.json().catch(()=>({}));
+  const data=await reserved.json().catch(()=>({})) as {reservation_id?:unknown;error?:{code?:string}};
   if(!reserved.ok)return json({ok:false,step:'reserve',status:reserved.status,error:data?.error?.code||'RESERVATION_FAILED'},reserved.status);
-  id=String(data.reservation_id||'');
+  id=typeof data.reservation_id==='string'?data.reservation_id:'';
   if(!id||!/^[-A-Za-z0-9_]{8,128}$/.test(id))return json({ok:false,step:'reserve',error:'Invalid reservation response'},502);
   const released=await upstream('/v1/battery/reservations/'+encodeURIComponent(id)+'/release',{
    method:'POST',headers:{'x-starry-app-key':key,'content-type':'application/json'},body:'{}'});
