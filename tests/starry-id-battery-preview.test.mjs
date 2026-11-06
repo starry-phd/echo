@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import worker from '../worker/echoPreview.ts';
+import {handlePreviewRequest} from '../worker/echoPreview.ts';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const base='https://echo-api-staging.starry-phd.workers.dev';
@@ -16,7 +16,7 @@ test('staging preview uses its own Worker, workers.dev and no domains or databas
 });
 
 test('staging page is honest about web callback allow-list and never requests an access token',async()=>{
- const res=await worker.fetch(new Request(base+'/'),{});
+ const res=await handlePreviewRequest(new Request(base+'/'),{});
  assert.equal(res.status,200);
  const html=await res.text();
  assert.match(html,/echo-api-staging/);
@@ -36,7 +36,7 @@ test('status endpoint checks live Starry ID app configuration without changing i
    if(url.endsWith('/v1/health'))return Response.json({status:'ok'});
    throw new Error('Unexpected upstream URL');
   };
-  const res=await worker.fetch(new Request(base+'/api/status'),{});
+  const res=await handlePreviewRequest(new Request(base+'/api/status'),{});
   assert.equal(res.status,200);
   const body=await res.json();
   assert.equal(body.app_status,'active');
@@ -47,8 +47,8 @@ test('status endpoint checks live Starry ID app configuration without changing i
 });
 
 test('Battery requires verified Starry Echo access token; no unauthorized reserve or deduction',async()=>{
- const readBalance=await worker.fetch(new Request(base+'/api/battery/balance'),{});
- const smoke=await worker.fetch(new Request(base+'/api/battery/smoke',{method:'POST'}),{});
+ const readBalance=await handlePreviewRequest(new Request(base+'/api/battery/balance'),{});
+ const smoke=await handlePreviewRequest(new Request(base+'/api/battery/smoke',{method:'POST'}),{});
  assert.equal(readBalance.status,401);
  assert.equal(smoke.status,401);
  assert.match(read('worker/echoPreview.ts'),/task_type:'echo\.ai',units:1/);
