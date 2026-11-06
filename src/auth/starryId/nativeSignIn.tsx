@@ -1,17 +1,10 @@
-/**
- * Web / default build of the native sign-in bridge. Metro picks
- * nativeSignIn.native.tsx on iOS and Android; the web bundle never imports
- * expo-secure-store, expo-apple-authentication, expo-web-browser or expo-crypto.
- */
+/** The web bundle never imports native OAuth, secure-store, or browser modules. */
 import type {StarryIdEnvironment} from './env';
+import type {RelayProvider} from './starryRelay';
 import type {RefreshTokenStore} from './storage';
-
-export type NativeAppleResult={idToken:string;code:string|null;redirectUri:string|null};
-export type AppleSignInButtonProps={onPress:()=>void;disabled?:boolean;dark?:boolean};
-
+export type NativeRelayResult={provider:RelayProvider;idToken:string;code:string|null;redirectUri:string|null};
+export const NATIVE_RELAY_RETURN_URL='echostarry://auth/apple';
 export const nativeRefreshTokenStore=():RefreshTokenStore|null=>null;
-export const nativeAppleAvailable=async():Promise<boolean>=>false;
-export const nativeAppleSignIn:(env:StarryIdEnvironment,rawNonce:string)=>Promise<NativeAppleResult>=async()=>{
- throw new Error('Native Sign in with Apple is not available on this platform');
+export const nativeRelaySignIn=async(_env:StarryIdEnvironment,_provider:RelayProvider,_nonce:string):Promise<NativeRelayResult>=>{
+ throw new Error('Native sign-in is unavailable on the web');
 };
-export const NativeAppleSignInButton:(props:AppleSignInButtonProps)=>null=()=>null;
