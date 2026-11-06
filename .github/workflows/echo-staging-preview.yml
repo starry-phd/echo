@@ -44,8 +44,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
-            echo "::error::Missing configured Cloudflare Actions secrets for existing Starry account";exit 1
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN missing for this PR staging workflow; configure an existing-account scoped secret, never publish it";exit 1
+          fi
+          # Account is already configured in the existing project. Never print
+          # its value or commit a duplicate account ID in this preview change.
+          if [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            CLOUDFLARE_ACCOUNT_ID="$(node -e "const t=require('fs').readFileSync('wrangler.toml','utf8');const m=t.match(/^account_id\\s*=\\s*\\\"([a-f0-9]{32})\\\"/m);if(!m)process.exit(1);process.stdout.write(m[1])")"
+            export CLOUDFLARE_ACCOUNT_ID
           fi
           test "$(node -p "require('fs').readFileSync('wrangler.echo-preview.toml','utf8').includes('name = \"echo-api-staging\"')")" = "true"
           npx --yes wrangler@4 deploy --config wrangler.echo-preview.toml
