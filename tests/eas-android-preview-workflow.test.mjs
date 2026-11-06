@@ -22,7 +22,8 @@ test('it only queues an internal Android APK: no store submit, no OTA update, no
  const eas=JSON.parse(read('eas.json'));
  assert.equal(eas.build.preview.distribution,'internal');
  assert.deepEqual(eas.build.preview.android,{buildType:'apk'});
- assert.equal(eas.build.preview.env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo.starry.phd');
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_ECHO_API_BASE_URL,'https://echo-api-staging.starry-phd.workers.dev');
+ assert.equal(eas.build.preview.env.EXPO_PUBLIC_STARRY_ID_API_BASE_URL,'https://id.starry.phd');
  assert.equal(JSON.parse(read('starry.app.json')).lifecycle.storeSubmissionAuthorized,false);
  for(const other of ['ci.yml','deploy-worker.yml','visual-check.yml'])
   assert.doesNotMatch(read('.github/workflows/'+other),/eas-cli|eas build|EXPO_TOKEN/,other);
