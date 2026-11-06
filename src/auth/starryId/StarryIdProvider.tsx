@@ -14,6 +14,9 @@ import type {StarryIdSession} from './session';
 import {createMemoryRefreshTokenStore,createSessionStorageRefreshTokenStore} from './storage';
 import {nativeRefreshTokenStore} from './nativeSignIn';
 import type {RefreshTokenStore} from './storage';
+import type {components as StarryIdComponents} from '../../../packages/starry-id-sdk/src/generated';
+
+export type StarryBatteryBalance=StarryIdComponents['schemas']['BatteryBalance'];
 
 /**
  * Member state for the whole app. DISABLED unless EXPO_PUBLIC_STARRY_ID_API_BASE_URL
@@ -34,13 +37,15 @@ export type StarryIdContextValue={
  signOut(everywhere?:boolean):Promise<void>;
  requestDeletion():Promise<void>;
  cancelDeletion():Promise<void>;
+ getBatteryBalance():Promise<StarryBatteryBalance>;
 };
 
 const disabled:StarryIdContextValue={
  enabled:false,env:null,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},cancelDeletion:async()=>{}
+ signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},cancelDeletion:async()=>{},
+ getBatteryBalance:async()=>{throw new Error('Starry ID disabled');}
 };
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
@@ -100,7 +105,16 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    const purgeAt=await requestAccountDeletion(session);
    return {kind:'signed-out',notice:'帳號已排定於 '+formatPurgeDate(purgeAt)+' 刪除，所有裝置都已登出。期限內重新登入即可撤回。'};
   }),
-  cancelDeletion:()=>run(async()=>{await cancelAccountDeletion(session);return stateFromMember(await fetchMe(session));})
+  cancelDeletion:()=>run(async()=>{await cancelAccountDeletion(session);return stateFromMember(await fetchMe(session));}),
+  getBatteryBalance:async()=>{
+   if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
+   const result=await session.request('/v1/me/battery');
+   const r=result as {balance?:Partial<StarryBatteryBalance>}|null;
+   const b=r?.balance;
+   if(!b||typeof b.period!=='string'||!['allowance','used','reserved','remaining','resets_at'].every(k=>Number.isSafeInteger(b[k as keyof StarryBatteryBalance])))
+    throw new Error('Battery 餘額資料格式不正確');
+   return b as StarryBatteryBalance;
+  }
  }),[env,state,busy,deps,run,session]);
 
  return <StarryIdContext.Provider value={value}>{children}</StarryIdContext.Provider>;
