@@ -48,7 +48,13 @@ test('one central session is exchanged between Apps with isolated Refresh Tokens
 });
 test('Echo only enables actual native shared storage, not per-App Android preferences or a Web fallback',async()=>{
  const app=JSON.parse(read('app.json')).expo;
- assert.ok(app.ios.entitlements['keychain-access-groups'].includes('$(AppIdentifierPrefix)phd.starry.shared'));
+ assert.deepEqual(app.ios.entitlements['keychain-access-groups'],[
+  '$(AppIdentifierPrefix)phd.starry.echo',
+  '$(AppIdentifierPrefix)phd.starry.shared'
+ ],'private Keychain group must precede shared SSO group');
+ const nativeSdk=read('src/auth/starryId/nativeSignIn.native.tsx');
+ assert.match(nativeSdk,/SecureStore\.setItemAsync\(key,value,SECURE_OPTIONS\)/);
+ assert.doesNotMatch(nativeSdk,/accessGroup:IOS_SSO_ACCESS_GROUP/);
  const native=read('src/auth/starryId/deviceSharedStorage.native.ts');
  assert.match(native,/accessGroup:IOS_SSO_ACCESS_GROUP/);
  assert.match(native,/SecureStore\.WHEN_UNLOCKED_THIS_DEVICE_ONLY/);

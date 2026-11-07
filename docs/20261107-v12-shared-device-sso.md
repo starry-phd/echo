@@ -5,7 +5,7 @@
 ## 本次差異
 - 同步 Starry ID 主專案最新版官方前端單檔 `sdk/starry-client.ts` 與 OpenAPI 3.1，原來的後端 `sdk/starry-sdk.ts` 和 Gitleaks 規則仍與中央一致。
 - 官方 SDK 新增同機 SSO `sharedStorage`，並在會員狀態還原、回前景呼叫官方 `syncDeviceSignIn()`。上鎖／未授權等原有狀態仍 fail closed，網頁維持每分頁安全儲存。
-- iOS 新增 `keychain-access-groups` 配置，群組 `$(AppIdentifierPrefix)phd.starry.shared`；只在同一個 Apple Team 簽署的 iOS App 間共用 `starry.sso`，各 App Refresh Token 仍完全隔離。這是 iOS 簽署 entitlement，**不是為 Apple 登入新增 OAuth 設定**。所有繁星 iOS App 需用**同一個** group 才有跨 App 效果。
+- iOS 新增固定的 SSO Keychain Group `$(AppIdentifierPrefix)phd.starry.shared`。**重要：entitlements 第一項保留 App 專用的 `$(AppIdentifierPrefix)phd.starry.echo`，第二項才是共用群組**；所有未指定 accessGroup 的本 App Refresh Token 會落在第一個私有群組，只有鍵名 `starry.sso` 使用第二個共享群組。共用群組只在相同 Apple Team 簽署且同設定的 iOS Apps 間可讀。這不是新增 Apple OAuth 後台設定。
 - Android 同機跨 App SSO 在 **2026-11-07.14 已改為選做**。本 PR 不開發 Android 共用提供者；保留各 App 私有的 Refresh Token，不能假裝 Android 已自動同步登入，也不以此阻礙 Web/iOS 測試。
 - iOS 共享群組需要重新簽署安裝新版 App；尚未真機驗收。當前 Web staging 不具備跨 App 儲存，不能代替真機 SSO 測試。
 - 刪除／登出／切換帳號的中央 SSO 狀態需要跨 App 實機驗收後才能正式啟用。未新增 RevenueCat、金鑰、R2 音訊讀取或付費操作。

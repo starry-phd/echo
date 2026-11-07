@@ -42,6 +42,7 @@
       ],
       "entitlements": {
         "keychain-access-groups": [
+          "$(AppIdentifierPrefix)phd.starry.echo",
           "$(AppIdentifierPrefix)phd.starry.shared"
         ]
       }
