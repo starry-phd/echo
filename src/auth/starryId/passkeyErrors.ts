@@ -11,8 +11,7 @@ export function passkeyErrorMessage(error:unknown):string|null{
   return '找不到可使用的 Passkey，請改用 Apple 或 Google 帳號登入。';
  if(code==='BadConfiguration'||/doesn't seem to be linked/i.test(message))
   return '手機 Passkey 尚未完成系統設定，請使用開發版 App，並確認管理員已登記裝置簽章。';
- if(code==='REAUTH_REQUIRED')
-  return '安全起見，新增 Passkey 前請在 10 分鐘內重新登入繁星會員。';
+ // Current Starry ID Passkey registration works regardless of how long ago the member signed in.
  if(code==='NotSupported'||code==='PASSKEY_UNSUPPORTED'||/not supported/i.test(message))
   return '這個裝置不支援 Passkey，請改用 Apple 或 Google 登入。';
  return 'Passkey 暫時無法使用，請稍後重試，或改用 Apple／Google 登入。';
