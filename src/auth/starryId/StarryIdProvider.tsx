@@ -16,6 +16,8 @@ import {createMemoryRefreshTokenStore,createSessionStorageRefreshTokenStore} fro
 import {nativeRefreshTokenStore} from './nativeSignIn';
 import type {RefreshTokenStore} from './storage';
 import type {components as StarryIdComponents} from '../../../packages/starry-id-sdk/src/generated';
+import {ownerTaskPriceRequest} from './echoBackendSettings';
+import type {EchoTaskPrice} from './echoBackendSettings';
 
 export type StarryBatteryBalance=StarryIdComponents['schemas']['BatteryBalance'];
 export type StarryQuantumBattery=StarryIdComponents['schemas']['QuantumBattery'];
@@ -40,6 +42,8 @@ export type StarryIdContextValue={
  signOut(everywhere?:boolean):Promise<void>;
  requestDeletion():Promise<void>;
  getBatteryBalance():Promise<StarryBatteryInfo>;
+ getTaskPrices():Promise<EchoTaskPrice[]>;
+ saveTaskPrice(price:EchoTaskPrice):Promise<EchoTaskPrice>;
 };
 
 const disabled:StarryIdContextValue={
@@ -47,7 +51,9 @@ const disabled:StarryIdContextValue={
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
  signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
- getBatteryBalance:async()=>{throw new Error('Starry ID disabled');}
+ getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
+ getTaskPrices:async()=>{throw new Error('Starry ID disabled');},
+ saveTaskPrice:async()=>{throw new Error('Starry ID disabled');}
 };
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
@@ -125,6 +131,16 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    await requestAccountDeletion(session);
    return {kind:'signed-out',notice:'繁星會員帳號已立即永久刪除，無法復原。商店訂閱須自行取消。'};
   }),
+  getTaskPrices:async()=>{
+   if(state.kind!=='signed-in'||state.member.staffRole!=='owner')throw new Error('只有超級管理員可以查看設定');
+   return ownerTaskPriceRequest(session,process.env.EXPO_PUBLIC_ECHO_API_BASE_URL||'','GET');
+  },
+  saveTaskPrice:async price=>{
+   if(state.kind!=='signed-in'||state.member.staffRole!=='owner')throw new Error('只有超級管理員可以修改設定');
+   const list=await ownerTaskPriceRequest(session,process.env.EXPO_PUBLIC_ECHO_API_BASE_URL||'','PATCH',price);
+   if(list.length!==1)throw new Error('Echo task update was not acknowledged');
+   return list[0];
+  },
   getBatteryBalance:async()=>{
    if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
    const result=await session.request('/v1/me/battery');
