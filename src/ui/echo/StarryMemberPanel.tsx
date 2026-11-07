@@ -1,7 +1,6 @@
 import {useEffect,useState} from 'react';
-import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
-import {formatPurgeDate} from '../../auth/starryId/memberFlow';
 import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
 import {nativeRelaySignIn} from '../../auth/starryId/nativeSignIn';
@@ -19,6 +18,7 @@ export function StarryMemberPanel(){
  const {fontSize}=useFontZoom();
  const [error,setError]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
+ const [deleteConfirmation,setDeleteConfirmation]=useState('');
  const [batterySummary,setBatterySummary]=useState('');
  const {state,env}=starry;
 
@@ -106,23 +106,29 @@ export function StarryMemberPanel(){
     <View style={styles.row}>{link('前往繁星帳號中心','/account')}</View>
     <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
       setBatterySummary('正在取得本月餘額…');
-      void starry.getBatteryBalance().then(b=>setBatterySummary(
-       b.period+' 本月額度 '+b.allowance+'、已用 '+b.used+'、預留中 '+b.reserved+'、剩餘 '+b.remaining
+      void starry.getBatteryBalance().then(({balance:b,quantum:q})=>setBatterySummary(
+       b.period+' 免費月額度 '+b.allowance+'、已用 '+b.used+'、預留中 '+b.reserved+'、剩餘 '+b.remaining+'；本 App 量子電池可用 '+q.available+' 顆（已預留 '+q.reserved+' 顆）。任務優先使用免費月額度，不足才使用量子電池。'
       )).catch(()=>setBatterySummary('電池艙暫時無法查詢，不會扣除額度。'));
      })}</View>
     {batterySummary?text(batterySummary,true):null}
     <View style={styles.row}>{button('登出',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
     {!confirmDelete?button('刪除帳號',()=>setConfirmDelete(true),'danger'):<View style={[styles.confirm,{borderColor:'#b8324e'}]}>
-     {text('刪除後有 7 天可以撤回（期間重新登入即可撤回），期滿後繁星會員資料會永久刪除，所有繁星 App 都無法再使用這個帳號。刪除帳號不會自動取消已在 App Store／Google Play 訂閱的項目，請另外到商店取消。')}
-     <View style={styles.row}>{button('確認刪除帳號',()=>{setConfirmDelete(false);void starry.requestDeletion();},'danger')}{button('取消',()=>setConfirmDelete(false))}</View>
+     {text('確定刪除後將立即永久刪除整個繁星會員帳號，無法復原、沒有撤回期。刪除不會自動取消 App Store／Google Play 訂閱，請自行前往商店取消。')}
+     {text('如確定刪除，請輸入 DELETE',true)}
+     <TextInput accessibilityLabel="輸入 DELETE 確認永久刪除" autoCapitalize="characters" autoCorrect={false}
+      value={deleteConfirmation} onChangeText={setDeleteConfirmation}
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]} placeholder="DELETE" placeholderTextColor={t.muted}/>
+     <View style={styles.row}>
+      {button('確認永久刪除',()=>{
+       if(deleteConfirmation!=='DELETE'){setError('必須輸入 DELETE 才能永久刪除。');return;}
+       setConfirmDelete(false);setDeleteConfirmation('');void starry.requestDeletion();
+      },'danger')}
+      {button('取消',()=>{setConfirmDelete(false);setDeleteConfirmation('');})}
+     </View>
     </View>}
    </>;break;
   }
-  case 'pending-deletion':
-   body=<>
-    {text('這個帳號將於 '+formatPurgeDate(state.purgeAt)+' 刪除。撤回後即可繼續使用。')}
-    <View style={styles.row}>{button('撤回刪除',()=>{void starry.cancelDeletion();},'primary')}{button('登出',()=>{void starry.signOut();})}</View>
-   </>;break;
+  case 'pending-deletion':body=text('繁星會員帳號狀態無法使用，請至帳號中心確認。');break;
   case 'suspended':body=text('這個帳號已被停權，已為你登出。如有疑問請聯絡繁星客服。');break;
   case 'maintenance':body=text('繁星會員服務維護中，會員功能暫停；其他頁面可正常瀏覽。',true);break;
   case 'update-required':body=text('請更新 App 至 '+state.minVersion+' 以上版本後再使用會員功能。');break;
@@ -151,5 +157,6 @@ const styles=StyleSheet.create({
  avatar:{width:56,height:56,borderRadius:28},
  initial:{alignItems:'center',justifyContent:'center'},
  name:{fontWeight:'900'},
- confirm:{borderWidth:1,borderRadius:12,padding:12,gap:10}
+ confirm:{borderWidth:1,borderRadius:12,padding:12,gap:10},
+ deleteInput:{borderWidth:1,borderRadius:10,minHeight:44,paddingHorizontal:12,alignSelf:'stretch'}
 });
