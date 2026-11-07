@@ -15,6 +15,7 @@ export type StarryMember=Readonly<{
  hasDisplayName:boolean;
  avatarPath:string|null;
  profileVersion:number;
+ staffRole:'owner'|'admin'|'support'|null;
  deletionPurgeAt:number|null;
  consent:Readonly<{termsVersion:string;privacyVersion:string;required:boolean}>;
 }>;
@@ -57,6 +58,7 @@ export function parseStarryMe(value:unknown):StarryMember{
   hasDisplayName:Boolean(name),
   avatarPath,
   profileVersion:version,
+  staffRole:value.staff_role==='owner'||value.staff_role==='admin'||value.staff_role==='support'?value.staff_role:null,
   deletionPurgeAt:optionalTimestamp(value.deletion_purge_at,'deletion_purge_at'),
   consent:Object.freeze({termsVersion:consent.terms_version,privacyVersion:consent.privacy_version,required:consent.required})
  });

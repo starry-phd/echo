@@ -98,8 +98,8 @@ test('Battery requires verified Starry Echo access token; no unauthorized reserv
  const smoke=await handlePreviewRequest(new Request(base+'/api/battery/smoke',{method:'POST'}),{});
  assert.equal(readBalance.status,401);
  assert.equal(smoke.status,401);
- assert.match(read('worker/echoPreview.ts'),/task_type:'echo\.ai',units:1/);
- assert.match(read('worker/echoPreview.ts'),/\/release/);
+ assert.match(read('worker/echoPreview.ts'),/taskType:'echo\.preview-check',taskLabel:'測試預留後釋放',units:1/);
+ assert.match(read('worker/echoPreview.ts'),/sdk\.release\(reservationId\)/);
  assert.doesNotMatch(read('worker/echoPreview.ts'),/\/commit/);
  assert.match(read('worker/echoPreview.ts'),/STARRY_BATTERY_KEY/);
 });

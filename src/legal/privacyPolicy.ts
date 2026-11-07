@@ -69,7 +69,7 @@ export const PRIVACY_POLICY_SECTIONS:PolicySection[]=[
  * behaviour of src/auth/starryId/* and starry-phd/id integration guide §2–4, §11.
  * Set PRIVACY_POLICY_MEMBER_UPDATED to the actual launch date when login opens.
  */
-export const PRIVACY_POLICY_MEMBER_UPDATED='2026-11-03';
+export const PRIVACY_POLICY_MEMBER_UPDATED='2026-11-07';
 export const STARRY_ID_PRIVACY_URL='https://id.starry.phd/privacy';
 export const STARRY_ID_TERMS_URL='https://id.starry.phd/terms';
 export const STARRY_ID_DELETE_URL='https://id.starry.phd/account/delete';
@@ -81,7 +81,7 @@ export const PRIVACY_POLICY_MEMBER_SECTIONS:PolicySection[]=[
  ]},
  {heading:'二、繁星會員登入（Starry ID）',paragraphs:[
   '繁星會員帳號由繁星中央會員系統 Starry ID（https://id.starry.phd）統一管理，同一個帳號可用於繁星生態系的各款 App。你使用 Google 或 Apple 帳號登入時，Google 或 Apple 會把用來驗證身分的登入憑證交給 Starry ID 驗證；Starry ID 如何收集、使用與保存會員資料，請見其隱私權政策 '+STARRY_ID_PRIVACY_URL+' 與服務條款 '+STARRY_ID_TERMS_URL+'。',
-  '本 App 只向 Starry ID 讀取並顯示：會員編號（不含個人資訊的識別碼）、顯示名稱、頭像、帳號狀態與條款同意狀態。本 App 不讀取、不保存你的 Email、電話、生日或地點等其他會員欄位（這些由你在繁星帳號中心自行管理），我們的伺服器也不另外儲存會員資料。',
+  '本 App 只向 Starry ID 讀取並顯示：會員編號（不含個人資訊的識別碼）、顯示名稱、頭像、帳號狀態與條款同意狀態。本 App 不讀取、不保存你的 Email、電話、生日或地點等其他會員欄位（這些由你在繁星帳號中心自行管理），也不複製完整會員主檔。超級管理員修改本 App 的電池任務價格時，Echo 只在自己的資料庫記錄任務代碼、價格、時間及 Starry user_id 作為變更稽核，不寫入 Starry ID 資料庫。',
   '網頁版登入時會整頁前往 Starry ID 的登入頁，再回到本 App；本 App 的網頁不載入 Google 或 Apple 的程式。登入過程中，一次性的驗證資訊會暫存在瀏覽器的 sessionStorage，完成後立即刪除。',
   '登入憑證的保存：網頁版的短效存取憑證只存在記憶體，續期憑證存在瀏覽器的 sessionStorage，關閉分頁即清除；手機 App 推出會員登入後，憑證會存在系統提供的安全儲存區（iOS 鑰匙圈、Android Keystore）。登出時會一併清除。'
  ]},
@@ -104,7 +104,7 @@ export const PRIVACY_POLICY_MEMBER_SECTIONS:PolicySection[]=[
   '當你使用「分享」時，本 App 會開啟你裝置內建的分享選單；分享的內容與對象由你決定，我們不會得知分享給誰。'
  ]},
  {heading:'七、刪除帳號',paragraphs:[
-  '你可以在本 App 的會員頁，或到 '+STARRY_ID_DELETE_URL+' 申請刪除繁星會員帳號。申請後所有裝置都會登出，7 天內重新登入即可撤回；期滿後由 Starry ID 永久刪除會員資料，所有繁星 App 都無法再使用該帳號。刪除帳號不會自動取消你在 App Store 或 Google Play 的訂閱，請另外到商店取消。'
+  '你可以在本 App 的會員頁，或到 '+STARRY_ID_DELETE_URL+' 申請刪除繁星會員帳號。確認後 Starry ID 會立即永久刪除會員帳號與資料，沒有撤回期、無法復原；所有裝置都會登出，所有繁星 App 都無法再使用該帳號。刪除帳號不會自動取消你在 App Store 或 Google Play 的訂閱，請另外到商店取消。'
  ]},
  {heading:'八、兒童隱私',paragraphs:[
   '本 App 並非專為 13 歲以下兒童設計，我們也不會在知情的情況下收集兒童的個人資料。'
@@ -119,7 +119,7 @@ export const PRIVACY_POLICY_MEMBER_SECTIONS:PolicySection[]=[
   `如有任何隱私問題，請來信：${PRIVACY_CONTACT_EMAIL}`
  ]},
  {heading:'English summary',paragraphs:[
-  `${PRIVACY_APP_NAME} can be used as a guest without any personal information, or with an optional Starry member account. Member accounts are managed by Starry ID (https://id.starry.phd); signing in with Google or Apple sends an identity token to Starry ID for verification, under Starry ID's privacy policy (${STARRY_ID_PRIVACY_URL}). This app only reads your member ID, display name, avatar, account status and consent status, and does not store member data on its servers. Web sign-in keeps the short-lived token in memory and the refresh token in sessionStorage; the mobile apps will use the system secure storage. Device preferences, a random guest nickname and on-device favourites/hidden lists stay on your device. Delete your account in the app or at ${STARRY_ID_DELETE_URL} (7-day withdrawal period; store subscriptions are not cancelled automatically). No ads, analytics, tracking or data sales. Not directed to children under 13. Contact: ${PRIVACY_CONTACT_EMAIL}. Last updated ${PRIVACY_POLICY_MEMBER_UPDATED}.`
+  `${PRIVACY_APP_NAME} can be used as a guest without any personal information, or with an optional Starry member account. Member accounts are managed by Starry ID (https://id.starry.phd); signing in with Google or Apple sends an identity token to Starry ID for verification, under Starry ID's privacy policy (${STARRY_ID_PRIVACY_URL}). This app only reads your member ID, display name, avatar, account status and consent status, and does not copy the full central member profile. Owner changes to Echo's Battery task prices are audited with Starry user_id and task settings in Echo's own database. Web sign-in keeps the short-lived token in memory and the refresh token in sessionStorage; the mobile apps will use the system secure storage. Device preferences, a random guest nickname and on-device favourites/hidden lists stay on your device. Delete your account in the app or at ${STARRY_ID_DELETE_URL} (deletion is immediate and irreversible; store subscriptions are not cancelled automatically). No ads, analytics, tracking or data sales. Not directed to children under 13. Contact: ${PRIVACY_CONTACT_EMAIL}. Last updated ${PRIVACY_POLICY_MEMBER_UPDATED}.`
  ]}
 ];
 

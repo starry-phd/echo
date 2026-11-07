@@ -1,12 +1,13 @@
-import {createContext,useCallback,useContext,useMemo,useRef,useState} from 'react';
+import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState} from 'react';
 import type {ReactNode} from 'react';
 import {Platform} from 'react-native';
 import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
-import {acceptCurrentConsent,cancelAccountDeletion,fetchMe,requestAccountDeletion,requestNonce,signOut} from './memberApi';
+import {acceptCurrentConsent,fetchAppConfig,fetchMe,requestAccountDeletion,requestNonce,signOut} from './memberApi';
 import type {ProviderSignIn,PublicFetch} from './memberApi';
-import {formatPurgeDate,stateFromError,stateFromMember} from './memberFlow';
+import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
+import {evaluateAppAvailability} from './appConfig';
 import type {MemberViewState} from './memberFlow';
 import {completeSignIn,loadMemberState} from './memberSession';
 import {createStarryIdSession} from './session';
@@ -15,8 +16,12 @@ import {createMemoryRefreshTokenStore,createSessionStorageRefreshTokenStore} fro
 import {nativeRefreshTokenStore} from './nativeSignIn';
 import type {RefreshTokenStore} from './storage';
 import type {components as StarryIdComponents} from '../../../packages/starry-id-sdk/src/generated';
+import {ownerTaskPriceRequest} from './echoBackendSettings';
+import type {EchoTaskPrice} from './echoBackendSettings';
 
 export type StarryBatteryBalance=StarryIdComponents['schemas']['BatteryBalance'];
+export type StarryQuantumBattery=StarryIdComponents['schemas']['QuantumBattery'];
+export type StarryBatteryInfo={balance:StarryBatteryBalance;quantum:StarryQuantumBattery};
 
 /**
  * Member state for the whole app. DISABLED unless EXPO_PUBLIC_STARRY_ID_API_BASE_URL
@@ -36,16 +41,19 @@ export type StarryIdContextValue={
  acceptConsent():Promise<void>;
  signOut(everywhere?:boolean):Promise<void>;
  requestDeletion():Promise<void>;
- cancelDeletion():Promise<void>;
- getBatteryBalance():Promise<StarryBatteryBalance>;
+ getBatteryBalance():Promise<StarryBatteryInfo>;
+ getTaskPrices():Promise<EchoTaskPrice[]>;
+ saveTaskPrice(price:EchoTaskPrice):Promise<EchoTaskPrice>;
 };
 
 const disabled:StarryIdContextValue={
  enabled:false,env:null,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},cancelDeletion:async()=>{},
- getBatteryBalance:async()=>{throw new Error('Starry ID disabled');}
+ signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
+ getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
+ getTaskPrices:async()=>{throw new Error('Starry ID disabled');},
+ saveTaskPrice:async()=>{throw new Error('Starry ID disabled');}
 };
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
@@ -76,6 +84,18 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     :{kind:'signed-out'})});
  }
  const session=sessionRef.current;
+ const version=Constants.expoConfig?.version??'';
+ // Read the public status/min_version/config on launch. Any failure gates
+ // member and Battery actions closed while public Echo screens still render.
+ useEffect(()=>{
+  let alive=true;
+  void fetchAppConfig(env,browserFetch).then(config=>{
+   if(!alive)return;
+   const gate=stateFromAvailability(evaluateAppAvailability(config,version));
+   if(gate)setState(gate);
+  });
+  return()=>{alive=false;};
+ },[env,version]);
  const deps=useMemo(()=>({env,fetch:browserFetch,session,appVersion:Constants.expoConfig?.version??''}),[env,session]);
 
  const run=useCallback(async(task:()=>Promise<MemberViewState|void>)=>{
@@ -92,30 +112,47 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    loaded.current=true;
    void run(()=>loadMemberState(deps));
   },
-  getNonce:()=>requestNonce(env,browserFetch),
-  signIn:input=>run(()=>completeSignIn(deps,input)),
+  getNonce:async()=>{
+   const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+   if(gate)throw new Error('繁星會員目前無法登入或需要更新');
+   return requestNonce(env,browserFetch);
+  },
+  signIn:input=>run(async()=>{
+   const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+   return gate??await completeSignIn(deps,input);
+  }),
   acceptConsent:()=>run(async()=>{
    if(state.kind!=='consent-required')return;
    await acceptCurrentConsent(session,state.member);
    return stateFromMember(await fetchMe(session));
   }),
   signOut:(everywhere=false)=>run(async()=>{await signOut(session,everywhere);return {kind:'signed-out'};}),
-  // Starry ID ends every session on deletion; withdrawing needs a fresh sign-in within 7 days.
   requestDeletion:()=>run(async()=>{
-   const purgeAt=await requestAccountDeletion(session);
-   return {kind:'signed-out',notice:'帳號已排定於 '+formatPurgeDate(purgeAt)+' 刪除，所有裝置都已登出。期限內重新登入即可撤回。'};
+   await requestAccountDeletion(session);
+   return {kind:'signed-out',notice:'繁星會員帳號已立即永久刪除，無法復原。商店訂閱須自行取消。'};
   }),
-  cancelDeletion:()=>run(async()=>{await cancelAccountDeletion(session);return stateFromMember(await fetchMe(session));}),
+  getTaskPrices:async()=>{
+   if(state.kind!=='signed-in'||state.member.staffRole!=='owner')throw new Error('只有超級管理員可以查看設定');
+   return ownerTaskPriceRequest(session,process.env.EXPO_PUBLIC_ECHO_API_BASE_URL||'','GET');
+  },
+  saveTaskPrice:async price=>{
+   if(state.kind!=='signed-in'||state.member.staffRole!=='owner')throw new Error('只有超級管理員可以修改設定');
+   const list=await ownerTaskPriceRequest(session,process.env.EXPO_PUBLIC_ECHO_API_BASE_URL||'','PATCH',price);
+   if(list.length!==1)throw new Error('Echo task update was not acknowledged');
+   return list[0];
+  },
   getBatteryBalance:async()=>{
    if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
    const result=await session.request('/v1/me/battery');
-   const r=result as {balance?:Partial<StarryBatteryBalance>}|null;
-   const b=r?.balance;
+   const r=result as {balance?:Partial<StarryBatteryBalance>;quantum?:Partial<StarryQuantumBattery>}|null;
+   const b=r?.balance,q=r?.quantum;
    if(!b||typeof b.period!=='string'||!['allowance','used','reserved','remaining','resets_at'].every(k=>Number.isSafeInteger(b[k as keyof StarryBatteryBalance])))
-    throw new Error('Battery 餘額資料格式不正確');
-   return b as StarryBatteryBalance;
+    throw new Error('Battery 免費餘額資料格式不正確');
+   if(!q||q.app_id!=='echo'||!['balance','reserved','available'].every(k=>Number.isSafeInteger(q[k as keyof StarryQuantumBattery])))
+    throw new Error('量子電池資料格式不正確');
+   return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
- }),[env,state,busy,deps,run,session]);
+ }),[env,state,busy,deps,run,session,version]);
 
  return <StarryIdContext.Provider value={value}>{children}</StarryIdContext.Provider>;
 }

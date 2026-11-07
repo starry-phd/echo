@@ -1,15 +1,12 @@
-import {createRemoteJWKSet,customFetch,jwtVerify} from 'jose';
+import {Starry,StarryError} from './vendor/starry-sdk';
+import {verifyEchoAccessToken} from './starryIdentity';
 
 /**
- * Isolated Echo/Starry ID integration preview.
- * NEVER serves Echo private media, writes the Starry ID D1, or exposes a service key.
- * The exact workers.dev staging origin is independently registered in Starry ID;
- * its login callback never flows through the original echo.starry.phd redirect.
+ * Isolated Echo/Starry ID integration preview. Does not store member data.
  */
 type Env={STARRY_BATTERY_KEY?:string;STARRY_ID_SERVICE?:{fetch(request:Request):Promise<Response>};
  ECHO_PUBLIC_SERVICE?:{fetch(request:Request):Promise<Response>};ASSETS?:{fetch(request:Request):Promise<Response>}};
 const ID_BASE='https://id.starry.phd';
-const JWKS=createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{timeoutDuration:6500});
 const HEADERS={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY'} as const;
 
 function json(data:unknown,status=200):Response{
@@ -68,49 +65,75 @@ async function status(env:Env):Promise<Response>{
   callback_registered:'https://echo-api-staging.starry-phd.workers.dev',can_login_from_preview:true});
 }
 
-async function memberToken(request:Request,env:Env):Promise<string|null>{
- const raw=request.headers.get('Authorization')||'';
- const match=/^Bearer ([A-Za-z0-9_.-]+)$/.exec(raw);
- if(!match||match[1].length>8192)return null;
- try{
-  const keys=env.STARRY_ID_SERVICE?createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{
-   timeoutDuration:6500,
-   [customFetch]:(url,options)=>env.STARRY_ID_SERVICE!.fetch(new Request(url,options))
-  }):JWKS;
-  const {payload,protectedHeader}=await jwtVerify(match[1],keys,{
-   issuer:'starry-id:production',audience:'starry',algorithms:['ES256'],clockTolerance:'5s'
-  });
-  if(protectedHeader.alg!=='ES256'||payload.app_id!=='echo'||typeof payload.sub!=='string'||!payload.sub)return null;
-  return match[1];
- }catch{return null;}
+/** The official single-file SDK always reaches the existing Starry ID Worker, not its D1. */
+export function echoStarrySdk(env:Env):Starry{
+ const safeFetch:typeof fetch=async(input,init)=>{
+  const url=typeof input==='string'?input:input instanceof URL?input.toString():input.url;
+  if(!url.startsWith(ID_BASE+'/v1/'))throw new Error('Unexpected Starry SDK host or path');
+  const req=new Request(url,{...init,redirect:'manual'});
+  const response=await (env.STARRY_ID_SERVICE?env.STARRY_ID_SERVICE.fetch(req):fetch(req));
+  if(response.status>=300&&response.status<400)throw new Error('Unexpected Starry SDK redirect');
+  return response;
+ };
+ return new Starry({baseUrl:ID_BASE,serviceKey:env.STARRY_BATTERY_KEY,fetch:safeFetch});
 }
-async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):Promise<Response>{
- const token=await memberToken(request,env);
- if(!token)return json({error:'A valid Starry ID Echo access token is required'},401);
- if(mode==='balance'){
-  try{
-   const r=await upstream('/v1/me/battery',env,{headers:{Authorization:'Bearer '+token}});
-   return json(await r.json(),r.status);
-  }catch{return json({error:'Starry ID is not reachable'},503);}
+
+export function batteryFailure(error:unknown):{status:number;code:string;message:string}{
+ if(error instanceof StarryError){
+  if(error.status===409&&error.code==='BATTERY_APP_CAP')
+   return {status:409,code:error.code,message:'繁星回聲本月用量已達上限，請稍後再試。'};
+  if(error.status===503||error.code==='SERVICE_UNAVAILABLE')
+   return {status:503,code:'SERVICE_UNAVAILABLE',message:'電池艙維護中，請稍後再試。'};
+  if(error.code==='BATTERY_INSUFFICIENT')
+   return {status:409,code:error.code,message:'免費月額度及本 App 量子電池不足。'};
+  return {status:error.status,code:error.code,message:'電池艙暫時無法使用，請稍後再試。'};
  }
- // Diagnostic smoke: reserve then release. Never commit a fake AI task.
- if(!env.STARRY_BATTERY_KEY)return json({error:'STARRY_BATTERY_KEY is not configured'},503);
- const key=env.STARRY_BATTERY_KEY;
- const body={task_type:'echo.ai',units:1,idempotency_key:crypto.randomUUID()};
- let id='';
- try{
-  const reserved=await upstream('/v1/battery/reservations',env,{
-   method:'POST',headers:{Authorization:'Bearer '+token,'x-starry-app-key':key,'content-type':'application/json'},body:JSON.stringify(body)});
-  const data=await reserved.json().catch(()=>({})) as {reservation_id?:unknown;error?:{code?:string}};
-  if(!reserved.ok)return json({ok:false,step:'reserve',status:reserved.status,error:data?.error?.code||'RESERVATION_FAILED'},reserved.status);
-  id=typeof data.reservation_id==='string'?data.reservation_id:'';
-  if(!id||!/^[-A-Za-z0-9_]{8,128}$/.test(id))return json({ok:false,step:'reserve',error:'Invalid reservation response'},502);
-  const released=await upstream('/v1/battery/reservations/'+encodeURIComponent(id)+'/release',env,{
-   method:'POST',headers:{'x-starry-app-key':key,'content-type':'application/json'},body:'{}'});
-  if(!released.ok)return json({ok:false,step:'release',status:released.status,error:'Release not confirmed; reservation expires automatically'},502);
-  return json({ok:true,reserved_units:1,released:true,charged_units:0});
- }catch{return json({ok:false,step:id?'release':'reserve',error:'Network failure; outstanding reservations expire automatically'},503);}
+ return {status:503,code:'SERVICE_UNAVAILABLE',message:'暫時無法連線到繁星電池艙，請稍後再試。'};
 }
+
+/** Any real AI task must use withBattery; it never runs work if reserve fails. */
+export async function executeMeteredEchoTask<T>(
+ env:Env,token:string,input:{taskType:`echo.${string}`;taskLabel:string;units:number},
+ work:()=>Promise<T>
+):Promise<T>{
+ if(!env.STARRY_BATTERY_KEY)throw new Error('Battery service key is not configured');
+ if(!/^echo\.[a-z0-9._-]{1,59}$/.test(input.taskType)||!Number.isSafeInteger(input.units)||input.units<1||input.units>100||
+    input.taskLabel.trim().length<1||input.taskLabel.length>40)throw new Error('Invalid Echo task');
+ return echoStarrySdk(env).withBattery(token,input,async()=>work());
+}
+
+async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):Promise<Response>{
+ const token=await verifyEchoAccessToken(request,env);
+ if(!token)return json({error:'A valid Starry ID Echo access token is required'},401);
+ const sdk=echoStarrySdk(env);
+ if(mode==='balance'){
+  try{return json(await sdk.battery(token));}
+  catch(error){const e=batteryFailure(error);return json({error:e.code,message:e.message},e.status);}
+ }
+ // Smoke may make a temporary 1-unit hold, but never commits / charges it.
+ // Only an authenticated Owner may invoke the diagnostic.
+ if(!env.STARRY_BATTERY_KEY)return json({error:'STARRY_BATTERY_KEY is not configured'},503);
+ try{
+  const me=await sdk.me(token) as {staff_role?:unknown};
+  if(me?.staff_role!=='owner')return json({error:'OWNER_REQUIRED'},403);
+ }catch(error){const e=batteryFailure(error);return json({error:e.code,message:e.message},e.status);}
+ let reservationId='';
+ try{
+  const reserved=await sdk.reserve(token,{
+   taskType:'echo.preview-check',taskLabel:'測試預留後釋放',units:1,idempotencyKey:crypto.randomUUID()
+  });
+  reservationId=reserved.reservation_id;
+  await sdk.release(reservationId);
+  return json({ok:true,reserved_units:1,released:true,charged_units:0,
+   quantum_amount:reserved.quantum_amount,quantum_charged:0});
+ }catch(error){
+  // If reserve succeeded but release failed, the reservation expires automatically.
+  if(reservationId)await sdk.release(reservationId).catch(()=>undefined);
+  const e=batteryFailure(error);
+  return json({error:e.code,message:e.message,reservation_pending_expiry:Boolean(reservationId)},e.status);
+ }
+}
+
 /**
  * PUBLIC Echo endpoints only. The existing echo-starry Worker enforces
  * verified/public media gates; this preview has no D1, R2, or write access.

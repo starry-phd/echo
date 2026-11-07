@@ -22,6 +22,8 @@ export type StarryIdSession={
  refresh():Promise<boolean>;
  signOutLocally():Promise<void>;
  hasAccessToken():boolean;
+ /** For bearer auth to Echo's OWN backend; never expose token in the UI. */
+ getAccessToken():Promise<string|null>;
 };
 
 const SIGNED_OUT_CODES=new Set(['INVALID_REFRESH','REFRESH_REUSED','ACCOUNT_SUSPENDED']);
@@ -90,7 +92,11 @@ export function createStarryIdSession(options:{
   request,
   refresh,
   signOutLocally:()=>signOutLocally(),
-  hasAccessToken:()=>accessToken!==null
+  hasAccessToken:()=>accessToken!==null,
+  getAccessToken:async()=>{
+   if(!accessToken&&!(await refresh()))return null;
+   return accessToken;
+  }
  };
 }
 
