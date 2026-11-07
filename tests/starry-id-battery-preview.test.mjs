@@ -25,7 +25,8 @@ test('staging page is honest about web callback allow-list and never requests an
  const html=await res.text();
  assert.match(html,/echo-api-staging/);
  assert.match(html,/echo\.starry\.phd/);
- assert.match(html,/不能直接在這裡進行網頁登入/);
+ assert.match(html,/Starry ID 已登記正式網站及本測試網域/);
+ assert.match(html,/href="\/profile"/);
  assert.doesNotMatch(html,/type="password"/);
  assert.equal(res.headers.get('cache-control'),'no-store');
 });
@@ -86,7 +87,8 @@ test('status endpoint checks live Starry ID app configuration without changing i
   const body=await res.json();
   assert.equal(body.app_status,'active');
   assert.equal(body.id_health,true);
-  assert.equal(body.can_login_from_preview,false);
+  assert.equal(body.can_login_from_preview,true);
+  assert.equal(body.callback_registered,base);
   assert.deepEqual(hits,['https://id.starry.phd/v1/apps/echo/config','https://id.starry.phd/v1/health']);
  }finally{globalThis.fetch=saved;}
 });
