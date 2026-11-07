@@ -11,17 +11,25 @@ import {base64UrlEncode} from './randomState';
  * reaches any server, and is wiped from the address bar immediately.
  */
 export const APP_WEB_ORIGIN='https://echo.starry.phd';
+export const STAGING_WEB_ORIGIN='https://echo-api-staging.starry-phd.workers.dev';
+export const ALLOWED_WEB_ORIGINS=[APP_WEB_ORIGIN,STAGING_WEB_ORIGIN] as const;
 export const WEB_RELAY_RETURN_PATH='/auth/done';
 export const WEB_RELAY_RETURN_URL=APP_WEB_ORIGIN+WEB_RELAY_RETURN_PATH;
 export const WEB_RELAY_PENDING_KEY='starry-id-relay-pending-v1';
 const MAX_AGE_MS=10*60_000;
 
-type Pending={provider:RelayProvider;nonce:string;state:string;startedAt:number};
+type Pending={provider:RelayProvider;nonce:string;state:string;startedAt:number;returnUrl?:string};
 type StorageLike={getItem(k:string):string|null;setItem(k:string,v:string):void;removeItem(k:string):void};
 
 /** Only the origin registered in Starry ID `web_origins` can receive the result. */
 export function webRelaySupported(origin:string|null|undefined):boolean{
- return origin===APP_WEB_ORIGIN;
+ return typeof origin==='string'&&ALLOWED_WEB_ORIGINS.some(value=>origin===value);
+}
+
+/** A login started on a given registered origin must return to that same origin. */
+export function webRelayReturnUrl(origin:string):string{
+ if(!webRelaySupported(origin))throw new Error('Unregistered Starry ID web origin');
+ return origin+WEB_RELAY_RETURN_PATH;
 }
 
 /** Structural subset of SubtleCrypto (window.crypto.subtle satisfies it). */
@@ -34,12 +42,14 @@ export async function sha256Hex(text:string,subtle:Sha256Digest):Promise<string>
 
 /** Prepares the redirect; the caller navigates to the returned URL. */
 export async function prepareWebRelay(env:StarryIdEnvironment,provider:RelayProvider,rawNonce:string,deps:{
- storage:StorageLike;subtle:Sha256Digest;randomBytes:(n:number)=>Uint8Array;now:()=>number;
+ storage:StorageLike;subtle:Sha256Digest;randomBytes:(n:number)=>Uint8Array;now:()=>number;origin?:string;
 }):Promise<string>{
+ const origin=deps.origin??(typeof window!=='undefined'?window.location.origin:APP_WEB_ORIGIN);
+ const returnUrl=webRelayReturnUrl(origin);
  const state=base64UrlEncode(deps.randomBytes(24));
- const pending:Pending={provider,nonce:rawNonce,state,startedAt:deps.now()};
+ const pending:Pending={provider,nonce:rawNonce,state,startedAt:deps.now(),returnUrl};
  deps.storage.setItem(WEB_RELAY_PENDING_KEY,JSON.stringify(pending));
- return buildRelayStartUrl(env,provider,await sha256Hex(rawNonce,deps.subtle),state,WEB_RELAY_RETURN_URL);
+ return buildRelayStartUrl(env,provider,await sha256Hex(rawNonce,deps.subtle),state,returnUrl);
 }
 
 export type WebRelayOutcome=
@@ -57,7 +67,12 @@ export function consumeWebRelay(env:StarryIdEnvironment,href:string,deps:{storag
  if(!(deps.now()-pending.startedAt>=0&&deps.now()-pending.startedAt<=MAX_AGE_MS))
   return {kind:'invalid',reason:'登入逾時，請重新登入。'};
  let result:RelayResult;
- try{result=parseRelayReturn(href,WEB_RELAY_RETURN_URL,pending.state);}
+ const returnUrl=pending.returnUrl??WEB_RELAY_RETURN_URL;
+ try{
+  const expectedOrigin=new URL(returnUrl).origin;
+  if(returnUrl!==webRelayReturnUrl(expectedOrigin))throw new Error('Invalid login origin');
+  result=parseRelayReturn(href,returnUrl,pending.state);
+ }
  catch{return {kind:'invalid',reason:'登入結果無法驗證，請重新登入。'};}
  if(result.kind==='error')return {kind:'cancelled',error:result.error};
  return {kind:'success',provider:pending.provider,nonce:pending.nonce,idToken:result.idToken,code:result.code,
