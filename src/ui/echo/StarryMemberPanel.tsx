@@ -20,6 +20,10 @@ export function StarryMemberPanel(){
  const [confirmDelete,setConfirmDelete]=useState(false);
  const [deleteConfirmation,setDeleteConfirmation]=useState('');
  const [batterySummary,setBatterySummary]=useState('');
+ const [taskType,setTaskType]=useState('echo.ai');
+ const [taskLabel,setTaskLabel]=useState('AI 任務');
+ const [taskUnits,setTaskUnits]=useState('1');
+ const [taskSettingsNotice,setTaskSettingsNotice]=useState('');
  const {state,env}=starry;
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
@@ -111,6 +115,37 @@ export function StarryMemberPanel(){
       )).catch(()=>setBatterySummary('電池艙暫時無法查詢，不會扣除額度。'));
      })}</View>
     {batterySummary?text(batterySummary,true):null}
+    {member.staffRole==='owner'&&<View style={[styles.confirm,{borderColor:t.border}]}>
+     {text('繁星回聲專屬 Battery 任務設定（超級管理員）')}
+     {text('每次任務要消耗幾顆，由本 App 決定（1–100 顆）。後端會再次核對 Owner 身分。',true)}
+     <TextInput accessibilityLabel="任務代碼" value={taskType} onChangeText={setTaskType}
+      autoCapitalize="none" autoCorrect={false} style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <TextInput accessibilityLabel="顯示給會員的任務名稱" value={taskLabel} onChangeText={setTaskLabel}
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <TextInput accessibilityLabel="每個任務消耗幾顆電池" value={taskUnits}
+      onChangeText={setTaskUnits} keyboardType="number-pad"
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <View style={styles.row}>
+      {button('讀取目前任務設定',()=>{
+       void starry.getTaskPrices().then(rows=>{
+        const current=rows.find(row=>row.task_type===taskType)||rows[0];
+        if(current){setTaskType(current.task_type);setTaskLabel(current.task_label);setTaskUnits(String(current.units));}
+        setTaskSettingsNotice('已取得 '+rows.length+' 項任務設定。');
+       }).catch(()=>setTaskSettingsNotice('Echo 任務設定後端尚未啟用，無法讀取。'));
+      })}
+      {button('儲存任務價格',()=>{
+       const units=Number(taskUnits);
+       if(!/^echo\\.[a-z0-9._-]{1,59}$/.test(taskType)||!Number.isSafeInteger(units)||units<1||units>100||
+          taskLabel.trim().length<1||taskLabel.length>40){
+        setTaskSettingsNotice('任務代碼需以 echo. 開頭，顆數需為 1～100，名稱最多 40 字。');return;
+       }
+       void starry.saveTaskPrice({task_type:taskType,task_label:taskLabel.trim(),units})
+        .then(()=>setTaskSettingsNotice('Echo 任務價格已儲存。'))
+        .catch(()=>setTaskSettingsNotice('未能儲存：請確認 Echo 後端已部署且具備管理員權限。'));
+      },'primary')}
+     </View>
+     {taskSettingsNotice?text(taskSettingsNotice,true):null}
+    </View>}
     <View style={styles.row}>{button('登出',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
     {!confirmDelete?button('刪除帳號',()=>setConfirmDelete(true),'danger'):<View style={[styles.confirm,{borderColor:'#b8324e'}]}>
      {text('確定刪除後將立即永久刪除整個繁星會員帳號，無法復原、沒有撤回期。刪除不會自動取消 App Store／Google Play 訂閱，請自行前往商店取消。')}
