@@ -9,7 +9,7 @@ const signInResponse=(sub,refresh)=>({
  user:{user_id:sub,status:'active',is_new:false,deletion_purge_at:null},
  access_token:bearer(sub),refresh_token:refresh,expires_in:900,consent_required:false
 });
-test('v2026-11-07.12 official Starry Client is copied verbatim and has device SSO methods',()=>{
+test('v2026-11-07.14 official Starry Client is copied verbatim and has device SSO methods',()=>{
  const client=read('src/auth/starryId/vendor/starry-client.ts');
  for(const marker of ['sharedStorage?: StarryStorage','async syncDeviceSignIn(): Promise<boolean>',
   '/v1/auth/sso/start','/v1/auth/sso/exchange','/v1/auth/sso/status','/v1/auth/sso/logout'])
@@ -48,7 +48,7 @@ test('one central session is exchanged between Apps with isolated Refresh Tokens
 });
 test('Echo only enables actual native shared storage, not per-App Android preferences or a Web fallback',async()=>{
  const app=JSON.parse(read('app.json')).expo;
- assert.ok(app.ios.entitlements['keychain-access-groups'].includes('$(AppIdentifierPrefix)phd.starry.sso'));
+ assert.ok(app.ios.entitlements['keychain-access-groups'].includes('$(AppIdentifierPrefix)phd.starry.shared'));
  const native=read('src/auth/starryId/deviceSharedStorage.native.ts');
  assert.match(native,/accessGroup:IOS_SSO_ACCESS_GROUP/);
  assert.match(native,/SecureStore\.WHEN_UNLOCKED_THIS_DEVICE_ONLY/);
@@ -61,6 +61,6 @@ test('Echo only enables actual native shared storage, not per-App Android prefer
  assert.match(provider,/await sdk\.syncDeviceSignIn\(\)/);
  assert.match(provider,/await sdk\.restore\(\)/);
  const panel=read('src/ui/echo/StarryMemberPanel.tsx');
- assert.match(panel,/starry\.deviceSsoAvailable\?'登出所有繁星 App'/);
- assert.match(panel,/Platform\.OS==='web'\?'登出此網頁':'登出此 App'/);
+ assert.match(panel,/starry\.deviceSsoAvailable\|\|Platform\.OS==='web'\?'登出所有繁星 App'/);
+ assert.match(panel,/網頁版僅同步登出同一瀏覽器/);
 });

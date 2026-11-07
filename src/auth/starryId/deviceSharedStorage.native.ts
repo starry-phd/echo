@@ -7,7 +7,7 @@
  *
  * Android: expo-secure-store is PER APP, not cross-App. A future signed
  * AccountManager/ContentProvider must be installed in all participating Apps.
- * Until there is a verified broker, refuse to advertise device-wide SSO there.
+ * Android device SSO is optional under 2026-11-07.14; it stays disabled until a secure native broker exists.
  */
 import {Platform} from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -15,7 +15,7 @@ import type {StarryStorage} from './vendor/starry-client';
 
 // Public signing Team prefix is required by iOS Keychain access-group API. This is not a login key.
 const APPLE_PUBLIC_SIGNING_TEAM='4W7QRTXN5Y';
-const IOS_SSO_ACCESS_GROUP=APPLE_PUBLIC_SIGNING_TEAM+'.phd.starry.sso';
+const IOS_SSO_ACCESS_GROUP=APPLE_PUBLIC_SIGNING_TEAM+'.phd.starry.shared';
 const IOS_OPTIONS={
  accessGroup:IOS_SSO_ACCESS_GROUP,
  keychainAccessible:SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY

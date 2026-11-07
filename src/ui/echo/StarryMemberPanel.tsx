@@ -201,7 +201,8 @@ export function StarryMemberPanel(){
      </View>
      {taskSettingsNotice?text(taskSettingsNotice,true):null}
     </View>}
-    <View style={styles.row}>{button(starry.deviceSsoAvailable?'登出所有繁星 App':Platform.OS==='web'?'登出此網頁':'登出此 App',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
+    {Platform.OS==='web'&&text('網頁版僅同步登出同一瀏覽器的繁星網頁，不影響手機 App。',true)}
+    <View style={styles.row}>{button(starry.deviceSsoAvailable||Platform.OS==='web'?'登出所有繁星 App':'登出此 App',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
     {!confirmDelete?button('刪除帳號',()=>setConfirmDelete(true),'danger'):<View style={[styles.confirm,{borderColor:'#b8324e'}]}>
      {text('確定刪除後將立即永久刪除整個繁星會員帳號，無法復原、沒有撤回期。刪除不會自動取消 App Store／Google Play 訂閱，請自行前往商店取消。')}
      {text('如確定刪除，請輸入 DELETE',true)}

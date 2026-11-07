@@ -6,7 +6,7 @@ import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
 
 /**
- * Return page of the Starry web sign-in relay (starry-phd/id guide §11.2). The result
+ * Return page of Starry OAuth relay and browser SSO (guide §11.2 and §13.5). The result
  * arrives after `#` (never sent to a server); it is read once and wiped from the
  * address bar immediately, then exchanged with Starry ID and the member page opens.
  */
@@ -24,8 +24,11 @@ export default function StarryRelayDone(){
   const href=window.location.href;
   try{window.history.replaceState(null,'',window.location.pathname);}catch{/* keep going */}
   if(!starry.enabled||!starry.env){setMessage('繁星會員登入尚未開放。');setDone(true);return;}
-  // Official SDK validates the single-use state, clears pending data and exchanges tokens.
-  void starry.completeWebRelay(href).then(()=>router.replace('/profile')).catch(err=>{
+  // Official SDK verifies one-time state/nonce and uses only registered return URLs.
+  const fragment=new URLSearchParams(href.split('#')[1]||'');
+  const isWebSso=['sso_code','sso_none','sso_adopted'].some(key=>fragment.has(key));
+  const complete=isWebSso?starry.completeWebSso(href):starry.completeWebRelay(href);
+  void complete.then(()=>router.replace('/profile')).catch(err=>{
    setMessage((err as {cancelled?:boolean})?.cancelled?'已取消登入。':'登入驗證未完成，請再試一次。');
    setDone(true);
   });
