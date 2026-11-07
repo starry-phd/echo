@@ -94,7 +94,7 @@ test('2026-11-08.3 battery bonus remains central: Echo reads actual API allowanc
  const provider=readFileSync(new URL('../src/auth/starryId/StarryIdProvider.tsx',import.meta.url),'utf8');
  assert.match(panel,/b\.allowance/);
  assert.match(panel,/b\.remaining/);
- assert.match(provider,/sdk\.getBatteryBalance\(\)/);
+ assert.match(provider,/session\.request\('\/v1\/me\/battery'\)/);
  assert.doesNotMatch(panel,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
  assert.doesNotMatch(provider,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
 });
