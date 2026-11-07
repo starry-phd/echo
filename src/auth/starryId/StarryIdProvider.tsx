@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
 import {fetchMe} from './memberApi';
-import {webRelayReturnUrl} from './webRelay';
+import {webRelayReturnUrl,webRelaySupported,WEB_RELAY_RETURN_PATH} from './webRelay';
 import {StarryClient,StarryError} from './vendor/starry-client';
 import type {Provider} from './vendor/starry-client';
 import {createEchoSdkStorage} from './sdkStorage';
@@ -48,6 +48,7 @@ export type StarryIdContextValue={
  signInRelay(provider:Provider):Promise<void>;
  beginWebRelay(provider:Provider):Promise<void>;
  completeWebRelay(href:string):Promise<void>;
+ completeWebSso(href:string):Promise<boolean|null>;
  signInPasskey():Promise<void>;
  listPasskeys():Promise<PasskeyEntry[]>;
  addPasskey(name?:string):Promise<void>;
@@ -64,7 +65,7 @@ const disabled:StarryIdContextValue={
  enabled:false,env:null,passkeyAvailable:false,deviceSsoAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},
+ signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},completeWebSso:async()=>null,
  signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
  acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
  getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
@@ -109,6 +110,14 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   });
  }
  const sdk=sdkRef.current;
+ const webSsoReturnUrl=useCallback(()=>{
+  if(Platform.OS!=='web'||typeof window==='undefined'||!webRelaySupported(window.location.origin))return null;
+  return webRelayReturnUrl(window.location.origin);
+ },[]);
+ const shareWebSession=useCallback(async()=>{
+  const returnUrl=webSsoReturnUrl();
+  if(returnUrl)await sdk.shareWebSignIn({returnUrl});
+ },[sdk,webSsoReturnUrl]);
  // A short adapter preserves existing Echo screens without a second token owner.
  const session=useMemo<StarryIdSession>(()=>({
   adoptTokens:async()=>{throw new Error('Use Starry Client for sign-in');},
@@ -163,10 +172,17 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     const gate=stateFromAvailability(evaluateAppAvailability(config,version));
     if(gate){wasBlocked.current=true;setState(gate);}
     else{
-     if(sharedStorageRef.current){
-      // The official SDK checks cross-App sign-out and account switching.
-      // Only a signed native device may share this token; Web remains per-tab.
-      try{await sdk.syncDeviceSignIn();}catch{/* offline keeps the existing local session */}
+     if(Platform.OS==='web'&&typeof window!=='undefined'){
+      // OAuth/SSO callback fragments must be consumed before any new redirect.
+      const isCallback=window.location.pathname===WEB_RELAY_RETURN_PATH;
+      const returnUrl=webSsoReturnUrl();
+      if(!isCallback&&returnUrl){
+       try{if(await sdk.syncWebSignIn({returnUrl}))return;}
+       catch{/* Offline or unsupported browser: keep the current local state. */}
+      }
+     }else{
+      // iOS uses the common Keychain group; Android safely stays app-local.
+      try{await sdk.syncDeviceSignIn();}catch{/* Offline does not log members out. */}
      }
      if(wasBlocked.current)wasBlocked.current=false;
      if(loaded.current)void run(loadMember);
@@ -190,7 +206,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     document.removeEventListener('visibilitychange',onVisible);
    }
   };
- },[version,fetchSdkConfig,loadMember,run,sdk]);
+ },[version,fetchSdkConfig,loadMember,run,sdk,webSsoReturnUrl]);
 
  // Notice transitions remain correct while the app stays open (without polling Starry ID).
  useEffect(()=>{
@@ -223,7 +239,9 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    });
    if(result.user.status==='pending_deletion')return {kind:'pending-deletion',purgeAt:result.user.deletion_purge_at};
    if(result.user.status==='suspended')return {kind:'suspended'};
-   return stateFromMember(await fetchMe(session));
+   const next=stateFromMember(await fetchMe(session));
+   await shareWebSession();
+   return next;
   }),
   signInRelay:async provider=>{
    if(Platform.OS==='web')throw new Error('Native relay unavailable on web');
@@ -248,7 +266,17 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    if(!result)throw new Error('Missing Starry ID relay response');
    if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
    else if(result.user.status==='suspended')setState({kind:'suspended'});
-   else setState(stateFromMember(await fetchMe(session)));
+   else{
+    setState(stateFromMember(await fetchMe(session)));
+    await shareWebSession();
+   }
+  },
+  completeWebSso:async href=>{
+   if(Platform.OS!=='web'||!webSsoReturnUrl())throw new Error('Unregistered SSO return origin');
+   const result=await sdk.completeWebSsoCheck(href);
+   if(result===true)setState(stateFromMember(await fetchMe(session)));
+   else if(result===false)setState({kind:'signed-out'});
+   return result;
   },
   signInPasskey:async()=>{
    if(busy)return;
@@ -259,7 +287,10 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     const result=await sdk.signInWithPasskey();
     if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
     else if(result.user.status==='suspended')setState({kind:'suspended'});
-    else setState(stateFromMember(await fetchMe(session)));
+    else{
+     setState(stateFromMember(await fetchMe(session)));
+     await shareWebSession();
+    }
    }finally{setBusy(false);}
   },
   listPasskeys:async()=>{
@@ -279,7 +310,13 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    await sdk.acceptConsent();
    return stateFromMember(await fetchMe(session));
   }),
-  signOut:(everywhere=false)=>run(async()=>{if(everywhere)await sdk.signOutEverywhere();else await sdk.signOut();return {kind:'signed-out'};}),
+  signOut:(everywhere=false)=>run(async()=>{
+   if(everywhere)await sdk.signOutEverywhere();
+   const returnUrl=webSsoReturnUrl();
+   if(returnUrl)await sdk.signOutWebEverywhere({returnUrl});
+   else if(!everywhere)await sdk.signOut();
+   return {kind:'signed-out'};
+  }),
   requestDeletion:()=>run(async()=>{
    await sdk.deleteAccount();
    return {kind:'signed-out',notice:'繁星會員帳號已立即永久刪除，無法復原。商店訂閱須自行取消。'};
@@ -305,7 +342,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     throw new Error('量子電池資料格式不正確');
    return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
- }),[env,state,busy,run,loadMember,availability,session,sdk,version]);
+ }),[env,state,busy,run,loadMember,availability,session,sdk,version,shareWebSession,webSsoReturnUrl]);
 
  return <StarryIdContext.Provider value={value}>
   <View style={{flex:1}}>
