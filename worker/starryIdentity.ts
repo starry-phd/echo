@@ -4,11 +4,12 @@ export const STARRY_ID_BASE='https://id.starry.phd';
 type ServiceBinding={fetch(request:Request):Promise<Response>};
 export type StarryServiceEnv={STARRY_ID_SERVICE?:ServiceBinding};
 const publicJwks=createRemoteJWKSet(new URL(STARRY_ID_BASE+'/.well-known/jwks.json'),{
- timeoutDuration:6500,cacheMaxAge:600_000,cooldownDuration:0
+ timeoutDuration:6500,cacheMaxAge:600_000,cooldownDuration:1_000
 });
 const boundJwks=new WeakMap<ServiceBinding,ReturnType<typeof createRemoteJWKSet>>();
 
-/** Keep JWKS between requests. On a new kid jose re-fetches the set; during
+/** Keep JWKS between requests; a 1-second cooldown limits unknown-kid abuse.
+ * On a new kid jose re-fetches the set; during
  * rotation both old/new keys remain acceptable while Starry publishes them.
  */
 export function jwksFor(env:StarryServiceEnv):ReturnType<typeof createRemoteJWKSet>{
@@ -17,7 +18,7 @@ export function jwksFor(env:StarryServiceEnv):ReturnType<typeof createRemoteJWKS
  let resolver=boundJwks.get(service);
  if(!resolver){
   resolver=createRemoteJWKSet(new URL(STARRY_ID_BASE+'/.well-known/jwks.json'),{
-   timeoutDuration:6500,cacheMaxAge:600_000,cooldownDuration:0,
+   timeoutDuration:6500,cacheMaxAge:600_000,cooldownDuration:1_000,
    [customFetch]:(url,options)=>service.fetch(new Request(url,{...options,redirect:'manual'}))
   });
   boundJwks.set(service,resolver);
