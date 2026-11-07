@@ -8,3 +8,10 @@ export const nativeRefreshTokenStore=():RefreshTokenStore|null=>null;
 export const nativeRelaySignIn:(env:StarryIdEnvironment,provider:RelayProvider,nonce:string)=>Promise<NativeRelayResult>=async()=>{
  throw new Error('Native sign-in is unavailable on the web');
 };
+
+/** Web substitute; Expo-only SDK adapters are never loaded in the browser. */
+import type {StarryStorage} from './vendor/starry-client';
+export const nativeSdkStorage=():StarryStorage|null=>null;
+export const nativeSdkSha256Hex:undefined=undefined;
+export const nativeSdkRandomState:undefined=undefined;
+export const nativeSdkOpenAuthSession:undefined=undefined;

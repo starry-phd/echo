@@ -4,21 +4,20 @@ import {AppState,Platform,Pressable,Text,View} from 'react-native';
 import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
-import {acceptCurrentConsent,fetchAppConfig,fetchMe,requestAccountDeletion,requestNonce,signOut,
- getPasskeySignInOptions,signInWithPasskey,getPasskeyCreationOptions,registerPasskey,getMemberPasskeys,deleteMemberPasskey} from './memberApi';
+import {fetchAppConfig,fetchMe} from './memberApi';
+import {StarryClient} from './vendor/starry-client';
+import {createEchoSdkStorage} from './sdkStorage';
 import type {ProviderSignIn,PublicFetch} from './memberApi';
-import {stateAfterSignIn,stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
+import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
 import {evaluateAppAvailability,nextStarryNoticeBoundary,visibleStarryNotices} from './appConfig';
 import type {StarryAppConfig} from './appConfig';
 import {passkeySupported,getPlatformPasskey,createPlatformPasskey} from './passkeyPlatform';
+import {validateLoginOptions} from './passkeyContract';
 import type {PasskeyEntry} from './passkeyContract';
 import type {MemberViewState} from './memberFlow';
-import {completeSignIn,loadMemberState} from './memberSession';
-import {createStarryIdSession} from './session';
+import {loadMemberState} from './memberSession';
 import type {StarryIdSession} from './session';
-import {createMemoryRefreshTokenStore,createSessionStorageRefreshTokenStore} from './storage';
-import {nativeRefreshTokenStore} from './nativeSignIn';
-import type {RefreshTokenStore} from './storage';
+import {nativeSdkOpenAuthSession,nativeSdkSha256Hex,nativeSdkRandomState} from './nativeSignIn';
 import type {components as StarryIdComponents} from '../../../packages/starry-id-sdk/src/generated';
 import {ownerTaskPriceRequest} from './echoBackendSettings';
 import type {EchoTaskPrice} from './echoBackendSettings';
@@ -67,15 +66,8 @@ const disabled:StarryIdContextValue={
 };
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
-function refreshTokenStore():RefreshTokenStore{
- // Native: iOS Keychain / Android Keystore via expo-secure-store (nativeSignIn.native.tsx).
- if(Platform.OS!=='web')return nativeRefreshTokenStore()??createMemoryRefreshTokenStore();
- let storage:Storage|null=null;
- try{storage=typeof window!=='undefined'?window.sessionStorage:null;}catch{storage=null;}
- return createSessionStorageRefreshTokenStore(storage);
-}
-
 const browserFetch:PublicFetch=(url,init)=>fetch(url,{...init,credentials:'omit'});
+const sdkFetch:typeof fetch=(input,init)=>fetch(input,{...init,credentials:'omit'});
 
 export function StarryIdProvider({children}:{children:ReactNode}){
  if(!STARRY_ENV)return <StarryIdContext.Provider value={disabled}>{children}</StarryIdContext.Provider>;
@@ -91,14 +83,30 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  const notices=visibleStarryNotices(noticeConfig,noticeNow);
  const wasBlocked=useRef(false);
  const loaded=useRef(false);
- const sessionRef=useRef<StarryIdSession|null>(null);
- if(!sessionRef.current){
-  sessionRef.current=createStarryIdSession({env,store:refreshTokenStore(),fetch:browserFetch,
-   onSignedOut:reason=>setState(reason==='ACCOUNT_SUSPENDED'?{kind:'suspended'}
-    :reason==='REFRESH_REUSED'?{kind:'signed-out',notice:'為了安全，這個登入已失效，請重新登入。'}
-    :{kind:'signed-out'})});
+ const sdkRef=useRef<StarryClient|null>(null);
+ if(!sdkRef.current){
+  sdkRef.current=new StarryClient({
+   baseUrl:env.baseUrl,appId:'echo',storage:createEchoSdkStorage(),fetch:sdkFetch,
+   ...(Platform.OS==='web'?{}:{
+    sha256Hex:nativeSdkSha256Hex,randomState:nativeSdkRandomState,
+    openAuthSession:nativeSdkOpenAuthSession
+   }),
+   passkey:{
+    get:raw=>getPlatformPasskey(validateLoginOptions(raw)),
+    create:raw=>createPlatformPasskey(raw)
+   }
+  });
  }
- const session=sessionRef.current;
+ const sdk=sdkRef.current;
+ // A short adapter preserves existing Echo screens without a second token owner.
+ const session=useMemo<StarryIdSession>(()=>({
+  adoptTokens:async()=>{throw new Error('Use Starry Client for sign-in');},
+  request:(path,init={})=>sdk.request(init.method??'GET',path,init.body),
+  refresh:async()=>Boolean(await sdk.refresh()),
+  signOutLocally:async()=>{await sdk.signOut();},
+  hasAccessToken:()=>sdk.signedIn,
+  getAccessToken:()=>sdk.getAccessToken()
+ }),[sdk]);
  const version=Constants.expoConfig?.version??'';
  const deps=useMemo(()=>({env,fetch:browserFetch,session,appVersion:Constants.expoConfig?.version??''}),[env,session]);
 
@@ -164,11 +172,19 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   getNonce:async()=>{
    const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
    if(gate)throw new Error('繁星會員目前無法登入或需要更新');
-   return requestNonce(env,browserFetch);
+   return sdk.nonce();
   },
   signIn:input=>run(async()=>{
    const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
-   return gate??await completeSignIn(deps,input);
+   if(gate)return gate;
+   const result=await sdk.signInWithIdToken(input.provider,{
+    idToken:input.idToken,nonce:input.nonce,
+    ...(input.authorizationCode?{authorizationCode:input.authorizationCode}:{}),
+    ...(input.redirectUri?{redirectUri:input.redirectUri}:{})
+   });
+   if(result.user.status==='pending_deletion')return {kind:'pending-deletion',purgeAt:result.user.deletion_purge_at};
+   if(result.user.status==='suspended')return {kind:'suspended'};
+   return stateFromMember(await fetchMe(session));
   }),
   signInPasskey:async()=>{
    if(busy)return;
@@ -176,36 +192,32 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    try{
     const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
     if(gate){setState(gate);throw new Error('繁星會員目前無法登入或需要更新');}
-    const options=await getPasskeySignInOptions(env,browserFetch);
-    const credential=await getPlatformPasskey(options);
-    const result=await signInWithPasskey(env,browserFetch,credential);
-    await session.adoptTokens(result.tokens);
-    const early=stateAfterSignIn(result);
-    setState(early??stateFromMember(await fetchMe(session)));
+    const result=await sdk.signInWithPasskey();
+    if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
+    else if(result.user.status==='suspended')setState({kind:'suspended'});
+    else setState(stateFromMember(await fetchMe(session)));
    }finally{setBusy(false);}
   },
   listPasskeys:async()=>{
    if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
-   return getMemberPasskeys(session);
+   return sdk.listPasskeys();
   },
   addPasskey:async name=>{
    if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
-   const options=await getPasskeyCreationOptions(session);
-   const attestation=await createPlatformPasskey(options);
-   await registerPasskey(session,attestation,name);
+   await sdk.registerPasskey(name?.trim().slice(0,80)||undefined);
   },
   removePasskey:async id=>{
    if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
-   await deleteMemberPasskey(session,id);
+   await sdk.removePasskey(id);
   },
   acceptConsent:()=>run(async()=>{
    if(state.kind!=='consent-required')return;
-   await acceptCurrentConsent(session,state.member);
+   await sdk.acceptConsent();
    return stateFromMember(await fetchMe(session));
   }),
-  signOut:(everywhere=false)=>run(async()=>{await signOut(session,everywhere);return {kind:'signed-out'};}),
+  signOut:(everywhere=false)=>run(async()=>{if(everywhere)await sdk.signOutEverywhere();else await sdk.signOut();return {kind:'signed-out'};}),
   requestDeletion:()=>run(async()=>{
-   await requestAccountDeletion(session);
+   await sdk.deleteAccount();
    return {kind:'signed-out',notice:'繁星會員帳號已立即永久刪除，無法復原。商店訂閱須自行取消。'};
   }),
   getTaskPrices:async()=>{
@@ -229,7 +241,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     throw new Error('量子電池資料格式不正確');
    return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
- }),[env,state,busy,deps,run,session,version]);
+ }),[env,state,busy,deps,run,session,sdk,version]);
 
  return <StarryIdContext.Provider value={value}>
   <View style={{flex:1}}>

@@ -30,6 +30,6 @@
 
 - 原有 `echo-starry`（正式）及 `echo-api-staging`（隔離測試）沿用，不為名稱新建 `echo-api` Worker；既有 `echo.starry.phd` 302 指向舊站不得變動。
 - 後端 `worker/vendor/starry-sdk.ts` 已與 Starry ID `sdk/starry-sdk.ts` 來源 blob SHA 一致；預留的 409/503 拒絕、JWKS `kid` 輪替、免費月額度與量子電池、Gitleaks 已在既有程式，請勿重做。
-- **前端 SDK 遷移仍待相容性測試**：現有 Starry ID Provider 用自有 Token/Relay/Passkey 邏輯，尚未改接 `sdk/starry-client.ts`。必須保護既有 Refresh Token 旋轉狀態與 Web／iOS／Android 的回傳流程；不得把複製單檔本身當成「已完成串接」。
+- **前端 SDK 改用中，待 CI／原生驗收**：Echo 已加入官方 `sdk/starry-client.ts`（來源 SHA 3aa9659c）作為 Token 旋轉、Passkey、會員操作的唯一執行者；原本 Apple／Google 中繼入口繼續沿用已驗收且可測的 UI/回傳邏輯，之後再將整個中繼導向步驟改由 SDK 接管。舊 Refresh Token 安全遷移到 SDK key；未完成真實登入與實機驗收前不得宣稱可用。
 - 已補公開的「聯絡客服」入口（只帶 app_id、版本、裝置型號）、公告時窗前景內到期／生效更新；不開啟私人音訊。
 - PR #171 未經業主核准不可合併、正式發布或送審；Passkey 真實 WebAuthn/原生驗收仍需本人操作與真正的簽章設定。

@@ -38,3 +38,22 @@ export async function nativeRelaySignIn(env:StarryIdEnvironment,provider:RelayPr
   redirectUri:provider==='apple'&&relay.code?relayRedirectUri(env,'apple'):null
  };
 }
+
+/** Official Starry Client Expo adapters; native OAuth SDKs are not used. */
+import {base64urlEncode} from './vendor/starry-client';
+import type {StarryStorage} from './vendor/starry-client';
+export function nativeSdkStorage():StarryStorage{
+ return {
+  async get(key){try{return await SecureStore.getItemAsync(key,SECURE_OPTIONS);}catch{return null;}},
+  async set(key,value){await SecureStore.setItemAsync(key,value,SECURE_OPTIONS);},
+  async remove(key){try{await SecureStore.deleteItemAsync(key,SECURE_OPTIONS);}catch{/* no-op */}}
+ };
+}
+export async function nativeSdkSha256Hex(value:string):Promise<string>{
+ return (await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256,value,{encoding:Crypto.CryptoEncoding.HEX})).toLowerCase();
+}
+export function nativeSdkRandomState():string{return base64urlEncode(Crypto.getRandomBytes(24));}
+export async function nativeSdkOpenAuthSession(url:string,returnUrl:string):Promise<string|null>{
+ const res=await WebBrowser.openAuthSessionAsync(url,returnUrl);
+ return res.type==='success'?res.url:null;
+}

@@ -136,3 +136,34 @@ test('contact support includes only Echo app, encoded app version and device mod
  assert.equal(parsed.searchParams.get('device'),'iPhone 15 Pro & test');
  assert.match(read('app/profile.tsx'),/聯絡客服/);
 });
+
+test('official Starry Client now owns the refresh token, sign-in and Passkey exchange',async()=>{
+ const {StarryClient,memoryStorage}=await import('../src/auth/starryId/vendor/starry-client.ts');
+ const storage=memoryStorage();
+ const calls=[];
+ const responses={
+  'POST /v1/auth/google':{access_token:'access1',refresh_token:'refresh1',expires_in:900,
+   user:{user_id:'u1',status:'active',is_new:false,deletion_purge_at:null},consent_required:false},
+  'POST /v1/auth/refresh':{access_token:'access2',refresh_token:'refresh2',expires_in:900},
+  'GET /v1/me':{user_id:'u1',status:'active',profile:{version:1,display_name:'Tester'},
+   consent:{terms_version:'2026',privacy_version:'2026',required:false}}
+ };
+ const sdk=new StarryClient({baseUrl:'https://id.starry.phd',appId:'echo',storage,
+  fetch:async(url,init)=>{
+   calls.push({url:String(url),method:init.method,headers:init.headers});
+   const path=new URL(String(url)).pathname;
+   const data=responses[init.method+' '+path];
+   return Response.json(data??{error:{code:'NOT_FOUND'}},{status:data?200:404});
+  }});
+ await sdk.signInWithIdToken('google',{idToken:'a.b.c',nonce:'n'.repeat(20)});
+ assert.equal(await storage.get('starry.refresh.echo'),'refresh1');
+ await sdk.refresh();
+ assert.equal(await storage.get('starry.refresh.echo'),'refresh2');
+ assert.equal((await sdk.me()).user_id,'u1');
+ assert.equal(calls.at(-1).headers.authorization,'Bearer access2');
+ const provider=read('src/auth/starryId/StarryIdProvider.tsx');
+ assert.match(provider,/new StarryClient/);
+ assert.match(provider,/createEchoSdkStorage/);
+ assert.match(provider,/validateLoginOptions/);
+ assert.doesNotMatch(provider,/createStarryIdSession/);
+});
