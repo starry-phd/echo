@@ -141,7 +141,9 @@ test('JWT verifier caches JWKS and fetches new kid on a rotation without accepti
  assert.equal(fetchCount,1);
  assert.equal(await verifyEchoAccessToken(new Request(origin,{headers:{Authorization:'Bearer '+tokenOld}}),env),tokenOld);
  assert.equal(fetchCount,1,'cached JWKS should not fetch on every request');
- available=[a,b];const tokenNew=await signed(fresh,'key-new');
+ available=[a,b];
+ await new Promise(resolve=>setTimeout(resolve,1_100)); // bounded JWKS refetch cooldown
+ const tokenNew=await signed(fresh,'key-new');
  assert.equal(await verifyEchoAccessToken(new Request(origin,{headers:{Authorization:'Bearer '+tokenNew}}),env),tokenNew);
  assert.ok(fetchCount>=2,'unfamiliar kid triggers a refresh');
  const otherApp=await signed(fresh,'key-new','recordnote');
