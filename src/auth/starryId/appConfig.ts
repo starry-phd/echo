@@ -64,3 +64,14 @@ export function memberFeaturesAvailable(availability:StarryAppAvailability):bool
 export function visibleStarryNotices(config:StarryAppConfig|null,now=Date.now()):readonly StarryNotice[]{
  return config?.notices.filter(n=>n.starts_at<=now&&now<n.ends_at)??[];
 }
+
+/** Next published notice start/end, for foreground display without polling the API. */
+export function nextStarryNoticeBoundary(config:StarryAppConfig|null,now=Date.now()):number|null{
+ let next:number|null=null;
+ for(const n of config?.notices??[]){
+  for(const time of [n.starts_at,n.ends_at]){
+   if(time>now&&(next===null||time<next))next=time;
+  }
+ }
+ return next;
+}

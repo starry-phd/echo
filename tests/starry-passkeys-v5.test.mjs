@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseStarryAppConfig,visibleStarryNotices,evaluateAppAvailability} from '../src/auth/starryId/appConfig.ts';
+import {parseStarryAppConfig,visibleStarryNotices,nextStarryNoticeBoundary,evaluateAppAvailability} from '../src/auth/starryId/appConfig.ts';
+import {starrySupportUrl} from '../src/auth/starryId/support.ts';
 import {validateLoginOptions,validateCreationOptions,verifyAssertion,verifyAttestation,STARRY_PASSKEY_RP} from '../src/auth/starryId/passkeyContract.ts';
 import {passkeyErrorMessage} from '../src/auth/starryId/passkeyErrors.ts';
 import {getPasskeySignInOptions,signInWithPasskey,getPasskeyCreationOptions,registerPasskey,
@@ -107,4 +108,31 @@ test('Web platform uses navigator.credentials while native uses the dedicated mo
  assert.match(provider,/visibilitychange/);
  assert.match(provider,/n.message/);
  assert.doesNotMatch(provider,/dangerouslySetInnerHTML|innerHTML/);
+});
+
+test('notice start/end transitions are scheduled without repeated Starry ID fetches',()=>{
+ const cfg=parseStarryAppConfig({app_id:'echo',status:'active',min_version:'0.0.0',config:{},notices:[
+  {message:'Now',starts_at:1000,ends_at:3000},
+  {message:'Later',starts_at:2000,ends_at:4000}
+ ]});
+ assert.equal(nextStarryNoticeBoundary(cfg,1500),2000);
+ assert.equal(nextStarryNoticeBoundary(cfg,2000),3000);
+ assert.equal(nextStarryNoticeBoundary(cfg,4500),null);
+ assert.equal(nextStarryNoticeBoundary(null,1500),null);
+ assert.equal(visibleStarryNotices(cfg,3000).length,1);
+ const provider=read('src/auth/starryId/StarryIdProvider.tsx');
+ assert.match(provider,/nextStarryNoticeBoundary/);
+ assert.match(provider,/clearTimeout\(timer\)/);
+});
+
+test('contact support includes only Echo app, encoded app version and device model',()=>{
+ const url=starrySupportUrl('1.4.2 (88)','iPhone 15 Pro & test');
+ const parsed=new URL(url);
+ assert.equal(parsed.origin,'https://id.starry.phd');
+ assert.equal(parsed.pathname,'/support');
+ assert.deepEqual([...parsed.searchParams.keys()],['app_id','app_version','device']);
+ assert.equal(parsed.searchParams.get('app_id'),'echo');
+ assert.equal(parsed.searchParams.get('app_version'),'1.4.2 (88)');
+ assert.equal(parsed.searchParams.get('device'),'iPhone 15 Pro & test');
+ assert.match(read('app/profile.tsx'),/聯絡客服/);
 });

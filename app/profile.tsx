@@ -1,6 +1,8 @@
 import {useState} from 'react';
 import {router} from 'expo-router';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Linking,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import Constants from 'expo-constants';
+import {starrySupportUrl} from '../src/auth/starryId/support';
 import {centralMemberApiState} from '../src/auth/centralMember';
 import {StarryMemberPanel} from '../src/ui/echo/StarryMemberPanel';
 import {useLegacyTheme} from '../src/ui/echo/legacyTheme';
@@ -30,6 +32,18 @@ export default function ProfileScreen(){
     <Text style={[styles.body,{color:t.muted,fontSize:fontSize(13)}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
     <Text style={[styles.warning,{fontSize:fontSize(13)}]}>登入、會員收藏同步及購買尚未開放。以下分頁只是原版介面入口，尚未讀取個人紀錄。</Text>
    </View>
+   <Pressable accessibilityRole="link" accessibilityLabel="聯絡客服"
+    onPress={()=>{
+     const version=Constants.expoConfig?.version??'unknown';
+     const build=Platform.OS==='ios'?Constants.expoConfig?.ios?.buildNumber:
+      Platform.OS==='android'?Constants.expoConfig?.android?.versionCode:undefined;
+     const appVersion=build===undefined?version:version+' ('+String(build)+')';
+     const model=(Platform.constants as {Model?:unknown}).Model;
+     const device=typeof model==='string'&&model.trim()?model:Platform.OS;
+     void Linking.openURL(starrySupportUrl(appVersion,device));
+    }} style={[styles.action,{backgroundColor:t.accentFill,marginTop:12}]}>
+    <Text style={[styles.actionLabel,{fontSize:fontSize(13)}]}>聯絡客服</Text>
+   </Pressable>
    <View accessibilityRole="tablist" style={styles.tabs}>
     {legacyProfileTabs.map(item=><Pressable key={item.id}
      accessibilityRole="tab" accessibilityLabel={item.label}

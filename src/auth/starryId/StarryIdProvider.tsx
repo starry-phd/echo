@@ -8,8 +8,8 @@ import {acceptCurrentConsent,fetchAppConfig,fetchMe,requestAccountDeletion,reque
  getPasskeySignInOptions,signInWithPasskey,getPasskeyCreationOptions,registerPasskey,getMemberPasskeys,deleteMemberPasskey} from './memberApi';
 import type {ProviderSignIn,PublicFetch} from './memberApi';
 import {stateAfterSignIn,stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
-import {evaluateAppAvailability,visibleStarryNotices} from './appConfig';
-import type {StarryNotice} from './appConfig';
+import {evaluateAppAvailability,nextStarryNoticeBoundary,visibleStarryNotices} from './appConfig';
+import type {StarryAppConfig} from './appConfig';
 import {passkeySupported,getPlatformPasskey,createPlatformPasskey} from './passkeyPlatform';
 import type {PasskeyEntry} from './passkeyContract';
 import type {MemberViewState} from './memberFlow';
@@ -85,8 +85,10 @@ export function StarryIdProvider({children}:{children:ReactNode}){
 function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;children:ReactNode}){
  const [state,setState]=useState<MemberViewState>({kind:'checking'});
  const [busy,setBusy]=useState(false);
- const [notices,setNotices]=useState<readonly StarryNotice[]>([]);
+ const [noticeConfig,setNoticeConfig]=useState<StarryAppConfig|null>(null);
+ const [noticeNow,setNoticeNow]=useState(()=>Date.now());
  const [dismissed,setDismissed]=useState<readonly string[]>([]);
+ const notices=visibleStarryNotices(noticeConfig,noticeNow);
  const wasBlocked=useRef(false);
  const loaded=useRef(false);
  const sessionRef=useRef<StarryIdSession|null>(null);
@@ -117,7 +119,8 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    try{
     const config=await fetchAppConfig(env,browserFetch);
     if(!active)return;
-    setNotices(visibleStarryNotices(config));
+    setNoticeConfig(config);
+    setNoticeNow(Date.now());
     const gate=stateFromAvailability(evaluateAppAvailability(config,version));
     if(gate){wasBlocked.current=true;setState(gate);}
     else if(wasBlocked.current){wasBlocked.current=false;void run(()=>loadMemberState(deps));}
@@ -141,6 +144,15 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    }
   };
  },[env,version,deps,run]);
+
+ // Notice transitions remain correct while the app stays open (without polling Starry ID).
+ useEffect(()=>{
+  const next=nextStarryNoticeBoundary(noticeConfig,noticeNow);
+  if(next===null)return;
+  const delay=Math.min(Math.max(1,next-Date.now()),2_147_483_647);
+  const timer=setTimeout(()=>setNoticeNow(Date.now()),delay);
+  return ()=>clearTimeout(timer);
+ },[noticeConfig,noticeNow]);
 
  const value=useMemo<StarryIdContextValue>(()=>({
   enabled:true,env,passkeyAvailable:passkeySupported(),state,busy,
