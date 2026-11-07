@@ -179,3 +179,4 @@ test('central SDK drives Web and native relays and app availability in the share
  assert.match(done,/starry\.completeWebRelay\(href\)/);
  assert.doesNotMatch(done,/consumeWebRelay\(starry\.env/);
 });
+\n

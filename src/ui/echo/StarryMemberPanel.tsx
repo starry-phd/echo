@@ -30,6 +30,8 @@ export function StarryMemberPanel(){
  const [taskUnits,setTaskUnits]=useState('1');
  const [taskSettingsNotice,setTaskSettingsNotice]=useState('');
  const {state,env}=starry;
+ const passkeyAvailable=starry.passkeyAvailable&&(Platform.OS!=='web'||
+  (typeof window!=='undefined'&&webRelaySupported(window.location.origin)));
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
 
@@ -105,7 +107,7 @@ export function StarryMemberPanel(){
       <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
      </Pressable>
     </View>}
-    {starry.passkeyAvailable&&<View style={styles.row}>
+    {passkeyAvailable&&<View style={styles.row}>
      {button('使用 Passkey 登入',()=>{
       void passkeyAction(()=>starry.signInPasskey());
      },'primary')}
@@ -135,14 +137,14 @@ export function StarryMemberPanel(){
      {text('Passkey 是繁星會員的額外登入方式，不影響你原本的 Apple／Google 登入。',true)}
      <View style={styles.row}>
       {button('我的 Passkey',()=>{void passkeyAction(loadPasskeys);})}
-      {starry.passkeyAvailable&&button('新增 Passkey',()=>{
+      {passkeyAvailable&&button('新增 Passkey',()=>{
        void passkeyAction(async()=>{
         await starry.addPasskey(passkeyName.trim()||undefined);
         await loadPasskeys();
        },'Passkey 已新增至繁星會員。');
       },'primary')}
      </View>
-     {starry.passkeyAvailable&&<TextInput
+     {passkeyAvailable&&<TextInput
       accessibilityLabel="Passkey 名稱（選填）" value={passkeyName} onChangeText={setPasskeyName}
       placeholder="Passkey 名稱（選填）" placeholderTextColor={t.muted}
       style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>}
@@ -159,7 +161,7 @@ export function StarryMemberPanel(){
       </>:button('移除',()=>setConfirmRemove(entry.id))}
      </View>)}
      {passkeyNotice?text(passkeyNotice,true):null}
-     {!starry.passkeyAvailable&&text('此裝置不支援 Passkey；可以在繁星網頁帳號中心管理。',true)}
+     {!passkeyAvailable&&text('此裝置或網址無法使用 Passkey；可以在繁星網頁帳號中心管理。',true)}
     </View>
     <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
       setBatterySummary('正在取得本月餘額…');

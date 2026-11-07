@@ -29,8 +29,8 @@ export default function ProfileScreen(){
     {state==='not-configured'?<View style={[styles.statusBox,{backgroundColor:t.lightPill}]}>
      <Text style={[styles.status,{color:t.accentText,fontSize:fontSize(14)}]}>API 尚未設定</Text>
     </View>:<StarryMemberPanel/>}
-    <Text style={[styles.body,{color:t.muted,fontSize:fontSize(13)}]}>預定中央資料庫：id-starry。跨生態系綁定需要雙方的身分驗證及正式授權。</Text>
-    <Text style={[styles.warning,{fontSize:fontSize(13)}]}>登入、會員收藏同步及購買尚未開放。以下分頁只是原版介面入口，尚未讀取個人紀錄。</Text>
+    <Text style={[styles.body,{color:t.muted,fontSize:fontSize(13)}]}>{state==='not-configured'?'會員登入尚未在此版本開放，請勿透過舊版會員資料登入。':'會員身分由 Starry ID 管理；Echo 不會複製完整中央會員資料。'}</Text>
+    <Text style={[styles.warning,{fontSize:fontSize(13)}]}>{state==='not-configured'?'登入、會員收藏同步及購買尚未開放。以下分頁只是原版介面入口，尚未讀取個人紀錄。':'已提供繁星會員登入入口；跨裝置收藏同步與購買尚未開放。以下分頁仍未讀取個人歷史紀錄。'}</Text>
    </View>
    <Pressable accessibilityRole="link" accessibilityLabel="聯絡客服"
     onPress={()=>{
@@ -71,7 +71,7 @@ export default function ProfileScreen(){
      <Text style={[styles.actionLabel,{fontSize:fontSize(13)}]}>查看我的收藏（本裝置）</Text>
     </Pressable>}
     <Text style={[styles.sectionText,{color:t.muted,fontSize:fontSize(12)}]}>
-     尚未接通會員 API，不能以「目前沒有紀錄」取代真實查詢結果。
+     {state==='not-configured'?'尚未接通會員 API，不能以「目前沒有紀錄」取代真實查詢結果。':'這些舊版個人紀錄尚未同步，不能以「目前沒有紀錄」取代真實查詢結果。'}
     </Text>
    </View>
   </View>
