@@ -11,10 +11,10 @@
 - 刪除／登出／切換帳號的中央 SSO 狀態需要跨 App 實機驗收後才能正式啟用。未新增 RevenueCat、金鑰、R2 音訊讀取或付費操作。
 
 ## 仍需的跨 App 協調
-- 其他繁星 iOS App 應採用 `phd.starry.sso` 同群組並由相同 Team 簽名；不能假設它們已完成。
-- Android 的共享帳號提供者 **需要先在擁有者批准的全生態系 App 中完成統一實作**，不能僅在 Echo 中建一個假的本機共用儲存。
+- 其他繁星 iOS App 應採用固定的 `phd.starry.shared` 同群組並由相同 Apple Team 簽名；這需要跨 App 專責 AI 協調，不能假設其他 App 已完成。
+- Android 跨 App SSO **現在選做**，不擋 Echo Web/iOS 開發或商店測試。若未來要實作，仍須全生態系共用安全的原生提供者；目前不讓其他 App 共用私有 Token。
 - 舊 APK/IPA 的憑證是否與新版本相符，必須在**實際簽署版**驗證；EAS 舊 APK 不含這次原生設定。
-- 帳號更換／登出所有 Apps 的真機同步及 Android SSO 安全機制未完成時，此 PR 保持 **DRAFT / NOT MERGED**。
+- Web SSO 已加入官方 SDK 流程，但跨兩個實際繁星 Web App 的 Cookie/登入/換人/登出仍需要本人驗收。iOS 共享群組也需兩款簽署 App 真機驗收；本 PR **DRAFT / NOT MERGED** 是因驗收尚未完成，不是因 Android 選做功能。
 
 ## v2026-11-07.14 補強
 
