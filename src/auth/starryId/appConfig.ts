@@ -5,7 +5,7 @@ import {STARRY_ID_APP_ID} from './env';
  * - paused → maintenance notice; killed → stop and explain; below min_version → update.
  * - Starry ID unreachable → public screens keep working, member features fail closed.
  */
-export type StarryAppConfig=Readonly<{appId:string;status:string;minVersion:string}>;
+export type StarryAppConfig=Readonly<{appId:string;status:string;minVersion:string;publicSettings:Readonly<Record<string,unknown>>}>;
 export type StarryAppAvailability=
  |{kind:'active'}
  |{kind:'paused'}
@@ -21,7 +21,9 @@ export function parseStarryAppConfig(value:unknown):StarryAppConfig{
  if(v.app_id!==STARRY_ID_APP_ID)throw new Error('Starry app config is for another app');
  if(typeof v.status!=='string'||typeof v.min_version!=='string'||!VERSION.test(v.min_version))
   throw new Error('Invalid Starry app config');
- return Object.freeze({appId:v.app_id,status:v.status,minVersion:v.min_version});
+ if(typeof v.config!=='object'||v.config===null||Array.isArray(v.config))throw new Error('Invalid public App settings');
+ return Object.freeze({appId:v.app_id,status:v.status,minVersion:v.min_version,
+  publicSettings:Object.freeze({...v.config as Record<string,unknown>})});
 }
 
 /** -1 / 0 / 1 for numeric x.y.z versions; throws on anything else. */
