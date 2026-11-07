@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolveStarryIdEnvironment} from '../src/auth/starryId/env.ts';
 import {StarryIdError} from '../src/auth/starryId/errors.ts';
-import {fetchAppConfig,requestNonce,signInRequestBody,signOut,requestAccountDeletion,cancelAccountDeletion,acceptCurrentConsent,fetchMe}
+import {fetchAppConfig,requestNonce,signInRequestBody,signOut,requestAccountDeletion,acceptCurrentConsent,fetchMe}
  from '../src/auth/starryId/memberApi.ts';
-import {formatPurgeDate,stateAfterSignIn,stateFromAvailability,stateFromError,stateFromMember} from '../src/auth/starryId/memberFlow.ts';
+import {stateAfterSignIn,stateFromAvailability,stateFromError,stateFromMember} from '../src/auth/starryId/memberFlow.ts';
 import {completeSignIn,loadMemberState} from '../src/auth/starryId/memberSession.ts';
 import {createStarryIdSession} from '../src/auth/starryId/session.ts';
 import {createMemoryRefreshTokenStore} from '../src/auth/starryId/storage.ts';
@@ -185,11 +185,11 @@ test('sign-in outcomes: consent required, pending deletion, suspended, invalid t
  assert.deepEqual(stateFromError(new StarryIdError(403,'ACCOUNT_SUSPENDED','',null,null,null)),{kind:'suspended'});
 });
 
-test('consent, sign out, sign out everywhere, delete and withdraw call the documented endpoints',async()=>{
+test('consent, sign out, sign out everywhere, immediate permanent delete use documented endpoints',async()=>{
  const me=parseStarryMe(fixture('me.200.json'));
  const api=fakeApi({'POST /v1/me/consents':[204,null],'POST /v1/auth/logout':[204,null],'POST /v1/auth/logout-all':[401,fixture('error.json')],
   'POST /v1/auth/refresh':[401,{error:{code:'INVALID_REFRESH',message:'',request_id:''}}],
-  'POST /v1/me/deletion':[202,fixture('me-deletion.202.json')],'DELETE /v1/me/deletion':[200,{status:'active'}],'GET /v1/me':[200,fixture('me.200.json')]});
+  'POST /v1/me/deletion':[202,fixture('me-deletion.202.json')],'GET /v1/me':[200,fixture('me.200.json')]});
  const store=createMemoryRefreshTokenStore();
  const session=createStarryIdSession({env,store,fetch:api.fetch});
  const adopt=()=>session.adoptTokens({accessToken:'eyJ.a.x',expiresInSeconds:900,refreshToken:'session1.r'});
@@ -198,21 +198,19 @@ test('consent, sign out, sign out everywhere, delete and withdraw call the docum
  await signOut(session);assert.equal(await store.get(),null);assert.equal(session.hasAccessToken(),false);
  await adopt();await signOut(session,true); // server refuses → still signed out locally
  assert.equal(await store.get(),null);
- await adopt();assert.equal(await requestAccountDeletion(session),1794294800000);
+ await adopt();assert.equal(await requestAccountDeletion(session),undefined);
  assert.deepEqual(api.calls.find(c=>c.path==='/v1/me/deletion'&&c.method==='POST').body,{confirm:true});
  assert.equal(await store.get(),null,'deletion ends every session');
- await adopt();await cancelAccountDeletion(session);assert.equal((await fetchMe(session)).status,'active');
+ assert.equal(api.calls.some(c=>c.path==='/v1/me/deletion'&&c.method==='DELETE'),false,'no withdrawal endpoint on current contract');
  for(const c of api.calls.filter(c=>c.path!=='/v1/auth/refresh'))assert.match(c.headers.authorization??'',/^Bearer /);
 });
 
-test('member view helpers and Taiwan-date deletion notice',()=>{
+test('member view helpers with permanent deletion contract',()=>{
  assert.equal(stateFromAvailability({kind:'active'}),null);
  assert.deepEqual(stateFromAvailability({kind:'killed'}),{kind:'maintenance'});
  assert.deepEqual(stateFromAvailability({kind:'update-required',minVersion:'1.0.0'}),{kind:'update-required',minVersion:'1.0.0'});
  assert.equal(stateFromMember(parseStarryMe(fixture('me.200.json'))).kind,'signed-in');
  assert.equal(stateAfterSignIn({user:{status:'active'}}),null);
- assert.equal(formatPurgeDate(Date.UTC(2026,10,9,20,0)),'2026/11/10');
- assert.equal(formatPurgeDate(null),'7 天後');
  assert.deepEqual(stateFromError(new Error('x')),{kind:'unavailable'});
 });
 
@@ -253,6 +251,6 @@ test('turning on sign-in switches the privacy page to the member-login version a
  assert.match(guest,/目前版本不需要註冊或登入/);
  assert.doesNotMatch(member,/目前版本不需要註冊或登入/);
  for(const must of ['Starry ID','https://id.starry.phd/privacy','https://id.starry.phd/terms','https://id.starry.phd/account/delete',
-  'Google 或 Apple','sessionStorage','安全儲存區','7 天內重新登入即可撤回','不會自動取消','不讀取、不保存你的 Email','13 歲以下','English summary'])
+  'Google 或 Apple','sessionStorage','安全儲存區','立即永久刪除','不會自動取消','不讀取、不保存你的 Email','13 歲以下','English summary'])
   assert.ok(member.includes(must),must);
 });
