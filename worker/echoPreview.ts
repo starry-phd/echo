@@ -3,8 +3,8 @@ import {createRemoteJWKSet,customFetch,jwtVerify} from 'jose';
 /**
  * Isolated Echo/Starry ID integration preview.
  * NEVER serves Echo private media, writes the Starry ID D1, or exposes a service key.
- * A web login cannot complete on this workers.dev hostname: Starry ID only
- * registered https://echo.starry.phd as its web callback origin.
+ * The exact workers.dev staging origin is independently registered in Starry ID;
+ * its login callback never flows through the original echo.starry.phd redirect.
  */
 type Env={STARRY_BATTERY_KEY?:string;STARRY_ID_SERVICE?:{fetch(request:Request):Promise<Response>};
  ECHO_PUBLIC_SERVICE?:{fetch(request:Request):Promise<Response>};ASSETS?:{fetch(request:Request):Promise<Response>}};
@@ -29,13 +29,13 @@ strong{color:#9f285e}code{overflow-wrap:anywhere;font-size:.91rem}a{color:#075b9
 <p><strong id="status">正在查詢…</strong></p><p class="small" id="detail"></p>
 <button type="button" onclick="location.reload()">重新查詢</button></div>
 <div class="card"><h2>Google／Apple 登入</h2>
-<p>正式 Starry ID 目前只接受 <code>https://echo.starry.phd</code> 網頁回傳，這個獨立預覽網址不在白名單，因此<strong>不能直接在這裡進行網頁登入</strong>。</p>
+<p>Starry ID 已登記正式網站及本測試網域，Google／Apple 登入後會<strong>返回原本測試網域</strong>，不經過舊站的 302 轉址。</p><p><a href="/profile">前往會員頁測試 Google／Apple 登入</a></p>
 <p>手機 App 版本使用已登記的 <code>echostarry://auth/apple</code> 深層連結，可在安裝內部測試版後驗證。此頁不會索取 Token 或密碼。</p></div>
 <div class="card"><h2>繁星電池艙 Starry Battery</h2>
 <p>已準備安全的會員餘額 API 與「預留 1 單位後釋放」測試端點。它們只接受經正式 Starry ID 驗證的 Echo Access Token。</p>
 <p>測試服務金鑰必須由業主放入 Worker Secret <code>STARRY_BATTERY_KEY</code>；未設定時會拒絕任何預留。絕不在本頁貼上金鑰。</p>
-<p class="small">這個頁面只測試串接狀態；正式會員登入與 Battery 扣抵仍需在授權的 App 實機驗證。</p></div>
-<p class="small">預覽 Worker：echo-api-staging。可回到 <a href="/">完整 Echo 畫面</a>。原網域 302 轉址與 Starry ID 設定均未改動。</p></main>
+<p class="small">會員登入可以在測試網站實際操作；Battery 餘額可登入後查詢，扣抵測試仍需後端金鑰及經授權的任務。</p></div>
+<p class="small">預覽 Worker：echo-api-staging。可回到 <a href="/">完整 Echo 畫面</a>。原網域 302 轉址保持不變，Starry ID 僅新增測試網域的登入授權。</p></main>
 <script>
 fetch('/api/status',{cache:'no-store'}).then(async r=>{const d=await r.json();document.getElementById('status').textContent=d.app_status==='active'?'App 登記有效（active）':'目前無法確認 active';
 document.getElementById('detail').textContent='Starry ID 健康檢查：'+(d.id_health?'正常':'尚未確認')+'；註冊狀態：'+(d.app_status||'未確認');})
@@ -65,7 +65,7 @@ async function status(env:Env):Promise<Response>{
  }catch(error){healthError=error instanceof Error?(error.name+': '+error.message).slice(0,180):'unknown';}
  return json({environment:'echo-api-staging',app_id:'echo',app_status:appStatus,id_health:health,
   upstream_http:{app:appHttpStatus,health:healthHttpStatus},upstream_errors:{app:appError,health:healthError},
-  callback_registered:'https://echo.starry.phd',can_login_from_preview:false});
+  callback_registered:'https://echo-api-staging.starry-phd.workers.dev',can_login_from_preview:true});
 }
 
 async function memberToken(request:Request,env:Env):Promise<string|null>{
