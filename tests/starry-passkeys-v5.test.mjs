@@ -64,12 +64,12 @@ test('Credential creation accepts only central RP and creation credential binary
  assert.equal(api.calls.at(-1).path,'/v1/me/passkeys/YWJj');
  assert.equal(api.calls.at(-1).method,'DELETE');
 });
-test('Cancellation is silent, missing credential falls back, duplicate and reauth errors are specific',()=>{
+test('Cancellation is silent; missing credential and duplicates have specific messages without an obsolete 10-minute reauth rule',()=>{
  for(const e of [{name:'NotAllowedError'},{name:'AbortError'},{error:'UserCancelled'}])
   assert.equal(passkeyErrorMessage(e),null);
  assert.match(passkeyErrorMessage({error:'NoCredentials'}),/Apple 或 Google/);
  assert.match(passkeyErrorMessage({name:'InvalidStateError'}),/已經有/);
- assert.match(passkeyErrorMessage({code:'REAUTH_REQUIRED'}),/10 分鐘/);
+ assert.doesNotMatch(passkeyErrorMessage({code:'REAUTH_REQUIRED'}),/10 分鐘/);
 });
 test('App notices are bounded plain strings with millisecond windows',()=>{
  const now=1794000000000;

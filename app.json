@@ -39,7 +39,13 @@
       },
       "associatedDomains": [
         "webcredentials:id.starry.phd"
-      ]
+      ],
+      "entitlements": {
+        "keychain-access-groups": [
+          "$(AppIdentifierPrefix)phd.starry.echo",
+          "$(AppIdentifierPrefix)phd.starry.shared"
+        ]
+      }
     },
     "android": {
       "package": "phd.starry.echo",

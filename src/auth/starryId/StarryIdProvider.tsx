@@ -5,10 +5,11 @@ import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
 import {fetchMe} from './memberApi';
-import {webRelayReturnUrl} from './webRelay';
+import {webRelayReturnUrl,webRelaySupported,WEB_RELAY_RETURN_PATH} from './webRelay';
 import {StarryClient,StarryError} from './vendor/starry-client';
 import type {Provider} from './vendor/starry-client';
 import {createEchoSdkStorage} from './sdkStorage';
+import {createStarryDeviceSharedStorage} from './deviceSharedStorage';
 import type {ProviderSignIn} from './memberApi';
 import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
 import {evaluateAppAvailability,nextStarryNoticeBoundary,parseStarryAppConfig,visibleStarryNotices} from './appConfig';
@@ -38,6 +39,7 @@ export type StarryIdContextValue={
  enabled:boolean;
  env:StarryIdEnvironment|null;
  passkeyAvailable:boolean;
+ deviceSsoAvailable:boolean;
  state:MemberViewState;
  busy:boolean;
  ensureLoaded():void;
@@ -45,7 +47,8 @@ export type StarryIdContextValue={
  signIn(input:ProviderSignIn):Promise<void>;
  signInRelay(provider:Provider):Promise<void>;
  beginWebRelay(provider:Provider):Promise<void>;
- completeWebRelay(href:string):Promise<void>;
+ completeWebRelay(href:string):Promise<boolean>;
+ completeWebSso(href:string):Promise<boolean|null>;
  signInPasskey():Promise<void>;
  listPasskeys():Promise<PasskeyEntry[]>;
  addPasskey(name?:string):Promise<void>;
@@ -59,10 +62,10 @@ export type StarryIdContextValue={
 };
 
 const disabled:StarryIdContextValue={
- enabled:false,env:null,passkeyAvailable:false,state:{kind:'disabled'},busy:false,
+ enabled:false,env:null,passkeyAvailable:false,deviceSsoAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},
+ signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>false,completeWebSso:async()=>null,
  signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
  acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
  getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
@@ -88,9 +91,18 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  const wasBlocked=useRef(false);
  const loaded=useRef(false);
  const sdkRef=useRef<StarryClient|null>(null);
+ const webNavigationRef=useRef(false);
+ // Shared token storage only where the OS provides a cross-App security boundary.
+ // Android must not fake device-wide SSO with an app-private SecureStore.
+ const sharedStorageRef=useRef<ReturnType<typeof createStarryDeviceSharedStorage>|undefined>(undefined);
+ if(sharedStorageRef.current===undefined)sharedStorageRef.current=createStarryDeviceSharedStorage();
  if(!sdkRef.current){
   sdkRef.current=new StarryClient({
    baseUrl:env.baseUrl,appId:'echo',storage:createEchoSdkStorage(),fetch:sdkFetch,
+   ...(Platform.OS==='web'&&typeof window!=='undefined'?{
+    navigate:(target:string)=>{window.location.assign(target);webNavigationRef.current=true;}
+   }:{}),
+   ...(sharedStorageRef.current?{sharedStorage:sharedStorageRef.current}:{}),
    ...(Platform.OS==='web'?{}:{
     sha256Hex:nativeSdkSha256Hex,randomState:nativeSdkRandomState,
     openAuthSession:nativeSdkOpenAuthSession
@@ -102,6 +114,17 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   });
  }
  const sdk=sdkRef.current;
+ const webSsoReturnUrl=useCallback(()=>{
+  if(Platform.OS!=='web'||typeof window==='undefined'||!webRelaySupported(window.location.origin))return null;
+  return webRelayReturnUrl(window.location.origin);
+ },[]);
+ const shareWebSession=useCallback(async():Promise<boolean>=>{
+  const returnUrl=webSsoReturnUrl();
+  if(!returnUrl)return false;
+  webNavigationRef.current=false;
+  await sdk.shareWebSignIn({returnUrl});
+  return webNavigationRef.current;
+ },[sdk,webSsoReturnUrl]);
  // A short adapter preserves existing Echo screens without a second token owner.
  const session=useMemo<StarryIdSession>(()=>({
   adoptTokens:async()=>{throw new Error('Use Starry Client for sign-in');},
@@ -122,10 +145,10 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   const gate=await availability();
   if(gate)return gate;
   try{
-   if(!session.hasAccessToken()&&!(await session.refresh()))return {kind:'signed-out'};
+   if(!(await sdk.restore()))return {kind:'signed-out'};
    return stateFromMember(await fetchMe(session));
   }catch(error){return stateFromError(error);}
- },[availability,session]);
+ },[availability,session,sdk]);
 
  const run=useCallback(async(task:()=>Promise<MemberViewState|void>)=>{
   setBusy(true);
@@ -155,7 +178,22 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     setNoticeNow(Date.now());
     const gate=stateFromAvailability(evaluateAppAvailability(config,version));
     if(gate){wasBlocked.current=true;setState(gate);}
-    else if(wasBlocked.current){wasBlocked.current=false;void run(loadMember);}
+    else{
+     if(Platform.OS==='web'&&typeof window!=='undefined'){
+      // OAuth/SSO callback fragments must be consumed before any new redirect.
+      const isCallback=window.location.pathname===WEB_RELAY_RETURN_PATH;
+      const returnUrl=webSsoReturnUrl();
+      if(!isCallback&&returnUrl){
+       try{if(await sdk.syncWebSignIn({returnUrl}))return;}
+       catch{/* Offline or unsupported browser: keep the current local state. */}
+      }
+     }else{
+      // iOS uses the common Keychain group; Android safely stays app-local.
+      try{await sdk.syncDeviceSignIn();}catch{/* Offline does not log members out. */}
+     }
+     if(wasBlocked.current)wasBlocked.current=false;
+     if(loaded.current)void run(loadMember);
+    }
    }finally{inflight=false;}
   };
   void refresh();
@@ -175,7 +213,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     document.removeEventListener('visibilitychange',onVisible);
    }
   };
- },[version,fetchSdkConfig,loadMember,run]);
+ },[version,fetchSdkConfig,loadMember,run,sdk,webSsoReturnUrl]);
 
  // Notice transitions remain correct while the app stays open (without polling Starry ID).
  useEffect(()=>{
@@ -187,7 +225,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  },[noticeConfig,noticeNow]);
 
  const value=useMemo<StarryIdContextValue>(()=>({
-  enabled:true,env,passkeyAvailable:passkeySupported(),state,busy,
+  enabled:true,env,passkeyAvailable:passkeySupported(),deviceSsoAvailable:Boolean(sharedStorageRef.current),state,busy,
   ensureLoaded(){
    if(loaded.current)return;
    loaded.current=true;
@@ -208,7 +246,9 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    });
    if(result.user.status==='pending_deletion')return {kind:'pending-deletion',purgeAt:result.user.deletion_purge_at};
    if(result.user.status==='suspended')return {kind:'suspended'};
-   return stateFromMember(await fetchMe(session));
+   const next=stateFromMember(await fetchMe(session));
+   await shareWebSession();
+   return next;
   }),
   signInRelay:async provider=>{
    if(Platform.OS==='web')throw new Error('Native relay unavailable on web');
@@ -233,7 +273,19 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    if(!result)throw new Error('Missing Starry ID relay response');
    if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
    else if(result.user.status==='suspended')setState({kind:'suspended'});
-   else setState(stateFromMember(await fetchMe(session)));
+   else{
+    setState(stateFromMember(await fetchMe(session)));
+    // The IdP adoption is a top-level redirect: never race it with router.replace().
+    return shareWebSession();
+   }
+   return false;
+  },
+  completeWebSso:async href=>{
+   if(Platform.OS!=='web'||!webSsoReturnUrl())throw new Error('Unregistered SSO return origin');
+   const result=await sdk.completeWebSsoCheck(href);
+   if(result===true)setState(stateFromMember(await fetchMe(session)));
+   else if(result===false)setState({kind:'signed-out'});
+   return result;
   },
   signInPasskey:async()=>{
    if(busy)return;
@@ -244,7 +296,10 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     const result=await sdk.signInWithPasskey();
     if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
     else if(result.user.status==='suspended')setState({kind:'suspended'});
-    else setState(stateFromMember(await fetchMe(session)));
+    else{
+     setState(stateFromMember(await fetchMe(session)));
+     await shareWebSession();
+    }
    }finally{setBusy(false);}
   },
   listPasskeys:async()=>{
@@ -264,7 +319,13 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    await sdk.acceptConsent();
    return stateFromMember(await fetchMe(session));
   }),
-  signOut:(everywhere=false)=>run(async()=>{if(everywhere)await sdk.signOutEverywhere();else await sdk.signOut();return {kind:'signed-out'};}),
+  signOut:(everywhere=false)=>run(async()=>{
+   if(everywhere)await sdk.signOutEverywhere();
+   const returnUrl=webSsoReturnUrl();
+   if(returnUrl)await sdk.signOutWebEverywhere({returnUrl});
+   else if(!everywhere)await sdk.signOut();
+   return {kind:'signed-out'};
+  }),
   requestDeletion:()=>run(async()=>{
    await sdk.deleteAccount();
    return {kind:'signed-out',notice:'繁星會員帳號已立即永久刪除，無法復原。商店訂閱須自行取消。'};
@@ -290,7 +351,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     throw new Error('量子電池資料格式不正確');
    return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
- }),[env,state,busy,run,loadMember,availability,session,sdk,version]);
+ }),[env,state,busy,run,loadMember,availability,session,sdk,version,shareWebSession,webSsoReturnUrl]);
 
  return <StarryIdContext.Provider value={value}>
   <View style={{flex:1}}>

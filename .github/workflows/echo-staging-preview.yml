@@ -104,6 +104,17 @@ jobs:
             assert.ok(web.origins?.includes(origin), 'Echo web Passkey origin not published: '+origin);
           console.log('Echo signed Android APK, iOS association and two WebAuthn origins are publicly registered.');
           NODE
+      - name: GET Echo app registration from Starry ID (public, read only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 4 --retry-delay 2 --max-time 20 \
+            'https://id.starry.phd/v1/apps/echo/config' -o /tmp/echo-starry-app-config.json
+          node - <<'NODE'
+          const r=require('/tmp/echo-starry-app-config.json');
+          if(r.app_id!=='echo'||r.status!=='active'||typeof r.min_version!=='string')process.exit(1);
+          console.log('Central GET /v1/apps/echo/config verified:',r.app_id,r.status,'min_version',r.min_version);
+          NODE
       - name: Smoke test real Echo UI, approved guest cards, and no private audio
         shell: bash
         run: |
