@@ -28,6 +28,7 @@ export function parseStarryAppConfig(value:unknown):StarryAppConfig{
   if(!entry||typeof entry!=='object')return false;
   const n=entry as Partial<StarryNotice>;
   return typeof n.message==='string'&&n.message.length>0&&n.message.length<=2000&&
+   typeof n.starts_at==='number'&&typeof n.ends_at==='number'&&
    Number.isSafeInteger(n.starts_at)&&Number.isSafeInteger(n.ends_at)&&n.ends_at>n.starts_at;
  }):[];
  return Object.freeze({appId:v.app_id,status:v.status,minVersion:v.min_version,
