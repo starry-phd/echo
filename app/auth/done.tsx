@@ -28,7 +28,10 @@ export default function StarryRelayDone(){
   const fragment=new URLSearchParams(href.split('#')[1]||'');
   const isWebSso=['sso_code','sso_none','sso_adopted'].some(key=>fragment.has(key));
   const complete=isWebSso?starry.completeWebSso(href):starry.completeWebRelay(href);
-  void complete.then(()=>router.replace('/profile')).catch(err=>{
+  void complete.then(redirecting=>{
+   if(!isWebSso&&redirecting===true)return; // Central cookie adoption is already navigating.
+   router.replace('/profile');
+  }).catch(err=>{
    setMessage((err as {cancelled?:boolean})?.cancelled?'已取消登入。':'登入驗證未完成，請再試一次。');
    setDone(true);
   });

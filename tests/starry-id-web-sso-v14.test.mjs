@@ -28,12 +28,15 @@ test('2026-11-07.14 official Web SDK is used verbatim; callback and configured w
  assert.throws(()=>webRelayReturnUrl('https://malicious.example'));
  const provider=read('src/auth/starryId/StarryIdProvider.tsx');
  assert.match(provider,/sdk\.shareWebSignIn\(\{returnUrl\}\)/);
+ assert.match(provider,/webNavigationRef\.current=true/);
+ assert.match(provider,/return shareWebSession\(\)/);
  assert.match(provider,/sdk\.syncWebSignIn\(\{returnUrl\}\)/);
  assert.match(provider,/window\.location\.pathname===WEB_RELAY_RETURN_PATH/);
  assert.match(provider,/sdk\.completeWebSsoCheck\(href\)/);
  assert.match(provider,/sdk\.signOutWebEverywhere\(\{returnUrl\}\)/);
  const callback=read('app/auth/done.tsx');
  assert.match(callback,/isWebSso\?starry\.completeWebSso\(href\):starry\.completeWebRelay\(href\)/);
+ assert.match(callback,/if\(!isWebSso&&redirecting===true\)return/);
 });
 
 test('browser login adopts central HttpOnly-cookie SSO using a one-time code and approved callback',async()=>{

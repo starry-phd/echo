@@ -47,7 +47,7 @@ export type StarryIdContextValue={
  signIn(input:ProviderSignIn):Promise<void>;
  signInRelay(provider:Provider):Promise<void>;
  beginWebRelay(provider:Provider):Promise<void>;
- completeWebRelay(href:string):Promise<void>;
+ completeWebRelay(href:string):Promise<boolean>;
  completeWebSso(href:string):Promise<boolean|null>;
  signInPasskey():Promise<void>;
  listPasskeys():Promise<PasskeyEntry[]>;
@@ -65,7 +65,7 @@ const disabled:StarryIdContextValue={
  enabled:false,env:null,passkeyAvailable:false,deviceSsoAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},completeWebSso:async()=>null,
+ signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>false,completeWebSso:async()=>null,
  signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
  acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
  getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
@@ -91,6 +91,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  const wasBlocked=useRef(false);
  const loaded=useRef(false);
  const sdkRef=useRef<StarryClient|null>(null);
+ const webNavigationRef=useRef(false);
  // Shared token storage only where the OS provides a cross-App security boundary.
  // Android must not fake device-wide SSO with an app-private SecureStore.
  const sharedStorageRef=useRef<ReturnType<typeof createStarryDeviceSharedStorage>|undefined>(undefined);
@@ -98,6 +99,9 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  if(!sdkRef.current){
   sdkRef.current=new StarryClient({
    baseUrl:env.baseUrl,appId:'echo',storage:createEchoSdkStorage(),fetch:sdkFetch,
+   ...(Platform.OS==='web'&&typeof window!=='undefined'?{
+    navigate:(target:string)=>{window.location.assign(target);webNavigationRef.current=true;}
+   }:{}),
    ...(sharedStorageRef.current?{sharedStorage:sharedStorageRef.current}:{}),
    ...(Platform.OS==='web'?{}:{
     sha256Hex:nativeSdkSha256Hex,randomState:nativeSdkRandomState,
@@ -114,9 +118,12 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   if(Platform.OS!=='web'||typeof window==='undefined'||!webRelaySupported(window.location.origin))return null;
   return webRelayReturnUrl(window.location.origin);
  },[]);
- const shareWebSession=useCallback(async()=>{
+ const shareWebSession=useCallback(async():Promise<boolean>=>{
   const returnUrl=webSsoReturnUrl();
-  if(returnUrl)await sdk.shareWebSignIn({returnUrl});
+  if(!returnUrl)return false;
+  webNavigationRef.current=false;
+  await sdk.shareWebSignIn({returnUrl});
+  return webNavigationRef.current;
  },[sdk,webSsoReturnUrl]);
  // A short adapter preserves existing Echo screens without a second token owner.
  const session=useMemo<StarryIdSession>(()=>({
@@ -268,8 +275,10 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    else if(result.user.status==='suspended')setState({kind:'suspended'});
    else{
     setState(stateFromMember(await fetchMe(session)));
-    await shareWebSession();
+    // The IdP adoption is a top-level redirect: never race it with router.replace().
+    return shareWebSession();
    }
+   return false;
   },
   completeWebSso:async href=>{
    if(Platform.OS!=='web'||!webSsoReturnUrl())throw new Error('Unregistered SSO return origin');
