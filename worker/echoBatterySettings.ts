@@ -38,12 +38,12 @@ export function echoBatteryError(error:unknown):{status:number;code:string;messa
   if(error.status===409&&error.code==='BATTERY_APP_CAP')
    return {status:409,code:'BATTERY_APP_CAP',message:'繁星回聲本月用量達上限，請稍後再試。'};
   if(error.status===503||error.code==='SERVICE_UNAVAILABLE')
-   return {status:503,code:'SERVICE_UNAVAILABLE',message:'繁星電池艙維護中，請稍後再試。'};
+   return {status:503,code:'SERVICE_UNAVAILABLE',message:'🔋 繁星電池艙維護中，請稍後再試。'};
   if(error.code==='BATTERY_INSUFFICIENT')
-   return {status:409,code:error.code,message:'免費額度與本 App 量子電池不足。'};
-  return {status:error.status,code:error.code,message:'繁星電池艙暫時無法使用，請稍後再試。'};
+   return {status:409,code:error.code,message:'🔋 普通電池與 ⚛️ 本 App 量子電池不足。'};
+  return {status:error.status,code:error.code,message:'🔋 繁星電池艙暫時無法使用，請稍後再試。'};
  }
- return {status:503,code:'SERVICE_UNAVAILABLE',message:'無法連接繁星電池艙，請稍後再試。'};
+ return {status:503,code:'SERVICE_UNAVAILABLE',message:'🔋 無法連接繁星電池艙，請稍後再試。'};
 }
 
 type VerifiedMember={user_id?:unknown;staff_role?:unknown;status?:unknown;

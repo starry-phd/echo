@@ -168,7 +168,15 @@
               "string",
               "null"
             ],
-            "example": "886-0112342"
+            "example": "TW0112342"
+          },
+          "shown_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "THE name to show for this member in every Starry App: the primary display name the member chose (nickname or real name, exactly one; default nickname; null when neither exists, then show initials)",
+            "example": "陽光海豚"
           },
           "nickname": {
             "type": [
@@ -188,14 +196,20 @@
               "string",
               "null"
             ]
+          },
+          "initials": {
+            "type": "string",
+            "description": "Show in a circle when avatar_url is null"
           }
         },
         "required": [
           "user_id",
           "member_no",
+          "shown_name",
           "nickname",
           "display_name",
-          "avatar_url"
+          "avatar_url",
+          "initials"
         ]
       },
       "PasskeyRequestOptions": {
@@ -576,6 +590,14 @@
       "Profile": {
         "type": "object",
         "properties": {
+          "shown_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "THE name to show for this member in every Starry App: the primary display name the member chose (nickname or real name, exactly one; default nickname; null when neither exists, then show initials)",
+            "example": "陽光海豚"
+          },
           "display_name": {
             "type": [
               "string",
@@ -589,6 +611,10 @@
               "null"
             ],
             "description": "Signed path, valid for one hour"
+          },
+          "initials": {
+            "type": "string",
+            "description": "Show this in a circle when avatar_url is null (first letter of family name and of given name)"
           },
           "birthday": {
             "type": [
@@ -760,8 +786,10 @@
           }
         },
         "required": [
+          "shown_name",
           "display_name",
           "avatar_url",
+          "initials",
           "birthday",
           "locale",
           "contact_email",
@@ -995,6 +1023,14 @@
       "PublicProfile": {
         "type": "object",
         "properties": {
+          "shown_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "THE name to show for this member in every Starry App: the primary display name the member chose (nickname or real name, exactly one; default nickname; null when neither exists, then show initials)",
+            "example": "陽光海豚"
+          },
           "display_name": {
             "type": [
               "string",
@@ -1014,6 +1050,10 @@
               "null"
             ],
             "description": "Always public"
+          },
+          "initials": {
+            "type": "string",
+            "description": "Show this in a circle when avatar_url is null: first letter of family name and of given name"
           },
           "birthday_month_day": {
             "type": [
@@ -1165,9 +1205,11 @@
           }
         },
         "required": [
+          "shown_name",
           "display_name",
           "nickname",
           "avatar_url",
+          "initials",
           "birthday_month_day",
           "zodiac_name",
           "life_path_number",

@@ -55,7 +55,7 @@ export function LegacyFilterToolbar({categories,category,onCategory,order,onOrde
   if(next){onOrder(next);return;}
   onNotice(field==='permission'
    ?'權限排序尚待中央會員與逐曲存取權限 API 正式驗證，暫不提供猜測結果。'
-   :'貼紙排序尚待正式貼紙／電池與每曲成本資料，暫不提供猜測結果。');
+   :'貼紙排序尚待正式貼紙／🔋 電池與每曲成本資料，暫不提供猜測結果。');
  };
  return <View style={styles.root}>
   <View style={[styles.row,{backgroundColor:t.card,borderColor:t.border}]}>
