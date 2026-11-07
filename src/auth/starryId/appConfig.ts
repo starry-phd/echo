@@ -5,7 +5,9 @@ import {STARRY_ID_APP_ID} from './env';
  * - paused → maintenance notice; killed → stop and explain; below min_version → update.
  * - Starry ID unreachable → public screens keep working, member features fail closed.
  */
-export type StarryAppConfig=Readonly<{appId:string;status:string;minVersion:string;publicSettings:Readonly<Record<string,unknown>>}>;
+import type {components as StarryComponents} from '../../../packages/starry-id-sdk/src/generated';
+export type StarryNotice=StarryComponents['schemas']['AppConfig']['notices'][number];
+export type StarryAppConfig=Readonly<{appId:string;status:string;minVersion:string;publicSettings:Readonly<Record<string,unknown>>;notices:readonly StarryNotice[]}>;
 export type StarryAppAvailability=
  |{kind:'active'}
  |{kind:'paused'}
@@ -22,8 +24,15 @@ export function parseStarryAppConfig(value:unknown):StarryAppConfig{
  if(typeof v.status!=='string'||typeof v.min_version!=='string'||!VERSION.test(v.min_version))
   throw new Error('Invalid Starry app config');
  if(typeof v.config!=='object'||v.config===null||Array.isArray(v.config))throw new Error('Invalid public App settings');
+ const notices=Array.isArray(v.notices)?v.notices.filter((entry):entry is StarryNotice=>{
+  if(!entry||typeof entry!=='object')return false;
+  const n=entry as Partial<StarryNotice>;
+  return typeof n.message==='string'&&n.message.length>0&&n.message.length<=2000&&
+   typeof n.starts_at==='number'&&typeof n.ends_at==='number'&&
+   Number.isSafeInteger(n.starts_at)&&Number.isSafeInteger(n.ends_at)&&n.ends_at>n.starts_at;
+ }):[];
  return Object.freeze({appId:v.app_id,status:v.status,minVersion:v.min_version,
-  publicSettings:Object.freeze({...v.config as Record<string,unknown>})});
+  publicSettings:Object.freeze({...v.config as Record<string,unknown>}),notices:Object.freeze(notices)});
 }
 
 /** -1 / 0 / 1 for numeric x.y.z versions; throws on anything else. */
@@ -49,4 +58,20 @@ export function evaluateAppAvailability(config:StarryAppConfig|null,appVersion:s
 
 export function memberFeaturesAvailable(availability:StarryAppAvailability):boolean{
  return availability.kind==='active';
+}
+
+/** Announcement timestamps are milliseconds, not seconds; only publish in-range plain text. */
+export function visibleStarryNotices(config:StarryAppConfig|null,now=Date.now()):readonly StarryNotice[]{
+ return config?.notices.filter(n=>n.starts_at<=now&&now<n.ends_at)??[];
+}
+
+/** Next published notice start/end, for foreground display without polling the API. */
+export function nextStarryNoticeBoundary(config:StarryAppConfig|null,now=Date.now()):number|null{
+ let next:number|null=null;
+ for(const n of config?.notices??[]){
+  for(const time of [n.starts_at,n.ends_at]){
+   if(time>now&&(next===null||time<next))next=time;
+  }
+ }
+ return next;
 }

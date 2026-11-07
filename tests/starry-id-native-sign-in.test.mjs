@@ -42,7 +42,8 @@ test('iOS and Android use Starry browser relay with registered deep link and sec
 
 test('mobile provider UI offers both Google and Apple without native SDKs',()=>{
  const panel=read('src/ui/echo/StarryMemberPanel.tsx');
- assert.match(panel,/await nativeRelaySignIn\(env,provider,nonce\)/);
+ assert.match(panel,/await starry\.signInRelay\(provider\)/);
+ assert.match(read('src/auth/starryId/StarryIdProvider.tsx'),/sdk\.signInWithRelay/);
  assert.match(panel,/nativeRelay\('google'\)/);
  assert.match(panel,/nativeRelay\('apple'\)/);
  assert.equal(JSON.parse(read('app.json')).expo.scheme,'echostarry');

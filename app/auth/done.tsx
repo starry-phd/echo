@@ -2,7 +2,6 @@ import {useEffect,useRef,useState} from 'react';
 import {ActivityIndicator,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {router} from 'expo-router';
 import {useStarryId} from '../../src/auth/starryId/StarryIdProvider';
-import {consumeWebRelay} from '../../src/auth/starryId/webRelay';
 import {useLegacyTheme} from '../../src/ui/echo/legacyTheme';
 import {useFontZoom} from '../../src/ui/echo/FontZoom';
 
@@ -25,12 +24,11 @@ export default function StarryRelayDone(){
   const href=window.location.href;
   try{window.history.replaceState(null,'',window.location.pathname);}catch{/* keep going */}
   if(!starry.enabled||!starry.env){setMessage('繁星會員登入尚未開放。');setDone(true);return;}
-  const outcome=consumeWebRelay(starry.env,href,{storage:window.sessionStorage,now:()=>Date.now()});
-  if(outcome.kind==='invalid'){setMessage(outcome.reason);setDone(true);return;}
-  if(outcome.kind==='cancelled'){setMessage('已取消登入。');setDone(true);return;}
-  void starry.signIn({provider:outcome.provider,idToken:outcome.idToken,nonce:outcome.nonce,
-   authorizationCode:outcome.code,redirectUri:outcome.redirectUri})
-   .finally(()=>router.replace('/profile'));
+  // Official SDK validates the single-use state, clears pending data and exchanges tokens.
+  void starry.completeWebRelay(href).then(()=>router.replace('/profile')).catch(err=>{
+   setMessage((err as {cancelled?:boolean})?.cancelled?'已取消登入。':'登入驗證未完成，請再試一次。');
+   setDone(true);
+  });
  },[starry]);
 
  return <View style={[styles.root,{backgroundColor:t.bg}]}>

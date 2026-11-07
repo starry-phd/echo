@@ -74,6 +74,36 @@ jobs:
           console.log('Echo registration:',r.app_status,'Starry ID health:',r.id_health,'upstream HTTP:',r.upstream_http,'errors:',r.upstream_errors);
           if(r.environment!=='echo-api-staging'||r.app_id!=='echo'||r.app_status!=='active'||!r.id_health||r.can_login_from_preview!==true||r.callback_registered!=='https://echo-api-staging.starry-phd.workers.dev')process.exit(1);
           NODE
+
+      - name: Verify Starry ID published Echo Passkey links (GET only, no login or keys)
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://id.starry.phd/.well-known'
+          curl -fsS --retry 4 --retry-delay 2 --max-time 20 "$base/assetlinks.json" -o /tmp/echo-passkey-assetlinks.json
+          curl -fsS --retry 4 --retry-delay 2 --max-time 20 "$base/apple-app-site-association" -o /tmp/echo-passkey-apple-aasa.json
+          curl -fsS --retry 4 --retry-delay 2 --max-time 20 "$base/webauthn" -o /tmp/echo-passkey-web-origins.json
+          node - <<'NODE'
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          const parse = path => JSON.parse(fs.readFileSync(path, 'utf8'));
+          const expected = '04:10:CC:35:A5:79:A9:CF:EF:4E:33:1C:F1:06:AE:70:64:00:6B:11:01:4A:FA:FB:B4:FB:51:36:A6:AD:AC:6C';
+          const assetlinks = parse('/tmp/echo-passkey-assetlinks.json');
+          assert.ok(Array.isArray(assetlinks), 'assetlinks is not a JSON array');
+          const matches = assetlinks.filter(link => link?.target?.namespace === 'android_app' &&
+            link.target.package_name === 'phd.starry.echo' &&
+            link.relation?.includes('delegate_permission/common.get_login_creds'));
+          assert.equal(matches.length, 1, 'Echo must have exactly one Android get_login_creds association');
+          assert.ok(matches[0].target.sha256_cert_fingerprints?.includes(expected),
+            'Echo EAS APK signing certificate has not appeared in the public assetlinks.json');
+          const apple = parse('/tmp/echo-passkey-apple-aasa.json');
+          assert.ok(apple.webcredentials?.apps?.includes('4W7QRTXN5Y.phd.starry.echo'),
+            'Echo iOS app not published in Starry ID AASA');
+          const web = parse('/tmp/echo-passkey-web-origins.json');
+          for (const origin of ['https://echo.starry.phd','https://echo-api-staging.starry-phd.workers.dev'])
+            assert.ok(web.origins?.includes(origin), 'Echo web Passkey origin not published: '+origin);
+          console.log('Echo signed Android APK, iOS association and two WebAuthn origins are publicly registered.');
+          NODE
       - name: Smoke test real Echo UI, approved guest cards, and no private audio
         shell: bash
         run: |

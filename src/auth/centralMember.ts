@@ -2,7 +2,8 @@
  * Consumer adapter for the ONE member authority: Starry ID (starry-phd/id).
  * The v1.0 five-field DTO is superseded by `GET /v1/me` (integration guide §8);
  * see src/auth/starryId/. Never populate a member from legacy users, the app's
- * D1 or local state. Sign-in UI is not released yet, so member access stays closed.
+ * D1 or local state. Only the gated StarryIdProvider can activate login for
+ * an explicitly approved staging build; the public production guest shell is disabled.
  */
 import {resolveStarryIdEnvironment} from './starryId/env';
 import type {StarryMember} from './starryId/member';
@@ -18,5 +19,5 @@ export function centralMemberApiState():CentralMemberApiState{
 }
 
 export async function getCentralMemberProfile():Promise<CentralMemberProfile>{
- throw new Error('本 App 的會員登入尚未開放（繁星中央會員 Starry ID 已上線，App 登入畫面尚未發布）；不可由舊會員資料或本地狀態假冒登入成功。');
+ throw new Error('未經授權的會員資料直接查詢尚未開放；請使用 Starry ID 的受保護登入流程，不得由舊資料或本地狀態假冒會員。');
 }

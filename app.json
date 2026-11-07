@@ -36,7 +36,10 @@
       "bundleIdentifier": "phd.starry.echo",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "associatedDomains": [
+        "webcredentials:id.starry.phd"
+      ]
     },
     "android": {
       "package": "phd.starry.echo",
