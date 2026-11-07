@@ -363,9 +363,9 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    const r=result as {balance?:Partial<StarryBatteryBalance>;quantum?:Partial<StarryQuantumBattery>}|null;
    const b=r?.balance,q=r?.quantum;
    if(!b||typeof b.period!=='string'||!['allowance','used','reserved','remaining','resets_at'].every(k=>Number.isSafeInteger(b[k as keyof StarryBatteryBalance])))
-    throw new Error('Battery 免費餘額資料格式不正確');
+    throw new Error('🔋 普通電池餘額資料格式不正確');
    if(!q||q.app_id!=='echo'||!['balance','reserved','available'].every(k=>Number.isSafeInteger(q[k as keyof StarryQuantumBattery])))
-    throw new Error('量子電池資料格式不正確');
+    throw new Error('⚛️ 量子電池資料格式不正確');
    return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
  }),[env,state,busy,run,loadMember,availability,session,sdk,version,shareWebSession,webSsoReturnUrl]);

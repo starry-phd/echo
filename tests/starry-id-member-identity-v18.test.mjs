@@ -51,3 +51,12 @@ test('member numbers are never used as a key or filename in the Echo member UI',
  const provider=readFileSync(new URL('../src/auth/starryId/StarryIdProvider.tsx',import.meta.url),'utf8');
  assert.match(provider,/getFreshMemberNo/);
 });
+
+test('public preview, member UI and Battery errors keep fixed icon vocabulary',()=>{
+ const paths=['worker/echoPreview.ts','worker/echoBatterySettings.ts','src/ui/echo/StarryMemberPanel.tsx','src/ui/echo/LegacyFilterToolbar.tsx'];
+ const all=paths.map(path=>readFileSync(new URL('../'+path,import.meta.url),'utf8')).join('\n');
+ assert.match(all,/🔋 普通電池/);
+ assert.match(all,/⚛️ 量子電池/);
+ assert.match(all,/🔋 繁星電池艙/);
+ assert.match(all,/🔋 檢查繁星電池艙餘額/);
+});

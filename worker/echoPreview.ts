@@ -28,10 +28,10 @@ strong{color:#9f285e}code{overflow-wrap:anywhere;font-size:.91rem}a{color:#075b9
 <div class="card"><h2>Google／Apple 登入</h2>
 <p>Starry ID 已登記正式網站及本測試網域，Google／Apple 登入後會<strong>返回原本測試網域</strong>，不經過舊站的 302 轉址。</p><p><a href="/profile">前往會員頁測試 Google／Apple 登入</a></p>
 <p>手機 App 版本使用已登記的 <code>echostarry://auth/apple</code> 深層連結，可在安裝內部測試版後驗證。此頁不會索取 Token 或密碼。</p></div>
-<div class="card"><h2>繁星電池艙 Starry Battery</h2>
+<div class="card"><h2>🔋 繁星電池艙 Starry Battery</h2>
 <p>已準備安全的會員餘額 API 與「預留 1 單位後釋放」測試端點。它們只接受經正式 Starry ID 驗證的 Echo Access Token。</p>
 <p>測試服務金鑰必須由業主放入 Worker Secret <code>STARRY_BATTERY_KEY</code>；未設定時會拒絕任何預留。絕不在本頁貼上金鑰。</p>
-<p class="small">會員登入請到 <a href="/profile">會員頁</a>；登入後可以查詢免費月額度與量子電池。未取得測試 Worker 的服務金鑰前，不執行預留或扣抵。</p>
+<p class="small">會員登入請到 <a href="/profile">會員頁</a>；登入後可以查詢 🔋 普通電池與 ⚛️ 量子電池。未取得測試 Worker 的服務金鑰前，不執行預留或扣抵。</p>
 <p class="small">超級管理員的任務價格管理程式已備妥，但目前測試 Worker 沒有獨立 Echo D1，這裡不開放設定或寫入。請勿改用正式資料庫作為測試資料庫。</p></div>
 <p class="small">預覽 Worker：echo-api-staging。可回到 <a href="/">完整 Echo 畫面</a>。原網域 302 轉址保持不變，Starry ID 僅新增測試網域的登入授權。</p></main>
 <script>
@@ -84,12 +84,12 @@ export function batteryFailure(error:unknown):{status:number;code:string;message
   if(error.status===409&&error.code==='BATTERY_APP_CAP')
    return {status:409,code:error.code,message:'繁星回聲本月用量已達上限，請稍後再試。'};
   if(error.status===503||error.code==='SERVICE_UNAVAILABLE')
-   return {status:503,code:'SERVICE_UNAVAILABLE',message:'電池艙維護中，請稍後再試。'};
+   return {status:503,code:'SERVICE_UNAVAILABLE',message:'🔋 電池艙維護中，請稍後再試。'};
   if(error.code==='BATTERY_INSUFFICIENT')
-   return {status:409,code:error.code,message:'免費月額度及本 App 量子電池不足。'};
-  return {status:error.status,code:error.code,message:'電池艙暫時無法使用，請稍後再試。'};
+   return {status:409,code:error.code,message:'🔋 普通電池與 ⚛️ 本 App 量子電池不足。'};
+  return {status:error.status,code:error.code,message:'🔋 電池艙暫時無法使用，請稍後再試。'};
  }
- return {status:503,code:'SERVICE_UNAVAILABLE',message:'暫時無法連線到繁星電池艙，請稍後再試。'};
+ return {status:503,code:'SERVICE_UNAVAILABLE',message:'🔋 暫時無法連線到繁星電池艙，請稍後再試。'};
 }
 
 /** Any real AI task must use withBattery; it never runs work if reserve fails. */
