@@ -9,6 +9,7 @@ import {webRelayReturnUrl} from './webRelay';
 import {StarryClient,StarryError} from './vendor/starry-client';
 import type {Provider} from './vendor/starry-client';
 import {createEchoSdkStorage} from './sdkStorage';
+import {createStarryDeviceSharedStorage} from './deviceSharedStorage';
 import type {ProviderSignIn} from './memberApi';
 import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
 import {evaluateAppAvailability,nextStarryNoticeBoundary,parseStarryAppConfig,visibleStarryNotices} from './appConfig';
@@ -88,9 +89,14 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  const wasBlocked=useRef(false);
  const loaded=useRef(false);
  const sdkRef=useRef<StarryClient|null>(null);
+ // Shared token storage only where the OS provides a cross-App security boundary.
+ // Android must not fake device-wide SSO with an app-private SecureStore.
+ const sharedStorageRef=useRef<ReturnType<typeof createStarryDeviceSharedStorage>|undefined>(undefined);
+ if(sharedStorageRef.current===undefined)sharedStorageRef.current=createStarryDeviceSharedStorage();
  if(!sdkRef.current){
   sdkRef.current=new StarryClient({
    baseUrl:env.baseUrl,appId:'echo',storage:createEchoSdkStorage(),fetch:sdkFetch,
+   ...(sharedStorageRef.current?{sharedStorage:sharedStorageRef.current}:{}),
    ...(Platform.OS==='web'?{}:{
     sha256Hex:nativeSdkSha256Hex,randomState:nativeSdkRandomState,
     openAuthSession:nativeSdkOpenAuthSession
@@ -122,10 +128,10 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   const gate=await availability();
   if(gate)return gate;
   try{
-   if(!session.hasAccessToken()&&!(await session.refresh()))return {kind:'signed-out'};
+   if(!(await sdk.restore()))return {kind:'signed-out'};
    return stateFromMember(await fetchMe(session));
   }catch(error){return stateFromError(error);}
- },[availability,session]);
+ },[availability,session,sdk]);
 
  const run=useCallback(async(task:()=>Promise<MemberViewState|void>)=>{
   setBusy(true);
@@ -155,7 +161,15 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     setNoticeNow(Date.now());
     const gate=stateFromAvailability(evaluateAppAvailability(config,version));
     if(gate){wasBlocked.current=true;setState(gate);}
-    else if(wasBlocked.current){wasBlocked.current=false;void run(loadMember);}
+    else{
+     if(sharedStorageRef.current){
+      // The official SDK checks cross-App sign-out and account switching.
+      // Only a signed native device may share this token; Web remains per-tab.
+      try{await sdk.syncDeviceSignIn();}catch{/* offline keeps the existing local session */}
+     }
+     if(wasBlocked.current)wasBlocked.current=false;
+     if(loaded.current)void run(loadMember);
+    }
    }finally{inflight=false;}
   };
   void refresh();
@@ -175,7 +189,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     document.removeEventListener('visibilitychange',onVisible);
    }
   };
- },[version,fetchSdkConfig,loadMember,run]);
+ },[version,fetchSdkConfig,loadMember,run,sdk]);
 
  // Notice transitions remain correct while the app stays open (without polling Starry ID).
  useEffect(()=>{

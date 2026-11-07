@@ -45,7 +45,12 @@ jobs:
           else
             range="HEAD~1..HEAD"
           fi
-          /tmp/echo-gitleaks/gitleaks git --config .gitleaks.toml --redact --no-banner --exit-code 1 --log-opts "${range}"
+          # Preserve the fail-closed scanner; report only rule and line, never a matched value.
+          if ! /tmp/echo-gitleaks/gitleaks git --config .gitleaks.toml --redact --no-banner --exit-code 1 \
+              --report-format json --report-path /tmp/echo-gitleaks-findings.json --log-opts "${range}"; then
+            node -e "const fs=require('fs');const f='/tmp/echo-gitleaks-findings.json';if(fs.existsSync(f))for(const v of JSON.parse(fs.readFileSync(f,'utf8'))){console.error('Blocked secret pattern: '+v.RuleID+' in '+v.File+':'+v.StartLine)}"
+            exit 1
+          fi
   check:
     runs-on: ubuntu-latest
     steps:
