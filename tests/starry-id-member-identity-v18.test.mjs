@@ -38,7 +38,7 @@ test('avatar is never loaded from untrusted domains, credentials or fragments; n
   assert.equal(me.avatarPath,null,url);
   assert.equal(me.initials,'姓字');
  }
- const legacy=parseStarryMe(fixture);
+ const legacy=parseStarryMe({...fixture,profile:{...fixture.profile,initials:undefined}});
  assert.equal(legacy.initials,'','do not guess the first initial from the name');
  assert.equal(legacy.memberNo,null,'do not guess member numbers');
  const full=parseStarryMe({...fixture,profile:{...fixture.profile,
