@@ -3,9 +3,8 @@ import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,TextI
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {passkeyErrorMessage} from '../../auth/starryId/passkeyErrors';
 import type {PasskeyEntry} from '../../auth/starryId/passkeyContract';
-import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
+import {webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
-import {nativeRelaySignIn} from '../../auth/starryId/nativeSignIn';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -38,20 +37,18 @@ export function StarryMemberPanel(){
   if(!env)return;
   try{
    setError('');
-   const nonce=await starry.getNonce();
-   const result=await nativeRelaySignIn(env,provider,nonce);
-   await starry.signIn({provider:result.provider,idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
-  }catch{setError('繁星會員登入未完成，請再試一次。');}
+   await starry.signInRelay(provider);
+  }catch(err){
+   if((err as {cancelled?:boolean})?.cancelled)return;
+   setError('繁星會員登入未完成，請再試一次。');
+  }
  };
 
  const webRelay=async(provider:RelayProvider)=>{
   if(!env||typeof window==='undefined')return;
   try{
    setError('');
-   const nonce=await starry.getNonce();
-   const url=await prepareWebRelay(env,provider,nonce,{storage:window.sessionStorage,subtle:window.crypto.subtle,
-    randomBytes:n=>window.crypto.getRandomValues(new Uint8Array(n)),now:()=>Date.now()});
-   window.location.assign(url);
+   await starry.beginWebRelay(provider);
   }catch{setError('暫時無法前往繁星會員登入，請稍後再試。');}
  };
 

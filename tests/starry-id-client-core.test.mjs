@@ -175,7 +175,8 @@ test('web token storage: sessionStorage only (never localStorage), storage failu
  const fallback=createSessionStorageRefreshTokenStore(broken);
  await fallback.set('session1.b');assert.equal(await fallback.get(),'session1.b');
  await fallback.clear();assert.equal(await fallback.get(),null);
- for(const f of readdirSync(new URL('../src/auth/starryId/',import.meta.url))){
+ for(const f of [...readdirSync(new URL('../src/auth/starryId/',import.meta.url)).filter(f=>/\.tsx?$/.test(f)),
+  'vendor/starry-client.ts']){
   const src=readFileSync(new URL('../src/auth/starryId/'+f,import.meta.url),'utf8')
    .replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|[^:])\/\/.*$/gm,'$1');
   assert.doesNotMatch(src,/localStorage|AsyncStorage|credentials:\s*['"]include/,f);

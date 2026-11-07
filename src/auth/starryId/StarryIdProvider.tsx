@@ -4,20 +4,21 @@ import {AppState,Platform,Pressable,Text,View} from 'react-native';
 import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
-import {fetchAppConfig,fetchMe} from './memberApi';
-import {StarryClient} from './vendor/starry-client';
+import {fetchMe} from './memberApi';
+import {webRelayReturnUrl} from './webRelay';
+import {StarryClient,StarryError} from './vendor/starry-client';
+import type {Provider} from './vendor/starry-client';
 import {createEchoSdkStorage} from './sdkStorage';
-import type {ProviderSignIn,PublicFetch} from './memberApi';
+import type {ProviderSignIn} from './memberApi';
 import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
-import {evaluateAppAvailability,nextStarryNoticeBoundary,visibleStarryNotices} from './appConfig';
+import {evaluateAppAvailability,nextStarryNoticeBoundary,parseStarryAppConfig,visibleStarryNotices} from './appConfig';
 import type {StarryAppConfig} from './appConfig';
 import {passkeySupported,getPlatformPasskey,createPlatformPasskey} from './passkeyPlatform';
 import {validateLoginOptions} from './passkeyContract';
 import type {PasskeyEntry} from './passkeyContract';
 import type {MemberViewState} from './memberFlow';
-import {loadMemberState} from './memberSession';
 import type {StarryIdSession} from './session';
-import {nativeSdkOpenAuthSession,nativeSdkSha256Hex,nativeSdkRandomState} from './nativeSignIn';
+import {nativeSdkOpenAuthSession,nativeSdkSha256Hex,nativeSdkRandomState,NATIVE_RELAY_RETURN_URL} from './nativeSignIn';
 import type {components as StarryIdComponents} from '../../../packages/starry-id-sdk/src/generated';
 import {ownerTaskPriceRequest} from './echoBackendSettings';
 import type {EchoTaskPrice} from './echoBackendSettings';
@@ -42,6 +43,9 @@ export type StarryIdContextValue={
  ensureLoaded():void;
  getNonce():Promise<string>;
  signIn(input:ProviderSignIn):Promise<void>;
+ signInRelay(provider:Provider):Promise<void>;
+ beginWebRelay(provider:Provider):Promise<void>;
+ completeWebRelay(href:string):Promise<void>;
  signInPasskey():Promise<void>;
  listPasskeys():Promise<PasskeyEntry[]>;
  addPasskey(name?:string):Promise<void>;
@@ -58,7 +62,8 @@ const disabled:StarryIdContextValue={
  enabled:false,env:null,passkeyAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
+ signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},
+ signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
  acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
  getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
  getTaskPrices:async()=>{throw new Error('Starry ID disabled');},
@@ -66,7 +71,6 @@ const disabled:StarryIdContextValue={
 };
 const StarryIdContext=createContext<StarryIdContextValue>(disabled);
 
-const browserFetch:PublicFetch=(url,init)=>fetch(url,{...init,credentials:'omit'});
 const sdkFetch:typeof fetch=(input,init)=>fetch(input,{...init,credentials:'omit'});
 
 export function StarryIdProvider({children}:{children:ReactNode}){
@@ -108,12 +112,32 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   getAccessToken:()=>sdk.getAccessToken()
  }),[sdk]);
  const version=Constants.expoConfig?.version??'';
- const deps=useMemo(()=>({env,fetch:browserFetch,session,appVersion:Constants.expoConfig?.version??''}),[env,session]);
+ const fetchSdkConfig=useCallback(async():Promise<StarryAppConfig|null>=>{
+  try{return parseStarryAppConfig(await sdk.getConfig());}catch{return null;}
+ },[sdk]);
+ const availability=useCallback(async()=>{
+  return stateFromAvailability(evaluateAppAvailability(await fetchSdkConfig(),version));
+ },[fetchSdkConfig,version]);
+ const loadMember=useCallback(async():Promise<MemberViewState>=>{
+  const gate=await availability();
+  if(gate)return gate;
+  try{
+   if(!session.hasAccessToken()&&!(await session.refresh()))return {kind:'signed-out'};
+   return stateFromMember(await fetchMe(session));
+  }catch(error){return stateFromError(error);}
+ },[availability,session]);
 
  const run=useCallback(async(task:()=>Promise<MemberViewState|void>)=>{
   setBusy(true);
   try{const next=await task();if(next)setState(next);}
-  catch(error){setState(stateFromError(error));}
+  catch(error){
+   if(error instanceof StarryError){
+    if(error.code==='ACCOUNT_SUSPENDED')setState({kind:'suspended'});
+    else if(error.status===401)setState({kind:'signed-out',notice:'登入驗證未完成，請再試一次。'});
+    else if(error.status===429)setState({kind:'signed-out',notice:'操作太頻繁，請稍後再試。'});
+    else setState({kind:'unavailable'});
+   }else setState(stateFromError(error));
+  }
   finally{setBusy(false);}
  },[]);
 
@@ -125,13 +149,13 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    if(!active||inflight||Date.now()-lastCheck<4000)return;
    inflight=true;lastCheck=Date.now();
    try{
-    const config=await fetchAppConfig(env,browserFetch);
+    const config=await fetchSdkConfig();
     if(!active)return;
     setNoticeConfig(config);
     setNoticeNow(Date.now());
     const gate=stateFromAvailability(evaluateAppAvailability(config,version));
     if(gate){wasBlocked.current=true;setState(gate);}
-    else if(wasBlocked.current){wasBlocked.current=false;void run(()=>loadMemberState(deps));}
+    else if(wasBlocked.current){wasBlocked.current=false;void run(loadMember);}
    }finally{inflight=false;}
   };
   void refresh();
@@ -151,7 +175,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     document.removeEventListener('visibilitychange',onVisible);
    }
   };
- },[env,version,deps,run]);
+ },[version,fetchSdkConfig,loadMember,run]);
 
  // Notice transitions remain correct while the app stays open (without polling Starry ID).
  useEffect(()=>{
@@ -167,15 +191,15 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   ensureLoaded(){
    if(loaded.current)return;
    loaded.current=true;
-   void run(()=>loadMemberState(deps));
+   void run(loadMember);
   },
   getNonce:async()=>{
-   const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+   const gate=await availability();
    if(gate)throw new Error('繁星會員目前無法登入或需要更新');
    return sdk.nonce();
   },
   signIn:input=>run(async()=>{
-   const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+   const gate=await availability();
    if(gate)return gate;
    const result=await sdk.signInWithIdToken(input.provider,{
     idToken:input.idToken,nonce:input.nonce,
@@ -186,11 +210,36 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    if(result.user.status==='suspended')return {kind:'suspended'};
    return stateFromMember(await fetchMe(session));
   }),
+  signInRelay:async provider=>{
+   if(Platform.OS==='web')throw new Error('Native relay unavailable on web');
+   const gate=await availability();
+   if(gate){setState(gate);throw new Error('繁星會員目前無法登入或需要更新');}
+   setBusy(true);
+   try{
+    const result=await sdk.signInWithRelay(provider,{returnUrl:NATIVE_RELAY_RETURN_URL});
+    if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
+    else if(result.user.status==='suspended')setState({kind:'suspended'});
+    else setState(stateFromMember(await fetchMe(session)));
+   }finally{setBusy(false);}
+  },
+  beginWebRelay:async provider=>{
+   if(Platform.OS!=='web'||typeof window==='undefined')throw new Error('Web relay unavailable');
+   const gate=await availability();
+   if(gate){setState(gate);throw new Error('繁星會員目前無法登入或需要更新');}
+   await sdk.beginRelayRedirect(provider,{returnUrl:webRelayReturnUrl(window.location.origin)});
+  },
+  completeWebRelay:async href=>{
+   const result=await sdk.completeRelayRedirect(href);
+   if(!result)throw new Error('Missing Starry ID relay response');
+   if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
+   else if(result.user.status==='suspended')setState({kind:'suspended'});
+   else setState(stateFromMember(await fetchMe(session)));
+  },
   signInPasskey:async()=>{
    if(busy)return;
    setBusy(true);
    try{
-    const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+    const gate=await availability();
     if(gate){setState(gate);throw new Error('繁星會員目前無法登入或需要更新');}
     const result=await sdk.signInWithPasskey();
     if(result.user.status==='pending_deletion')setState({kind:'pending-deletion',purgeAt:result.user.deletion_purge_at});
@@ -241,7 +290,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
     throw new Error('量子電池資料格式不正確');
    return {balance:b as StarryBatteryBalance,quantum:q as StarryQuantumBattery};
   }
- }),[env,state,busy,deps,run,session,sdk,version]);
+ }),[env,state,busy,run,loadMember,availability,session,sdk,version]);
 
  return <StarryIdContext.Provider value={value}>
   <View style={{flex:1}}>

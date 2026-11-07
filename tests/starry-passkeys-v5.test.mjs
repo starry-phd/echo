@@ -167,3 +167,15 @@ test('official Starry Client now owns the refresh token, sign-in and Passkey exc
  assert.match(provider,/validateLoginOptions/);
  assert.doesNotMatch(provider,/createStarryIdSession/);
 });
+
+test('central SDK drives Web and native relays and app availability in the shared provider',()=>{
+ const provider=read('src/auth/starryId/StarryIdProvider.tsx');
+ assert.match(provider,/sdk\.beginRelayRedirect/);
+ assert.match(provider,/sdk\.completeRelayRedirect/);
+ assert.match(provider,/sdk\.signInWithRelay/);
+ assert.match(provider,/sdk\.getConfig/);
+ assert.match(provider,/webRelayReturnUrl\(window\.location\.origin\)/);
+ const done=read('app/auth/done.tsx');
+ assert.match(done,/starry\.completeWebRelay\(href\)/);
+ assert.doesNotMatch(done,/consumeWebRelay\(starry\.env/);
+});

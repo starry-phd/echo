@@ -38,7 +38,7 @@ export default function ProfileScreen(){
      const build=Platform.OS==='ios'?Constants.expoConfig?.ios?.buildNumber:
       Platform.OS==='android'?Constants.expoConfig?.android?.versionCode:undefined;
      const appVersion=build===undefined?version:version+' ('+String(build)+')';
-     const model=(Platform.constants as {Model?:unknown}).Model;
+     const model=Platform.constants?(Platform.constants as {Model?:unknown}).Model:undefined;
      const device=typeof model==='string'&&model.trim()?model:Platform.OS;
      void Linking.openURL(starrySupportUrl(appVersion,device));
     }} style={[styles.action,{backgroundColor:t.accentFill,marginTop:12}]}>

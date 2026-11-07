@@ -228,11 +228,12 @@ test('dark launch: public production remains disabled while isolated internal pr
  const panel=read('src/ui/echo/StarryMemberPanel.tsx');
  assert.match(panel,/case 'disabled':return null;/);
  assert.match(panel,/webRelaySupported\(window\.location\.origin\)/);
- assert.match(panel,/window\.location\.assign\(url\)/);
+ assert.match(panel,/await starry\.beginWebRelay\(provider\)/);
  assert.doesNotMatch(panel,/accounts\.google\.com|appleid\.cdn-apple\.com|renderGoogleButton/);
  const done=read('app/auth/done.tsx');
  assert.match(done,/window\.history\.replaceState\(null,'',window\.location\.pathname\)/);
- assert.ok(done.indexOf('replaceState')<done.indexOf('consumeWebRelay(starry.env'),'the # result is wiped before use');
+ assert.ok(done.indexOf('replaceState')<done.indexOf('starry.completeWebRelay(href)'),'the # result is wiped before the official SDK consumes it');
+ assert.match(done,/starry\.completeWebRelay\(href\)/);
  assert.match(done,/if\(!starry\.enabled\|\|!starry\.env\)/);
  assert.match(read('app/_layout.tsx'),/<Stack\.Screen name="auth\/done" \/>/);
  const profile=read('app/profile.tsx');
