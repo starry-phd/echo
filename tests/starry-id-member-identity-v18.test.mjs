@@ -98,3 +98,12 @@ test('2026-11-08.3 battery bonus remains central: Echo reads actual API allowanc
  assert.doesNotMatch(panel,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
  assert.doesNotMatch(provider,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
 });
+
+test('2026-11-08.3 a returning screen re-fetches the one-hour signed avatar, even when the route stays mounted',()=>{
+ const panel=readFileSync(new URL('../src/ui/echo/StarryMemberPanel.tsx',import.meta.url),'utf8');
+ const provider=readFileSync(new URL('../src/auth/starryId/StarryIdProvider.tsx',import.meta.url),'utf8');
+ assert.match(panel,/useFocusEffect\(useCallback\(\(\)=>\{/);
+ assert.match(panel,/current\.refreshMember\(\)/);
+ assert.match(provider,/if\(next==='active'\)void refresh\(\)/);
+ assert.doesNotMatch(panel,/refreshedOnEntry/);
+});

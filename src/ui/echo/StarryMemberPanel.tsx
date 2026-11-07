@@ -1,4 +1,5 @@
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {useFocusEffect} from 'expo-router';
 import {ActivityIndicator,Linking,Platform,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {Image} from 'expo-image';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
@@ -32,18 +33,19 @@ export function StarryMemberPanel(){
  const [taskLabel,setTaskLabel]=useState('AI 任務');
  const [taskUnits,setTaskUnits]=useState('1');
  const [taskSettingsNotice,setTaskSettingsNotice]=useState('');
- const refreshedOnEntry=useRef(false);
+ const memberContextRef=useRef(starry);
+ memberContextRef.current=starry;
  const {state,env}=starry;
  const passkeyAvailable=starry.passkeyAvailable&&(Platform.OS!=='web'||
   (typeof window!=='undefined'&&webRelaySupported(window.location.origin)));
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
- // Re-fetch each time this member panel mounts, as signed avatar URLs expire hourly.
- useEffect(()=>{
-  if(state.kind!=='signed-in'||refreshedOnEntry.current)return;
-  refreshedOnEntry.current=true;
-  void starry.refreshMember();
- },[state.kind,starry]);
+ // A route may remain mounted while another screen is open.
+ // Always get a new signed avatar URL on each navigation focus; provider also refreshes on app foreground.
+ useFocusEffect(useCallback(()=>{
+  const current=memberContextRef.current;
+  if(current.state.kind==='signed-in')void current.refreshMember();
+ },[]));
 
  const nativeRelay=async(provider:RelayProvider)=>{
   if(!env)return;
