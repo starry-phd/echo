@@ -179,4 +179,21 @@ test('central SDK drives Web and native relays and app availability in the share
  assert.match(done,/starry\.completeWebRelay\(href\)/);
  assert.doesNotMatch(done,/consumeWebRelay\(starry\.env/);
 });
-\n
+
+
+test('Passkey buttons require a registered Echo web origin in addition to a supported browser',()=>{
+ const panel=read('src/ui/echo/StarryMemberPanel.tsx');
+ assert.match(panel,/const passkeyAvailable=starry\.passkeyAvailable/);
+ assert.match(panel,/webRelaySupported\(window\.location\.origin\)/);
+ assert.match(panel,/\{passkeyAvailable&&<View style=\{styles\.row\}>/);
+ assert.doesNotMatch(panel,/\{starry\.passkeyAvailable&&button\('新增 Passkey'/);
+});
+
+test('profile copy keeps production guest mode distinct from staging login',()=>{
+ const page=read('app/profile.tsx');
+ assert.match(page,/state==='not-configured'\?'登入、會員收藏同步及購買尚未開放/);
+ assert.match(page,/已提供繁星會員登入入口；跨裝置收藏同步與購買尚未開放/);
+ assert.match(page,/舊版個人紀錄尚未同步/);
+ assert.match(page,/不會複製完整中央會員資料/);
+});
+

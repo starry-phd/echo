@@ -19,5 +19,5 @@ export function centralMemberApiState():CentralMemberApiState{
 }
 
 export async function getCentralMemberProfile():Promise<CentralMemberProfile>{
- throw new Error('請透過 Starry ID 的受保護登入流程取得會員資料；不能由舊會員資料、本地狀態或未授權的 API 直接取得身分。');
+ throw new Error('未經授權的會員資料直接查詢尚未開放；請使用 Starry ID 的受保護登入流程，不得由舊資料或本地狀態假冒會員。');
 }
