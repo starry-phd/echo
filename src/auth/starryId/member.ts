@@ -14,6 +14,12 @@ export type StarryMember=Readonly<{
  displayName:string;
  hasDisplayName:boolean;
  avatarPath:string|null;
+ /** Signed URL supplied by Starry ID; never copy or rehost this avatar. */
+ avatarUrl:string|null;
+ /** Server-computed initials; do not derive from the display name. */
+ initials:string;
+ /** Mutable public member number; never use as a database/file key. */
+ memberNo:string|null;
  profileVersion:number;
  staffRole:'owner'|'admin'|'support'|null;
  deletionPurgeAt:number|null;
@@ -47,7 +53,17 @@ export function parseStarryMe(value:unknown):StarryMember{
  if(rawName!==null&&rawName!==undefined&&typeof rawName!=='string')throw new Error('Invalid Starry display_name');
  const name=typeof rawName==='string'?rawName.trim().slice(0,120):'';
  const avatar=profile.avatar_url;
- const avatarPath=typeof avatar==='string'&&avatar.startsWith('/')&&!avatar.startsWith('//')?avatar:null;
+ const avatarPath=typeof avatar==='string'&&avatar.startsWith('/')&&!avatar.startsWith('//')&&!avatar.includes('#')?avatar:null;
+ let avatarUrl:string|null=avatarPath;
+ if(!avatarUrl&&typeof avatar==='string'){
+  try{
+   const url=new URL(avatar);
+   if(url.protocol==='https:'&&url.origin==='https://id.starry.phd'&&
+      !url.username&&!url.password&&!url.hash)avatarUrl=url.href;
+  }catch{/* malformed/off-site avatar is never loaded */}
+ }
+ const initials=typeof profile.initials==='string'?profile.initials.slice(0,8):'';
+ const memberNo=typeof value.member_no==='string'&&/^[A-Z]{2}[0-9]{7,10}$/.test(value.member_no)?value.member_no:null;
  const consent=value.consent;
  if(!isRecord(consent)||typeof consent.terms_version!=='string'||typeof consent.privacy_version!=='string'
    ||typeof consent.required!=='boolean')throw new Error('Invalid Starry consent');
@@ -57,6 +73,9 @@ export function parseStarryMe(value:unknown):StarryMember{
   displayName:name||STARRY_MEMBER_FALLBACK_NAME,
   hasDisplayName:Boolean(name),
   avatarPath,
+  avatarUrl,
+  initials,
+  memberNo,
   profileVersion:version,
   staffRole:value.staff_role==='owner'||value.staff_role==='admin'||value.staff_role==='support'?value.staff_role:null,
   deletionPurgeAt:optionalTimestamp(value.deletion_purge_at,'deletion_purge_at'),
