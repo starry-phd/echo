@@ -39,6 +39,7 @@ export type StarryIdContextValue={
  enabled:boolean;
  env:StarryIdEnvironment|null;
  passkeyAvailable:boolean;
+ deviceSsoAvailable:boolean;
  state:MemberViewState;
  busy:boolean;
  ensureLoaded():void;
@@ -60,7 +61,7 @@ export type StarryIdContextValue={
 };
 
 const disabled:StarryIdContextValue={
- enabled:false,env:null,passkeyAvailable:false,state:{kind:'disabled'},busy:false,
+ enabled:false,env:null,passkeyAvailable:false,deviceSsoAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
  signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>{},
@@ -201,7 +202,7 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  },[noticeConfig,noticeNow]);
 
  const value=useMemo<StarryIdContextValue>(()=>({
-  enabled:true,env,passkeyAvailable:passkeySupported(),state,busy,
+  enabled:true,env,passkeyAvailable:passkeySupported(),deviceSsoAvailable:Boolean(sharedStorageRef.current),state,busy,
   ensureLoaded(){
    if(loaded.current)return;
    loaded.current=true;

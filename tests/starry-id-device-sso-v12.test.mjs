@@ -61,5 +61,6 @@ test('Echo only enables actual native shared storage, not per-App Android prefer
  assert.match(provider,/await sdk\.syncDeviceSignIn\(\)/);
  assert.match(provider,/await sdk\.restore\(\)/);
  const panel=read('src/ui/echo/StarryMemberPanel.tsx');
- assert.match(panel,/登出所有繁星 App/);
+ assert.match(panel,/starry\.deviceSsoAvailable\?'登出所有繁星 App'/);
+ assert.match(panel,/Platform\.OS==='web'\?'登出此網頁':'登出此 App'/);
 });
