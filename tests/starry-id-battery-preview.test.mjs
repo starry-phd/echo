@@ -24,7 +24,7 @@ test('staging page is honest about web callback allow-list and never requests an
  assert.equal(res.status,200);
  const html=await res.text();
  assert.match(html,/echo-api-staging/);
- assert.match(html,/echo\.starry\.phd/);
+ assert.match(html,/原網域 302 轉址保持不變/);
  assert.match(html,/Starry ID 已登記正式網站及本測試網域/);
  assert.match(html,/href="\/profile"/);
  assert.doesNotMatch(html,/type="password"/);
