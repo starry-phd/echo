@@ -15,7 +15,8 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_ECHO_API_BASE_URL": "https://echo.starry.phd"
+        "EXPO_PUBLIC_ECHO_API_BASE_URL": "https://echo-api-staging.starry-phd.workers.dev",
+        "EXPO_PUBLIC_STARRY_ID_API_BASE_URL": "https://id.starry.phd"
       },
       "android": {
         "buildType": "apk"

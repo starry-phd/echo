@@ -13,3 +13,5 @@ __pycache__/
 
 # Generated from canonical OpenAPI 3.1 during npm install; never hand-edit.
 packages/echo-api-sdk/src/generated.ts
+
+packages/starry-id-sdk/src/generated.ts

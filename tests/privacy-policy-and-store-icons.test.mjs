@@ -25,7 +25,7 @@ test('policy covers what stores require: contact, date, children, rights, third 
 
 // The policy's factual claims must stay true. If any of these fail, the app's
 // data behaviour changed: update src/legal/privacyPolicy.ts before release.
-test('policy claims match the code: no ads/analytics SDK, no foreign hosts, server only reads',()=>{
+test('guest API remains read-only; only Starry Owner can edit Echo task prices',()=>{
  const pkg=JSON.parse(read('package.json'));
  const deps=Object.keys({...pkg.dependencies,...pkg.devDependencies}).join(' ');
  assert.doesNotMatch(deps,/analytics|firebase|sentry|amplitude|mixpanel|segment|admob|google-mobile-ads|facebook|tracking|revenuecat|purchases/i);
@@ -33,7 +33,12 @@ test('policy claims match the code: no ads/analytics SDK, no foreign hosts, serv
  assert.equal(manifest.adsEnabled,false);assert.equal(manifest.billingSdkInitialized,false);
  const worker=read('worker/index.ts');
  assert.doesNotMatch(worker,/\bINSERT\b|\bUPDATE\b|\.put\(|console\.log|cf-connecting-ip/i);
- assert.doesNotMatch(worker,/app\.(post|put|patch|delete)\(/);
+ const writes=[...worker.matchAll(/app\.(post|put|patch|delete)\(['\"]([^'\"]+)/g)];
+ assert.deepEqual(writes.map(x=>[x[1],x[2]]),[['patch','/api/v1/battery/task-settings']]);
+ const settings=read('worker/echoBatterySettings.ts');
+ assert.match(settings,/if\(who\.me\.staff_role!=='owner'\)/);
+ assert.match(settings,/INSERT INTO echo_battery_task_prices/);
+ assert.match(settings,/verifyEchoAccessToken/);
  const app=JSON.parse(read('app.json')).expo;
  assert.equal(app.ios.infoPlist.NSLocationWhenInUseUsageDescription,undefined);
  assert.equal(app.android.permissions,undefined);

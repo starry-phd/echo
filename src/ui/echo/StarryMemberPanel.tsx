@@ -1,10 +1,9 @@
 import {useEffect,useState} from 'react';
-import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
-import {formatPurgeDate} from '../../auth/starryId/memberFlow';
 import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
-import {NativeAppleSignInButton,nativeAppleAvailable,nativeAppleSignIn} from '../../auth/starryId/nativeSignIn';
+import {nativeRelaySignIn} from '../../auth/starryId/nativeSignIn';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -19,27 +18,24 @@ export function StarryMemberPanel(){
  const {fontSize}=useFontZoom();
  const [error,setError]=useState('');
  const [confirmDelete,setConfirmDelete]=useState(false);
+ const [deleteConfirmation,setDeleteConfirmation]=useState('');
+ const [batterySummary,setBatterySummary]=useState('');
+ const [taskType,setTaskType]=useState('echo.ai');
+ const [taskLabel,setTaskLabel]=useState('AI 任務');
+ const [taskUnits,setTaskUnits]=useState('1');
+ const [taskSettingsNotice,setTaskSettingsNotice]=useState('');
  const {state,env}=starry;
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
 
- const signedOut=state.kind==='signed-out';
-
- const [nativeApple,setNativeApple]=useState(false);
- useEffect(()=>{
-  if(Platform.OS==='web'||!signedOut)return;
-  let alive=true;
-  void nativeAppleAvailable().then(ok=>{if(alive)setNativeApple(ok);});
-  return()=>{alive=false;};
- },[signedOut]);
- const appleNative=async()=>{
+ const nativeRelay=async(provider:RelayProvider)=>{
   if(!env)return;
   try{
    setError('');
    const nonce=await starry.getNonce();
-   const result=await nativeAppleSignIn(env,nonce);
-   await starry.signIn({provider:'apple',idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
-  }catch{setError('Apple 登入未完成，請再試一次。');}
+   const result=await nativeRelaySignIn(env,provider,nonce);
+   await starry.signIn({provider:result.provider,idToken:result.idToken,nonce,authorizationCode:result.code,redirectUri:result.redirectUri});
+  }catch{setError('繁星會員登入未完成，請再試一次。');}
  };
 
  const webRelay=async(provider:RelayProvider)=>{
@@ -82,10 +78,16 @@ export function StarryMemberPanel(){
        <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
       </Pressable>
      </View>:text('此網址不支援繁星會員登入，請改用正式網站。',true)}
-    </>:<>
-     {nativeApple&&<NativeAppleSignInButton dark={t.dark} disabled={starry.busy} onPress={()=>{void appleNative();}}/>}
-     {text('Google 帳號的手機版登入即將推出；也可以先使用網頁版登入。',true)}
-    </>}
+    </>:<View style={styles.row}>
+     <Pressable accessibilityRole="button" accessibilityLabel="透過繁星使用 Google 登入" disabled={starry.busy}
+      onPress={()=>{void nativeRelay('google');}} style={[styles.google,{borderColor:t.border},starry.busy&&styles.disabled]}>
+      <Text style={[styles.googleLabel,{fontSize:fontSize(15)}]}>使用 Google 帳號登入</Text>
+     </Pressable>
+     <Pressable accessibilityRole="button" accessibilityLabel="透過繁星使用 Apple 登入" disabled={starry.busy}
+      onPress={()=>{void nativeRelay('apple');}} style={[styles.apple,starry.busy&&styles.disabled]}>
+      <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
+     </Pressable>
+    </View>}
     <View style={styles.row}>{link('服務條款','/terms')}{link('隱私權政策','/privacy')}</View>
    </>;break;
   case 'consent-required':
@@ -106,18 +108,62 @@ export function StarryMemberPanel(){
     </View>
     {text('已登入繁星會員。個人資料、頭像與登入方式請到繁星帳號中心管理。',true)}
     <View style={styles.row}>{link('前往繁星帳號中心','/account')}</View>
+    <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
+      setBatterySummary('正在取得本月餘額…');
+      void starry.getBatteryBalance().then(({balance:b,quantum:q})=>setBatterySummary(
+       b.period+' 免費月額度 '+b.allowance+'、已用 '+b.used+'、預留中 '+b.reserved+'、剩餘 '+b.remaining+'；本 App 量子電池可用 '+q.available+' 顆（已預留 '+q.reserved+' 顆）。任務優先使用免費月額度，不足才使用量子電池。'
+      )).catch(()=>setBatterySummary('電池艙暫時無法查詢，不會扣除額度。'));
+     })}</View>
+    {batterySummary?text(batterySummary,true):null}
+    {member.staffRole==='owner'&&<View style={[styles.confirm,{borderColor:t.border}]}>
+     {text('繁星回聲專屬 Battery 任務設定（超級管理員）')}
+     {text('每次任務要消耗幾顆，由本 App 決定（1–100 顆）。後端會再次核對 Owner 身分。',true)}
+     <TextInput accessibilityLabel="任務代碼" value={taskType} onChangeText={setTaskType}
+      autoCapitalize="none" autoCorrect={false} style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <TextInput accessibilityLabel="顯示給會員的任務名稱" value={taskLabel} onChangeText={setTaskLabel}
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <TextInput accessibilityLabel="每個任務消耗幾顆電池" value={taskUnits}
+      onChangeText={setTaskUnits} keyboardType="number-pad"
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
+     <View style={styles.row}>
+      {button('讀取目前任務設定',()=>{
+       void starry.getTaskPrices().then(rows=>{
+        const current=rows.find(row=>row.task_type===taskType)||rows[0];
+        if(current){setTaskType(current.task_type);setTaskLabel(current.task_label);setTaskUnits(String(current.units));}
+        setTaskSettingsNotice('已取得 '+rows.length+' 項任務設定。');
+       }).catch(()=>setTaskSettingsNotice('Echo 任務設定後端尚未啟用，無法讀取。'));
+      })}
+      {button('儲存任務價格',()=>{
+       const units=Number(taskUnits);
+       if(!/^echo\\.[a-z0-9._-]{1,59}$/.test(taskType)||!Number.isSafeInteger(units)||units<1||units>100||
+          taskLabel.trim().length<1||taskLabel.length>40){
+        setTaskSettingsNotice('任務代碼需以 echo. 開頭，顆數需為 1～100，名稱最多 40 字。');return;
+       }
+       void starry.saveTaskPrice({task_type:taskType,task_label:taskLabel.trim(),units})
+        .then(()=>setTaskSettingsNotice('Echo 任務價格已儲存。'))
+        .catch(()=>setTaskSettingsNotice('未能儲存：請確認 Echo 後端已部署且具備管理員權限。'));
+      },'primary')}
+     </View>
+     {taskSettingsNotice?text(taskSettingsNotice,true):null}
+    </View>}
     <View style={styles.row}>{button('登出',()=>{void starry.signOut();})}{button('登出所有裝置',()=>{void starry.signOut(true);})}</View>
     {!confirmDelete?button('刪除帳號',()=>setConfirmDelete(true),'danger'):<View style={[styles.confirm,{borderColor:'#b8324e'}]}>
-     {text('刪除後有 7 天可以撤回（期間重新登入即可撤回），期滿後繁星會員資料會永久刪除，所有繁星 App 都無法再使用這個帳號。刪除帳號不會自動取消已在 App Store／Google Play 訂閱的項目，請另外到商店取消。')}
-     <View style={styles.row}>{button('確認刪除帳號',()=>{setConfirmDelete(false);void starry.requestDeletion();},'danger')}{button('取消',()=>setConfirmDelete(false))}</View>
+     {text('確定刪除後將立即永久刪除整個繁星會員帳號，無法復原、沒有撤回期。刪除不會自動取消 App Store／Google Play 訂閱，請自行前往商店取消。')}
+     {text('如確定刪除，請輸入 DELETE',true)}
+     <TextInput accessibilityLabel="輸入 DELETE 確認永久刪除" autoCapitalize="characters" autoCorrect={false}
+      value={deleteConfirmation} onChangeText={setDeleteConfirmation}
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]} placeholder="DELETE" placeholderTextColor={t.muted}/>
+     <View style={styles.row}>
+      {button('確認永久刪除',()=>{
+       if(deleteConfirmation!=='DELETE'){setError('必須輸入 DELETE 才能永久刪除。');return;}
+       setConfirmDelete(false);setDeleteConfirmation('');void starry.requestDeletion();
+      },'danger')}
+      {button('取消',()=>{setConfirmDelete(false);setDeleteConfirmation('');})}
+     </View>
     </View>}
    </>;break;
   }
-  case 'pending-deletion':
-   body=<>
-    {text('這個帳號將於 '+formatPurgeDate(state.purgeAt)+' 刪除。撤回後即可繼續使用。')}
-    <View style={styles.row}>{button('撤回刪除',()=>{void starry.cancelDeletion();},'primary')}{button('登出',()=>{void starry.signOut();})}</View>
-   </>;break;
+  case 'pending-deletion':body=text('繁星會員帳號狀態無法使用，請至帳號中心確認。');break;
   case 'suspended':body=text('這個帳號已被停權，已為你登出。如有疑問請聯絡繁星客服。');break;
   case 'maintenance':body=text('繁星會員服務維護中，會員功能暫停；其他頁面可正常瀏覽。',true);break;
   case 'update-required':body=text('請更新 App 至 '+state.minVersion+' 以上版本後再使用會員功能。');break;
@@ -146,5 +192,6 @@ const styles=StyleSheet.create({
  avatar:{width:56,height:56,borderRadius:28},
  initial:{alignItems:'center',justifyContent:'center'},
  name:{fontWeight:'900'},
- confirm:{borderWidth:1,borderRadius:12,padding:12,gap:10}
+ confirm:{borderWidth:1,borderRadius:12,padding:12,gap:10},
+ deleteInput:{borderWidth:1,borderRadius:10,minHeight:44,paddingHorizontal:12,alignSelf:'stretch'}
 });

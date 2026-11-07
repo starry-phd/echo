@@ -11,6 +11,12 @@ binding = "DB"
 database_name = "echo-starry"
 database_id = "8437c865-d7f5-4efb-8c95-44ee3d3fdb21"
 
+# Internal service binding to the already deployed central Starry ID Worker.
+# Keeps login, Owner-role checks and Battery calls off public ingress.
+[[services]]
+binding = "STARRY_ID_SERVICE"
+service = "starry-id"
+
 [[r2_buckets]]
 binding = "MEDIA"
 bucket_name = "echo-starry"

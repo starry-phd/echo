@@ -82,15 +82,12 @@ export async function signOut(session:StarryIdSession,everywhere=false):Promise<
  finally{await session.signOutLocally();}
 }
 
-/** 7-day withdrawal period; Starry ID ends every session, so local tokens are cleared too. */
-export async function requestAccountDeletion(session:StarryIdSession):Promise<number>{
+/** Immediate, irreversible Starry ID account deletion (no cancellation period).
+ * UI must separately remind users that App Store / Google Play subscriptions persist.
+ */
+export async function requestAccountDeletion(session:StarryIdSession):Promise<void>{
  const body=await session.request('/v1/me/deletion',{method:'POST',body:{confirm:true}});
- const purge=typeof body==='object'&&body!==null?(body as {deletion_purge_at?:unknown}).deletion_purge_at:undefined;
+ if(typeof body!=='object'||body===null||(body as {status?:unknown}).status!=='deleted')
+  throw new Error('Starry ID did not confirm permanent deletion');
  await session.signOutLocally();
- if(typeof purge!=='number'||!Number.isSafeInteger(purge))throw new Error('Invalid deletion_purge_at');
- return purge;
-}
-
-export async function cancelAccountDeletion(session:StarryIdSession):Promise<void>{
- await session.request('/v1/me/deletion',{method:'DELETE'});
 }

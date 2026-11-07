@@ -1,0 +1,28 @@
+name = "echo-api-staging"
+main = "worker/echoPreview.ts"
+compatibility_date = "2026-11-03"
+workers_dev = true
+
+# The new Echo Web app is built with Expo Web and hosted as Worker Static Assets.
+# NO custom domain, D1 or R2 binding. Existing public data is read only
+# through the existing production Echo Worker, never through database access.
+# Production is a separate future approval; not included in this preview.
+# Optional secret only: STARRY_BATTERY_KEY (never stored in Git).
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/integration"]
+
+# Read-only service access to the EXISTING Starry ID Worker in this account.
+# Does not modify or redeploy Starry ID.
+[[services]]
+binding = "STARRY_ID_SERVICE"
+service = "starry-id"
+
+# Existing Echo worker: use only public guest / verified GET API responses.
+# No D1 or R2 bindings are granted to the preview.
+[[services]]
+binding = "ECHO_PUBLIC_SERVICE"
+service = "echo-starry"
