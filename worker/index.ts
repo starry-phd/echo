@@ -5,6 +5,7 @@
  */
 import {Hono} from 'hono';
 import {z} from 'zod';
+import {echoBatterySettings} from './echoBatterySettings';
 
 type TrackRow={
  id:string;title:string;speaker:string;description:string|null;
@@ -19,6 +20,7 @@ interface Statement{
  bind(...values:(string|number)[]):Statement;
  all<T>():Promise<{results?:T[]}>;
  first<T>():Promise<T|null>;
+ run():Promise<unknown>;
 }
 interface Database{prepare(sql:string):Statement}
 interface AudioObject{
@@ -28,9 +30,10 @@ interface AudioObject{
  httpMetadata?:{contentType?:string};
 }
 interface Media{get(key:string,opts?:{range:Headers}):Promise<AudioObject|null>}
-export interface Env{DB:Database;MEDIA:Media;ASSETS?:{fetch(req:Request):Promise<Response>}}
+export interface Env{DB:Database;MEDIA:Media;ASSETS?:{fetch(req:Request):Promise<Response>};
+ STARRY_BATTERY_KEY?:string;STARRY_ID_SERVICE?:{fetch(request:Request):Promise<Response>}}
 const app=new Hono<{Bindings:Env}>();
-const origins=new Set(['https://echo.starry.phd']);
+const origins=new Set(['https://echo.starry.phd','https://echo-api-staging.starry-phd.workers.dev']);
 const allowed=(origin:string)=>origins.has(origin)||/^http:\/\/localhost:\d+$/.test(origin);
 function json(data:unknown,status:number,req:Request){
  const origin=req.headers.get('Origin')||'';
@@ -57,10 +60,15 @@ app.options('*',c=>{
  const origin=c.req.header('Origin')||'';
  if(!allowed(origin))return new Response(null,{status:403});
  return new Response(null,{status:204,headers:{
-  'access-control-allow-origin':origin,'access-control-allow-methods':'GET, OPTIONS',
-  'access-control-allow-headers':'Content-Type, Accept, Range','access-control-max-age':'600','vary':'Origin'
+  'access-control-allow-origin':origin,'access-control-allow-methods':'GET, PATCH, OPTIONS',
+  'access-control-allow-headers':'Content-Type, Accept, Range, Authorization','access-control-max-age':'600','vary':'Origin'
  }});
 });
+// Own Echo D1 settings: owner role is verified by the backend against Starry
+// on EVERY request, not trusted from the member UI.
+app.get('/api/v1/battery/task-settings',c=>echoBatterySettings(c.req.raw,c.env));
+app.patch('/api/v1/battery/task-settings',c=>echoBatterySettings(c.req.raw,c.env));
+
 const health=async(c:{req:{raw:Request};env:Env})=>{
  let legacyMediaMigration:'pending'|'copied'|'verified'='pending';
  try{
