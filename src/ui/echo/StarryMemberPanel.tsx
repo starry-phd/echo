@@ -1,6 +1,8 @@
 import {useEffect,useState} from 'react';
 import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
+import {passkeyErrorMessage} from '../../auth/starryId/passkeyErrors';
+import type {PasskeyEntry} from '../../auth/starryId/passkeyContract';
 import {prepareWebRelay,webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
 import {nativeRelaySignIn} from '../../auth/starryId/nativeSignIn';
@@ -17,6 +19,10 @@ export function StarryMemberPanel(){
  const t=useLegacyTheme();
  const {fontSize}=useFontZoom();
  const [error,setError]=useState('');
+ const [passkeys,setPasskeys]=useState<PasskeyEntry[]|null>(null);
+ const [passkeyName,setPasskeyName]=useState('');
+ const [passkeyNotice,setPasskeyNotice]=useState('');
+ const [confirmRemove,setConfirmRemove]=useState<string|null>(null);
  const [confirmDelete,setConfirmDelete]=useState(false);
  const [deleteConfirmation,setDeleteConfirmation]=useState('');
  const [batterySummary,setBatterySummary]=useState('');
@@ -49,6 +55,20 @@ export function StarryMemberPanel(){
   }catch{setError('暫時無法前往繁星會員登入，請稍後再試。');}
  };
 
+ const passkeyAction=async(work:()=>Promise<void>,success?:string)=>{
+  try{
+   setError('');setPasskeyNotice('');
+   await work();
+   if(success)setPasskeyNotice(success);
+  }catch(err){
+   const message=passkeyErrorMessage(err);
+   if(message)setError(message);
+  }
+ };
+ const loadPasskeys=async()=>{
+  const list=await starry.listPasskeys();
+  setPasskeys(list);
+ };
  const text=(value:string,muted=false)=><Text style={[styles.text,{color:muted?t.muted:t.ink,fontSize:fontSize(14)}]}>{value}</Text>;
  const button=(label:string,onPress:()=>void,kind:'primary'|'plain'|'danger'='plain')=><Pressable
   key={label} accessibilityRole="button" accessibilityLabel={label} disabled={starry.busy} onPress={onPress}
@@ -66,7 +86,7 @@ export function StarryMemberPanel(){
   case 'signed-out':
    body=<>
     {state.notice&&text(state.notice)}
-    {text('使用 Google 或 Apple 帳號登入繁星會員（Starry ID）。同一個帳號可用於繁星生態系的所有 App。',true)}
+    {text('可使用 Passkey、Google 或 Apple 登入繁星會員（Starry ID），三者都使用同一個中央會員帳號。',true)}
     {Platform.OS==='web'?<>
      {typeof window!=='undefined'&&webRelaySupported(window.location.origin)?<View style={styles.row}>
       <Pressable accessibilityRole="button" accessibilityLabel="使用 Google 帳號登入" disabled={starry.busy}
@@ -88,6 +108,11 @@ export function StarryMemberPanel(){
       <Text style={[styles.appleLabel,{fontSize:fontSize(15)}]}>使用 Apple 帳號登入</Text>
      </Pressable>
     </View>}
+    {starry.passkeyAvailable&&<View style={styles.row}>
+     {button('使用 Passkey 登入',()=>{
+      void passkeyAction(()=>starry.signInPasskey());
+     },'primary')}
+    </View>}
     <View style={styles.row}>{link('服務條款','/terms')}{link('隱私權政策','/privacy')}</View>
    </>;break;
   case 'consent-required':
@@ -108,6 +133,37 @@ export function StarryMemberPanel(){
     </View>
     {text('已登入繁星會員。個人資料、頭像與登入方式請到繁星帳號中心管理。',true)}
     <View style={styles.row}>{link('前往繁星帳號中心','/account')}</View>
+    <View style={[styles.confirm,{borderColor:t.border}]}>
+     {text('我的 Passkey')}
+     {text('Passkey 是繁星會員的額外登入方式，不影響你原本的 Apple／Google 登入。',true)}
+     <View style={styles.row}>
+      {button('我的 Passkey',()=>{void passkeyAction(loadPasskeys);})}
+      {starry.passkeyAvailable&&button('新增 Passkey',()=>{
+       void passkeyAction(async()=>{
+        await starry.addPasskey(passkeyName.trim()||undefined);
+        await loadPasskeys();
+       },'Passkey 已新增至繁星會員。');
+      },'primary')}
+     </View>
+     {starry.passkeyAvailable&&<TextInput
+      accessibilityLabel="Passkey 名稱（選填）" value={passkeyName} onChangeText={setPasskeyName}
+      placeholder="Passkey 名稱（選填）" placeholderTextColor={t.muted}
+      style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>}
+     {passkeys?.length===0&&text('尚未建立任何 Passkey。',true)}
+     {passkeys?.map(entry=><View key={entry.id} style={styles.row}>
+      {text(entry.name)}
+      {confirmRemove===entry.id?<>
+       {button('確定移除這把 Passkey',()=>{
+        void passkeyAction(async()=>{
+         await starry.removePasskey(entry.id);setConfirmRemove(null);await loadPasskeys();
+        },'Passkey 已移除。');
+       },'danger')}
+       {button('取消',()=>setConfirmRemove(null))}
+      </>:button('移除',()=>setConfirmRemove(entry.id))}
+     </View>)}
+     {passkeyNotice?text(passkeyNotice,true):null}
+     {!starry.passkeyAvailable&&text('此裝置不支援 Passkey；可以在繁星網頁帳號中心管理。',true)}
+    </View>
     <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
       setBatterySummary('正在取得本月餘額…');
       void starry.getBatteryBalance().then(({balance:b,quantum:q})=>setBatterySummary(
