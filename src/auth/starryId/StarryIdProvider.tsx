@@ -43,6 +43,8 @@ export type StarryIdContextValue={
  state:MemberViewState;
  busy:boolean;
  ensureLoaded():void;
+ refreshMember():Promise<void>;
+ getFreshMemberNo():Promise<string|null>;
  getNonce():Promise<string>;
  signIn(input:ProviderSignIn):Promise<void>;
  signInRelay(provider:Provider):Promise<void>;
@@ -63,7 +65,7 @@ export type StarryIdContextValue={
 
 const disabled:StarryIdContextValue={
  enabled:false,env:null,passkeyAvailable:false,deviceSsoAvailable:false,state:{kind:'disabled'},busy:false,
- ensureLoaded(){},
+ ensureLoaded(){},refreshMember:async()=>{},getFreshMemberNo:async()=>null,
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
  signIn:async()=>{},signInRelay:async()=>{},beginWebRelay:async()=>{},completeWebRelay:async()=>false,completeWebSso:async()=>null,
  signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
@@ -230,6 +232,21 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    if(loaded.current)return;
    loaded.current=true;
    void run(loadMember);
+  },
+  refreshMember:async()=>{
+   if(!loaded.current)return;
+   await run(loadMember);
+  },
+  getFreshMemberNo:async()=>{
+   if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
+   // Never share a cached member number: the member can change it in Starry ID.
+   const latest=await fetchMe(session);
+   if(latest.userId!==state.member.userId||latest.status!=='active'||latest.consent.required){
+    setState(stateFromMember(latest));
+    throw new Error('會員資料已變更，請重新確認後再分享。');
+   }
+   setState(stateFromMember(latest));
+   return latest.memberNo;
   },
   getNonce:async()=>{
    const gate=await availability();

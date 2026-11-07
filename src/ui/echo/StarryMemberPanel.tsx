@@ -1,10 +1,11 @@
-import {useEffect,useState} from 'react';
-import {ActivityIndicator,Image,Linking,Platform,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useEffect,useRef,useState} from 'react';
+import {ActivityIndicator,Image,Linking,Platform,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {passkeyErrorMessage} from '../../auth/starryId/passkeyErrors';
 import type {PasskeyEntry} from '../../auth/starryId/passkeyContract';
 import {webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
+import {memberInviteUrl,memberPublicUrl} from '../../auth/starryId/memberLinks';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -29,11 +30,18 @@ export function StarryMemberPanel(){
  const [taskLabel,setTaskLabel]=useState('AI 任務');
  const [taskUnits,setTaskUnits]=useState('1');
  const [taskSettingsNotice,setTaskSettingsNotice]=useState('');
+ const refreshedOnEntry=useRef(false);
  const {state,env}=starry;
  const passkeyAvailable=starry.passkeyAvailable&&(Platform.OS!=='web'||
   (typeof window!=='undefined'&&webRelaySupported(window.location.origin)));
 
  useEffect(()=>{starry.ensureLoaded();},[starry]);
+ // Re-fetch each time this member panel mounts, as signed avatar URLs expire hourly.
+ useEffect(()=>{
+  if(state.kind!=='signed-in'||refreshedOnEntry.current)return;
+  refreshedOnEntry.current=true;
+  void starry.refreshMember();
+ },[state.kind,starry]);
 
  const nativeRelay=async(provider:RelayProvider)=>{
   if(!env)return;
@@ -67,6 +75,27 @@ export function StarryMemberPanel(){
  const loadPasskeys=async()=>{
   const list=await starry.listPasskeys();
   setPasskeys(list);
+ };
+ const shareMemberInvite=async()=>{
+  try{
+   setError('');
+   // Fetch /v1/me again: member_no is editable and must never be cached for sharing.
+   const freshNo=await starry.getFreshMemberNo();
+   if(!freshNo){setError('暫時無法取得最新會員編號。');return;}
+   const url=memberInviteUrl(freshNo);
+   if(!url)return;
+   if(Platform.OS==='web'){
+    if(typeof navigator!=='undefined'&&typeof navigator.share==='function'){
+     await navigator.share({url,title:'繁星會員邀請'});
+    }else if(typeof navigator!=='undefined'&&navigator.clipboard?.writeText){
+     await navigator.clipboard.writeText(url);
+     setError('已複製邀請連結。');
+    }else setError('此瀏覽器無法開啟分享功能，請使用邀請連結。');
+   }else await Share.share({message:url});
+  }catch(err){
+   if((err as {name?:string})?.name==='AbortError')return;
+   setError('無法分享邀請連結，請稍後再試。');
+  }
  };
  const text=(value:string,muted=false)=><Text style={[styles.text,{color:muted?t.muted:t.ink,fontSize:fontSize(14)}]}>{value}</Text>;
  const button=(label:string,onPress:()=>void,kind:'primary'|'plain'|'danger'='plain')=><Pressable
@@ -122,16 +151,27 @@ export function StarryMemberPanel(){
    </>;break;
   case 'signed-in':{
    const member=state.member;
+   const publicUrl=member.memberNo?memberPublicUrl(member.memberNo):null;
+   const inviteUrl=member.memberNo?memberInviteUrl(member.memberNo):null;
    body=<>
     <View style={styles.row}>
-     {member.avatarPath&&env
-      ?<Image source={{uri:env.baseUrl+member.avatarPath}} accessibilityLabel={'頭像：'+member.displayName} style={styles.avatar}/>
+     {member.avatarUrl&&env
+      ?<Image source={{uri:member.avatarUrl.startsWith('/')?env.baseUrl+member.avatarUrl:member.avatarUrl}}
+        accessibilityLabel={'頭像：'+member.displayName} style={styles.avatar}/>
       :<View style={[styles.avatar,styles.initial,{backgroundColor:t.lightPill}]}>
-        <Text style={{color:t.accentText,fontSize:fontSize(22),fontWeight:'900'}}>{Array.from(member.displayName)[0]}</Text></View>}
+        <Text style={{color:t.accentText,fontSize:fontSize(22),fontWeight:'900'}}>{member.initials||'•'}</Text></View>}
      <Text style={[styles.name,{color:t.ink,fontSize:fontSize(18)}]}>{member.displayName}</Text>
     </View>
     {text('已登入繁星會員。個人資料、頭像與登入方式請到繁星帳號中心管理。',true)}
     <View style={styles.row}>{link('前往繁星帳號中心','/account')}</View>
+    {member.memberNo&&text('會員編號：'+member.memberNo,true)}
+    {(publicUrl||inviteUrl)&&<View style={styles.row}>
+     {publicUrl&&<Text accessibilityRole="link" onPress={()=>{void Linking.openURL(publicUrl);}}
+      style={[styles.link,{color:t.accentText,fontSize:fontSize(14)}]}>查看公開會員頁</Text>}
+     {inviteUrl&&<Text accessibilityRole="link" onPress={()=>{void Linking.openURL(inviteUrl);}}
+      style={[styles.link,{color:t.accentText,fontSize:fontSize(14)}]}>查看邀請連結</Text>}
+     {inviteUrl&&button('分享邀請連結',()=>{void shareMemberInvite();},'primary')}
+    </View>}
     <View style={[styles.confirm,{borderColor:t.border}]}>
      {text('我的 Passkey')}
      {text('Passkey 是繁星會員的額外登入方式，不影響你原本的 Apple／Google 登入。',true)}
@@ -163,21 +203,21 @@ export function StarryMemberPanel(){
      {passkeyNotice?text(passkeyNotice,true):null}
      {!passkeyAvailable&&text('此裝置或網址無法使用 Passkey；可以在繁星網頁帳號中心管理。',true)}
     </View>
-    <View style={styles.row}>{button('檢查繁星電池艙餘額',()=>{
-      setBatterySummary('正在取得本月餘額…');
+    <View style={styles.row}>{button('🔋 檢查繁星電池艙餘額',()=>{
+      setBatterySummary('正在取得 🔋 普通電池與 ⚛️ 量子電池餘額…');
       void starry.getBatteryBalance().then(({balance:b,quantum:q})=>setBatterySummary(
-       b.period+' 免費月額度 '+b.allowance+'、已用 '+b.used+'、預留中 '+b.reserved+'、剩餘 '+b.remaining+'；本 App 量子電池可用 '+q.available+' 顆（已預留 '+q.reserved+' 顆）。任務優先使用免費月額度，不足才使用量子電池。'
-      )).catch(()=>setBatterySummary('電池艙暫時無法查詢，不會扣除額度。'));
+       '🔋 '+b.remaining+' 顆普通電池（'+b.period+' 月額度 '+b.allowance+' 顆、已用 '+b.used+' 顆、預留 '+b.reserved+' 顆）；⚛️ '+q.available+' 顆量子電池（已預留 '+q.reserved+' 顆）。使用時先扣 🔋 普通電池，不足才扣 ⚛️ 量子電池。'
+      )).catch(()=>setBatterySummary('🔋 普通電池與 ⚛️ 量子電池暫時無法查詢，不會扣除額度。'));
      })}</View>
     {batterySummary?text(batterySummary,true):null}
     {member.staffRole==='owner'&&<View style={[styles.confirm,{borderColor:t.border}]}>
-     {text('繁星回聲專屬 Battery 任務設定（超級管理員）')}
-     {text('每次任務要消耗幾顆，由本 App 決定（1–100 顆）。後端會再次核對 Owner 身分。',true)}
+     {text('🔋 繁星回聲電池任務設定（超級管理員）')}
+     {text('🔋 每次任務消耗 1～100 顆電池，由本 App 決定；後端會再次核對 Owner 身分。',true)}
      <TextInput accessibilityLabel="任務代碼" value={taskType} onChangeText={setTaskType}
       autoCapitalize="none" autoCorrect={false} style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
      <TextInput accessibilityLabel="顯示給會員的任務名稱" value={taskLabel} onChangeText={setTaskLabel}
       style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
-     <TextInput accessibilityLabel="每個任務消耗幾顆電池" value={taskUnits}
+     <TextInput accessibilityLabel="🔋 每個任務消耗幾顆電池" value={taskUnits}
       onChangeText={setTaskUnits} keyboardType="number-pad"
       style={[styles.deleteInput,{borderColor:t.border,color:t.ink}]}/>
      <View style={styles.row}>
@@ -188,14 +228,14 @@ export function StarryMemberPanel(){
         setTaskSettingsNotice('已取得 '+rows.length+' 項任務設定。');
        }).catch(()=>setTaskSettingsNotice('Echo 任務設定後端尚未啟用，無法讀取。'));
       })}
-      {button('儲存任務價格',()=>{
+      {button('🔋 儲存任務價格',()=>{
        const units=Number(taskUnits);
        if(!/^echo\\.[a-z0-9._-]{1,59}$/.test(taskType)||!Number.isSafeInteger(units)||units<1||units>100||
           taskLabel.trim().length<1||taskLabel.length>40){
         setTaskSettingsNotice('任務代碼需以 echo. 開頭，顆數需為 1～100，名稱最多 40 字。');return;
        }
        void starry.saveTaskPrice({task_type:taskType,task_label:taskLabel.trim(),units})
-        .then(()=>setTaskSettingsNotice('Echo 任務價格已儲存。'))
+        .then(()=>setTaskSettingsNotice('🔋 Echo 電池任務價格已儲存。'))
         .catch(()=>setTaskSettingsNotice('未能儲存：請確認 Echo 後端已部署且具備管理員權限。'));
       },'primary')}
      </View>
