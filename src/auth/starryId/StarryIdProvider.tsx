@@ -1,13 +1,17 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useRef,useState} from 'react';
 import type {ReactNode} from 'react';
-import {Platform} from 'react-native';
+import {AppState,Platform,Pressable,Text,View} from 'react-native';
 import Constants from 'expo-constants';
 import {resolveStarryIdEnvironment} from './env';
 import type {StarryIdEnvironment} from './env';
-import {acceptCurrentConsent,fetchAppConfig,fetchMe,requestAccountDeletion,requestNonce,signOut} from './memberApi';
+import {acceptCurrentConsent,fetchAppConfig,fetchMe,requestAccountDeletion,requestNonce,signOut,
+ getPasskeySignInOptions,signInWithPasskey,getPasskeyCreationOptions,registerPasskey,getMemberPasskeys,deleteMemberPasskey} from './memberApi';
 import type {ProviderSignIn,PublicFetch} from './memberApi';
-import {stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
-import {evaluateAppAvailability} from './appConfig';
+import {stateAfterSignIn,stateFromAvailability,stateFromError,stateFromMember} from './memberFlow';
+import {evaluateAppAvailability,visibleStarryNotices} from './appConfig';
+import type {StarryNotice} from './appConfig';
+import {passkeySupported,getPlatformPasskey,createPlatformPasskey} from './passkeyPlatform';
+import type {PasskeyEntry} from './passkeyContract';
 import type {MemberViewState} from './memberFlow';
 import {completeSignIn,loadMemberState} from './memberSession';
 import {createStarryIdSession} from './session';
@@ -33,11 +37,16 @@ const STARRY_ENV:StarryIdEnvironment|null=resolveStarryIdEnvironment(process.env
 export type StarryIdContextValue={
  enabled:boolean;
  env:StarryIdEnvironment|null;
+ passkeyAvailable:boolean;
  state:MemberViewState;
  busy:boolean;
  ensureLoaded():void;
  getNonce():Promise<string>;
  signIn(input:ProviderSignIn):Promise<void>;
+ signInPasskey():Promise<void>;
+ listPasskeys():Promise<PasskeyEntry[]>;
+ addPasskey(name?:string):Promise<void>;
+ removePasskey(id:string):Promise<void>;
  acceptConsent():Promise<void>;
  signOut(everywhere?:boolean):Promise<void>;
  requestDeletion():Promise<void>;
@@ -47,10 +56,11 @@ export type StarryIdContextValue={
 };
 
 const disabled:StarryIdContextValue={
- enabled:false,env:null,state:{kind:'disabled'},busy:false,
+ enabled:false,env:null,passkeyAvailable:false,state:{kind:'disabled'},busy:false,
  ensureLoaded(){},
  getNonce:()=>Promise.reject(new Error('Starry ID disabled')),
- signIn:async()=>{},acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
+ signIn:async()=>{},signInPasskey:async()=>{},listPasskeys:async()=>[],addPasskey:async()=>{},removePasskey:async()=>{},
+ acceptConsent:async()=>{},signOut:async()=>{},requestDeletion:async()=>{},
  getBatteryBalance:async()=>{throw new Error('Starry ID disabled');},
  getTaskPrices:async()=>{throw new Error('Starry ID disabled');},
  saveTaskPrice:async()=>{throw new Error('Starry ID disabled');}
@@ -75,6 +85,9 @@ export function StarryIdProvider({children}:{children:ReactNode}){
 function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;children:ReactNode}){
  const [state,setState]=useState<MemberViewState>({kind:'checking'});
  const [busy,setBusy]=useState(false);
+ const [notices,setNotices]=useState<readonly StarryNotice[]>([]);
+ const [dismissed,setDismissed]=useState<readonly string[]>([]);
+ const wasBlocked=useRef(false);
  const loaded=useRef(false);
  const sessionRef=useRef<StarryIdSession|null>(null);
  if(!sessionRef.current){
@@ -85,17 +98,6 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
  }
  const session=sessionRef.current;
  const version=Constants.expoConfig?.version??'';
- // Read the public status/min_version/config on launch. Any failure gates
- // member and Battery actions closed while public Echo screens still render.
- useEffect(()=>{
-  let alive=true;
-  void fetchAppConfig(env,browserFetch).then(config=>{
-   if(!alive)return;
-   const gate=stateFromAvailability(evaluateAppAvailability(config,version));
-   if(gate)setState(gate);
-  });
-  return()=>{alive=false;};
- },[env,version]);
  const deps=useMemo(()=>({env,fetch:browserFetch,session,appVersion:Constants.expoConfig?.version??''}),[env,session]);
 
  const run=useCallback(async(task:()=>Promise<MemberViewState|void>)=>{
@@ -105,8 +107,43 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   finally{setBusy(false);}
  },[]);
 
+ // Check the central public gate at launch and whenever the App returns to foreground.
+ // Coalesce rapid window focus/visibility events; never poll a paused App repeatedly.
+ useEffect(()=>{
+  let active=true,inflight=false,lastCheck=0;
+  const refresh=async()=>{
+   if(!active||inflight||Date.now()-lastCheck<4000)return;
+   inflight=true;lastCheck=Date.now();
+   try{
+    const config=await fetchAppConfig(env,browserFetch);
+    if(!active)return;
+    setNotices(visibleStarryNotices(config));
+    const gate=stateFromAvailability(evaluateAppAvailability(config,version));
+    if(gate){wasBlocked.current=true;setState(gate);}
+    else if(wasBlocked.current){wasBlocked.current=false;void run(()=>loadMemberState(deps));}
+   }finally{inflight=false;}
+  };
+  void refresh();
+  const subscription=AppState.addEventListener('change',next=>{
+   if(next==='active')void refresh();
+  });
+  const onFocus=()=>{void refresh();};
+  const onVisible=()=>{if(typeof document!=='undefined'&&document.visibilityState==='visible')void refresh();};
+  if(Platform.OS==='web'&&typeof window!=='undefined'){
+   window.addEventListener('focus',onFocus);
+   document.addEventListener('visibilitychange',onVisible);
+  }
+  return()=>{
+   active=false;subscription.remove();
+   if(Platform.OS==='web'&&typeof window!=='undefined'){
+    window.removeEventListener('focus',onFocus);
+    document.removeEventListener('visibilitychange',onVisible);
+   }
+  };
+ },[env,version,deps,run]);
+
  const value=useMemo<StarryIdContextValue>(()=>({
-  enabled:true,env,state,busy,
+  enabled:true,env,passkeyAvailable:passkeySupported(),state,busy,
   ensureLoaded(){
    if(loaded.current)return;
    loaded.current=true;
@@ -121,6 +158,34 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
    const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
    return gate??await completeSignIn(deps,input);
   }),
+  signInPasskey:async()=>{
+   if(busy)return;
+   setBusy(true);
+   try{
+    const gate=stateFromAvailability(evaluateAppAvailability(await fetchAppConfig(env,browserFetch),version));
+    if(gate){setState(gate);throw new Error('繁星會員目前無法登入或需要更新');}
+    const options=await getPasskeySignInOptions(env,browserFetch);
+    const credential=await getPlatformPasskey(options);
+    const result=await signInWithPasskey(env,browserFetch,credential);
+    await session.adoptTokens(result.tokens);
+    const early=stateAfterSignIn(result);
+    setState(early??stateFromMember(await fetchMe(session)));
+   }finally{setBusy(false);}
+  },
+  listPasskeys:async()=>{
+   if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
+   return getMemberPasskeys(session);
+  },
+  addPasskey:async name=>{
+   if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
+   const options=await getPasskeyCreationOptions(session);
+   const attestation=await createPlatformPasskey(options);
+   await registerPasskey(session,attestation,name);
+  },
+  removePasskey:async id=>{
+   if(state.kind!=='signed-in')throw new Error('請先登入並同意條款');
+   await deleteMemberPasskey(session,id);
+  },
   acceptConsent:()=>run(async()=>{
    if(state.kind!=='consent-required')return;
    await acceptCurrentConsent(session,state.member);
@@ -154,7 +219,19 @@ function EnabledStarryIdProvider({env,children}:{env:StarryIdEnvironment;childre
   }
  }),[env,state,busy,deps,run,session,version]);
 
- return <StarryIdContext.Provider value={value}>{children}</StarryIdContext.Provider>;
+ return <StarryIdContext.Provider value={value}>
+  <View style={{flex:1}}>
+   {notices.filter(n=>!dismissed.includes(n.message+'|'+n.starts_at)).map(n=>
+    <View key={n.message+'|'+n.starts_at} accessibilityRole="alert"
+     style={{paddingVertical:10,paddingHorizontal:14,backgroundColor:'#fff3c6',flexDirection:'row',alignItems:'center'}}>
+     <Text style={{color:'#503d00',flex:1}}>{n.message}</Text>
+     <Pressable accessibilityRole="button" accessibilityLabel="關閉公告"
+      onPress={()=>setDismissed(old=>[...old,n.message+'|'+n.starts_at])}
+      style={{padding:8}}><Text style={{color:'#503d00'}}>關閉</Text></Pressable>
+    </View>)}
+   {children}
+  </View>
+ </StarryIdContext.Provider>;
 }
 
 export function useStarryId():StarryIdContextValue{
