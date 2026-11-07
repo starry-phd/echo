@@ -109,3 +109,29 @@ jobs:
           status="$(curl -sS --max-time 20 -D /tmp/echo-starry-relay.headers -o /dev/null -w '%{http_code}' "$relay")"
           test "$status" = 302
           tr -d '\r' < /tmp/echo-starry-relay.headers | grep -Ei '^location: https://accounts.google.com/o/oauth2/v2/auth[?]'
+      - name: Verify nonce POST preflight and fail-closed Battery preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin='https://echo-api-staging.starry-phd.workers.dev'
+          nonce_url='https://id.starry.phd/v1/auth/nonce'
+          # OPTIONS is read-only: verifies the browser can request a nonce,
+          # but does not create login sessions or touch member records.
+          status="$(curl -sS --max-time 20 -D /tmp/echo-nonce-preflight.headers -o /dev/null -w '%{http_code}' -X OPTIONS \
+            -H "Origin: $origin" \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type' "$nonce_url")"
+          test "$status" = '204'
+          tr -d '\r' < /tmp/echo-nonce-preflight.headers | grep -Fxi "access-control-allow-origin: $origin"
+          tr -d '\r' < /tmp/echo-nonce-preflight.headers | grep -Ei '^access-control-allow-methods:.*POST'
+          tr -d '\r' < /tmp/echo-nonce-preflight.headers | grep -Ei '^access-control-allow-headers:.*content-type'
+          base='https://echo-api-staging.starry-phd.workers.dev'
+          balance_status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$base/api/battery/balance")"
+          smoke_status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' -X POST "$base/api/battery/smoke")"
+          price_status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$base/api/v1/battery/task-settings")"
+          test "$balance_status" = '401'
+          test "$smoke_status" = '401'
+          # This isolated staging Worker deliberately has no Echo D1 binding:
+          # owner task-price writes are blocked until a separately approved staging DB exists.
+          test "$price_status" = '404'
+          echo 'Login nonce CORS preflight and unauthenticated Battery/Owner protections passed.'
