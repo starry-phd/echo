@@ -32,8 +32,8 @@ function session(routes){
 test('Passkey challenge is app-bound, Starry RP validated and never silently replaced by Echo origin',async()=>{
  const options={challenge:'YWJjZA',rpId:STARRY_PASSKEY_RP,userVerification:'required',timeout:120000,allowCredentials:[]};
  const api=publicApi({'POST /v1/auth/passkey/options':[200,{publicKey:options,expires_in:600}],
-  'POST /v1/auth/passkey':[200,{access_token:'a.b.c',refresh_token:'r1',expires_in:900,
-   user:{user_id:'user1',status:'active',is_new:false,deletion_purge_at:null},consent_required:false}]});
+  'POST /v1/auth/passkey':[200,{token_type:'Bearer',access_token:'eyJ.access1.x',refresh_token:'session1.r1',expires_in:900,
+   user:{user_id:'0193a5b2-7c4d-7e8f-9a01-23456789abcd',status:'active',is_new:false,deletion_purge_at:null},consent_required:false}]});
  assert.deepEqual(await getPasskeySignInOptions(env,api.fetch),options);
  assert.deepEqual(api.calls[0].body,{app_id:'echo'});
  const credential={id:'YWJj',clientDataJSON:'YWJj',authenticatorData:'YWJj',signature:'YWJj'};
@@ -67,7 +67,7 @@ test('Cancellation is silent, missing credential falls back, duplicate and reaut
  for(const e of [{name:'NotAllowedError'},{name:'AbortError'},{error:'UserCancelled'}])
   assert.equal(passkeyErrorMessage(e),null);
  assert.match(passkeyErrorMessage({error:'NoCredentials'}),/Apple 或 Google/);
- assert.match(passkeyErrorMessage({name:'InvalidStateError'}),/已有/);
+ assert.match(passkeyErrorMessage({name:'InvalidStateError'}),/已經有/);
  assert.match(passkeyErrorMessage({code:'REAUTH_REQUIRED'}),/10 分鐘/);
 });
 test('App notices are bounded plain strings with millisecond windows',()=>{
