@@ -72,7 +72,7 @@ jobs:
           node - <<'NODE'
           const r=require('/tmp/echo-preview-status.json');
           console.log('Echo registration:',r.app_status,'Starry ID health:',r.id_health,'upstream HTTP:',r.upstream_http,'errors:',r.upstream_errors);
-          if(r.environment!=='echo-api-staging'||r.app_id!=='echo'||r.app_status!=='active'||!r.id_health||r.can_login_from_preview!==false)process.exit(1);
+          if(r.environment!=='echo-api-staging'||r.app_id!=='echo'||r.app_status!=='active'||!r.id_health||r.can_login_from_preview!==true||r.callback_registered!=='https://echo-api-staging.starry-phd.workers.dev')process.exit(1);
           NODE
       - name: Smoke test real Echo UI, approved guest cards, and no private audio
         shell: bash
@@ -94,3 +94,18 @@ jobs:
           NODE
           private_status="$(curl -sS -o /dev/null -w '%{http_code}' "$base/api/v1/tracks/not-verified-and-public/stream")"
           test "$private_status" = '404'
+      - name: Verify Starry ID browser CORS and Google relay accepts exact preview URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin='https://echo-api-staging.starry-phd.workers.dev'
+          config='https://id.starry.phd/v1/apps/echo/config'
+          code="$(curl -sS --max-time 20 -D /tmp/echo-starry-cors.headers -o /dev/null -w '%{http_code}' -X OPTIONS \
+            -H "Origin: $origin" -H 'Access-Control-Request-Method: GET' "$config")"
+          test "$code" = 204
+          tr -d '\r' < /tmp/echo-starry-cors.headers | grep -Fxi "access-control-allow-origin: $origin"
+          nonce_hash="$(printf '%064d' 0)"
+          relay="$(node -e "const u=new URL('https://id.starry.phd/auth/google/start');u.searchParams.set('app_id','echo');u.searchParams.set('nonce',process.argv[1]);u.searchParams.set('return','https://echo-api-staging.starry-phd.workers.dev/auth/done');u.searchParams.set('state','echo-preview-registry-probe-20261107');process.stdout.write(u.toString())" "$nonce_hash")"
+          status="$(curl -sS --max-time 20 -D /tmp/echo-starry-relay.headers -o /dev/null -w '%{http_code}' "$relay")"
+          test "$status" = 302
+          tr -d '\r' < /tmp/echo-starry-relay.headers | grep -Ei '^location: https://accounts.google.com/o/oauth2/v2/auth[?]'
