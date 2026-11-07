@@ -31,7 +31,8 @@ strong{color:#9f285e}code{overflow-wrap:anywhere;font-size:.91rem}a{color:#075b9
 <div class="card"><h2>繁星電池艙 Starry Battery</h2>
 <p>已準備安全的會員餘額 API 與「預留 1 單位後釋放」測試端點。它們只接受經正式 Starry ID 驗證的 Echo Access Token。</p>
 <p>測試服務金鑰必須由業主放入 Worker Secret <code>STARRY_BATTERY_KEY</code>；未設定時會拒絕任何預留。絕不在本頁貼上金鑰。</p>
-<p class="small">會員登入可以在測試網站實際操作；Battery 餘額可登入後查詢，扣抵測試仍需後端金鑰及經授權的任務。</p></div>
+<p class="small">會員登入請到 <a href="/profile">會員頁</a>；登入後可以查詢免費月額度與量子電池。未取得測試 Worker 的服務金鑰前，不執行預留或扣抵。</p>
+<p class="small">超級管理員的任務價格管理程式已備妥，但目前測試 Worker 沒有獨立 Echo D1，這裡不開放設定或寫入。請勿改用正式資料庫作為測試資料庫。</p></div>
 <p class="small">預覽 Worker：echo-api-staging。可回到 <a href="/">完整 Echo 畫面</a>。原網域 302 轉址保持不變，Starry ID 僅新增測試網域的登入授權。</p></main>
 <script>
 fetch('/api/status',{cache:'no-store'}).then(async r=>{const d=await r.json();document.getElementById('status').textContent=d.app_status==='active'?'App 登記有效（active）':'目前無法確認 active';
