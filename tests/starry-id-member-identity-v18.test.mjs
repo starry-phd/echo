@@ -60,3 +60,41 @@ test('public preview, member UI and Battery errors keep fixed icon vocabulary',(
  assert.match(all,/🔋 繁星電池艙/);
  assert.match(all,/🔋 檢查繁星電池艙餘額/);
 });
+
+test('2026-11-08.3 shows only central shown_name and falls back to central initials',()=>{
+ const shared={...fixture,profile:{...fixture.profile,display_name:'不公開的姓名',nickname:'不公開的暱稱',shown_name:'中央指定顯示名稱',initials:'周子'}};
+ const me=parseStarryMe(shared);
+ assert.equal(me.displayName,'中央指定顯示名稱');
+ assert.equal(me.hasDisplayName,true);
+ const hidden=parseStarryMe({...shared,profile:{...shared.profile,shown_name:null}});
+ assert.equal(hidden.displayName,'周子');
+ assert.equal(hidden.hasDisplayName,false);
+ const missing=parseStarryMe({...shared,profile:{...shared.profile,shown_name:null,initials:''}});
+ assert.equal(missing.displayName,'繁星會員');
+ assert.throws(()=>parseStarryMe({...shared,profile:{...shared.profile,shown_name:5}}),/shown_name/);
+});
+test('2026-11-08.3 avatar cache uses image pathname, not expiring signatures or user ID',async()=>{
+ const {starryAvatarCacheKey}=await import('../src/auth/starryId/avatarCache.ts');
+ const original='/v1/avatars/x/photo-one.webp?exp=123&sig=a';
+ const refresh='/v1/avatars/x/photo-one.webp?exp=456&sig=b';
+ const changed='/v1/avatars/x/photo-two.webp?exp=789&sig=c';
+ assert.equal(starryAvatarCacheKey(original),'/v1/avatars/x/photo-one.webp');
+ assert.equal(starryAvatarCacheKey(refresh),starryAvatarCacheKey(original));
+ assert.notEqual(starryAvatarCacheKey(changed),starryAvatarCacheKey(original));
+ assert.equal(starryAvatarCacheKey('https://id.starry.phd/v1/avatars/abc.webp?sig=x'),'/v1/avatars/abc.webp');
+ assert.equal(starryAvatarCacheKey('https://evil.example/abc.webp?sig=x'),null);
+ const panel=readFileSync(new URL('../src/ui/echo/StarryMemberPanel.tsx',import.meta.url),'utf8');
+ assert.match(panel,/from 'expo-image'/);
+ assert.match(panel,/cacheKey:starryAvatarCacheKey\(member\.avatarUrl\)/);
+ assert.match(panel,/key=\{starryAvatarCacheKey\(member\.avatarUrl\)\}/);
+ assert.doesNotMatch(panel,/cacheKey:member\.userId/);
+});
+test('2026-11-08.3 battery bonus remains central: Echo reads actual API allowance without recalculating bonuses',()=>{
+ const panel=readFileSync(new URL('../src/ui/echo/StarryMemberPanel.tsx',import.meta.url),'utf8');
+ const provider=readFileSync(new URL('../src/auth/starryId/StarryIdProvider.tsx',import.meta.url),'utf8');
+ assert.match(panel,/b\.allowance/);
+ assert.match(panel,/b\.remaining/);
+ assert.match(provider,/sdk\.getBatteryBalance\(\)/);
+ assert.doesNotMatch(panel,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
+ assert.doesNotMatch(provider,/bonusMultiplier|visibilityMultiplier|publicFieldsBonus/);
+});

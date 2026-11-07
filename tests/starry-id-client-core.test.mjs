@@ -62,7 +62,7 @@ test('GET /v1/me fixture: tolerant of extra fields, keeps only what the app disp
 
 test('/v1/me edge cases: null name falls back to 繁星會員, unsafe avatar dropped, e-mail never accepted as identity',()=>{
  const base=fixture('me.200.json');
- const noName=parseStarryMe({...base,profile:{...base.profile,display_name:null,avatar_url:'//evil.example/a.webp'}});
+ const noName=parseStarryMe({...base,profile:{...base.profile,display_name:null,shown_name:null,initials:'',avatar_url:'//evil.example/a.webp'}});
  assert.equal(noName.displayName,STARRY_MEMBER_FALLBACK_NAME);assert.equal(noName.hasDisplayName,false);
  assert.equal(noName.avatarPath,null);
  assert.equal(parseStarryMe({...base,profile:{...base.profile,avatar_url:'/v1/avatars/u/a.webp'}}).avatarPath,'/v1/avatars/u/a.webp');

@@ -1,11 +1,13 @@
 import {useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Image,Linking,Platform,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Linking,Platform,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image} from 'expo-image';
 import {useStarryId} from '../../auth/starryId/StarryIdProvider';
 import {passkeyErrorMessage} from '../../auth/starryId/passkeyErrors';
 import type {PasskeyEntry} from '../../auth/starryId/passkeyContract';
 import {webRelaySupported} from '../../auth/starryId/webRelay';
 import type {RelayProvider} from '../../auth/starryId/starryRelay';
 import {memberInviteUrl,memberPublicUrl} from '../../auth/starryId/memberLinks';
+import {starryAvatarCacheKey} from '../../auth/starryId/avatarCache';
 import {useLegacyTheme} from './legacyTheme';
 import {useFontZoom} from './FontZoom';
 
@@ -155,8 +157,13 @@ export function StarryMemberPanel(){
    const inviteUrl=member.memberNo?memberInviteUrl(member.memberNo):null;
    body=<>
     <View style={styles.row}>
-     {member.avatarUrl&&env
-      ?<Image source={{uri:member.avatarUrl.startsWith('/')?env.baseUrl+member.avatarUrl:member.avatarUrl}}
+     {member.avatarUrl&&env&&starryAvatarCacheKey(member.avatarUrl)
+      ?<Image key={starryAvatarCacheKey(member.avatarUrl)}
+        source={{
+         uri:member.avatarUrl.startsWith('/')?env.baseUrl+member.avatarUrl:member.avatarUrl,
+         cacheKey:starryAvatarCacheKey(member.avatarUrl)??undefined
+        }}
+        cachePolicy="memory-disk" contentFit="cover"
         accessibilityLabel={'頭像：'+member.displayName} style={styles.avatar}/>
       :<View style={[styles.avatar,styles.initial,{backgroundColor:t.lightPill}]}>
         <Text style={{color:t.accentText,fontSize:fontSize(22),fontWeight:'900'}}>{member.initials||'•'}</Text></View>}

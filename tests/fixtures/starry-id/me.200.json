@@ -86,7 +86,9 @@
       }
     },
     "version": 2,
-    "updated_at": 1793690000000
+    "updated_at": 1793690000000,
+    "shown_name": "小星",
+    "initials": "小星"
   },
   "public_profile": {
     "display_name": "小星",
@@ -97,7 +99,9 @@
     "location": null,
     "phone": null,
     "motto": "慢慢來，比較快。",
-    "contact_email": null
+    "contact_email": null,
+    "shown_name": "小星",
+    "initials": "小星"
   },
   "identities": [
     {
