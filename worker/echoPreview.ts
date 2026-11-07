@@ -1,30 +1,12 @@
-import {createRemoteJWKSet,customFetch,jwtVerify} from 'jose';
 import {Starry,StarryError} from './vendor/starry-sdk';
+import {verifyEchoAccessToken} from './starryIdentity';
 
 /**
- * Isolated Echo/Starry ID integration preview.
- * NEVER serves Echo private media, writes the Starry ID D1, or exposes a service key.
- * The exact workers.dev staging origin is independently registered in Starry ID;
- * its login callback never flows through the original echo.starry.phd redirect.
+ * Isolated Echo/Starry ID integration preview. Does not store member data.
  */
 type Env={STARRY_BATTERY_KEY?:string;STARRY_ID_SERVICE?:{fetch(request:Request):Promise<Response>};
  ECHO_PUBLIC_SERVICE?:{fetch(request:Request):Promise<Response>};ASSETS?:{fetch(request:Request):Promise<Response>}};
 const ID_BASE='https://id.starry.phd';
-const JWKS=createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{timeoutDuration:6500});
-const serviceJwks=new WeakMap<object,ReturnType<typeof createRemoteJWKSet>>();
-/** jose caches valid JWKS and re-fetches an unknown kid after cooldown on rotation. */
-function memberJwks(env:Env):ReturnType<typeof createRemoteJWKSet>{
- if(!env.STARRY_ID_SERVICE)return JWKS;
- let keys=serviceJwks.get(env.STARRY_ID_SERVICE);
- if(!keys){
-  keys=createRemoteJWKSet(new URL(ID_BASE+'/.well-known/jwks.json'),{
-   timeoutDuration:6500,cooldownDuration:0,cacheMaxAge:600_000,
-   [customFetch]:(url,options)=>env.STARRY_ID_SERVICE!.fetch(new Request(url,{...options,redirect:'manual'}))
-  });
-  serviceJwks.set(env.STARRY_ID_SERVICE,keys);
- }
- return keys;
-}
 const HEADERS={'cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer','x-frame-options':'DENY'} as const;
 
 function json(data:unknown,status=200):Response{
@@ -83,19 +65,6 @@ async function status(env:Env):Promise<Response>{
   callback_registered:'https://echo-api-staging.starry-phd.workers.dev',can_login_from_preview:true});
 }
 
-async function memberToken(request:Request,env:Env):Promise<string|null>{
- const raw=request.headers.get('Authorization')||'';
- const match=/^Bearer ([A-Za-z0-9_.-]+)$/.exec(raw);
- if(!match||match[1].length>8192)return null;
- try{
-  const keys=memberJwks(env);
-  const {payload,protectedHeader}=await jwtVerify(match[1],keys,{
-   issuer:'starry-id:production',audience:'starry',algorithms:['ES256'],clockTolerance:'5s'
-  });
-  if(protectedHeader.alg!=='ES256'||payload.app_id!=='echo'||typeof payload.sub!=='string'||!payload.sub)return null;
-  return match[1];
- }catch{return null;}
-}
 /** The official single-file SDK always reaches the existing Starry ID Worker, not its D1. */
 export function echoStarrySdk(env:Env):Starry{
  const safeFetch:typeof fetch=async(input,init)=>{
@@ -134,7 +103,7 @@ export async function executeMeteredEchoTask<T>(
 }
 
 async function batteryResponse(request:Request,env:Env,mode:'balance'|'smoke'):Promise<Response>{
- const token=await memberToken(request,env);
+ const token=await verifyEchoAccessToken(request,env);
  if(!token)return json({error:'A valid Starry ID Echo access token is required'},401);
  const sdk=echoStarrySdk(env);
  if(mode==='balance'){
